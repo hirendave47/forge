@@ -4,6 +4,7 @@ import type { ThinkingLevel } from "@earendil-works/forge-agent-core";
 import {
 	type EditorTheme,
 	getCapabilities,
+	Markdown,
 	type MarkdownTheme,
 	type RgbColor,
 	type SelectListTheme,
@@ -1348,4 +1349,21 @@ export function getSettingsListTheme(): SettingsListTheme {
 		cursor: theme.fg("accent", "→ "),
 		hint: (text: string) => theme.fg("dim", text),
 	};
+}
+
+export interface RenderTerminalMarkdownOptions {
+	width?: number;
+	theme?: MarkdownTheme;
+}
+
+/**
+ * Render Markdown formatted text with ANSI styling, box borders for tables and code blocks,
+ * colors, and terminal formatting.
+ */
+export function renderTerminalMarkdown(markdown: string, options?: RenderTerminalMarkdownOptions): string {
+	initTheme();
+	const columns = options?.width ?? (process.stdout.columns ? Math.max(20, process.stdout.columns) : 80);
+	const mdTheme = options?.theme ?? getMarkdownTheme();
+	const md = new Markdown(markdown, 0, 0, mdTheme);
+	return md.render(columns).join("\n");
 }

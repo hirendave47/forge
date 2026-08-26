@@ -4,12 +4,19 @@ export { type Args, parseArgs } from "./cli/args.ts";
 
 // Config paths
 export {
+	APP_NAME,
+	APP_TITLE,
 	CONFIG_DIR_NAME,
 	getAgentDir,
+	getAuthPath,
+	getBinDir,
 	getDocsPath,
 	getExamplesPath,
+	getModelsPath,
 	getPackageDir,
 	getReadmePath,
+	getSessionsDir,
+	getSettingsPath,
 	VERSION,
 } from "./config.ts";
 export {
@@ -407,6 +414,8 @@ export {
 	getSettingsListTheme,
 	highlightCode,
 	initTheme,
+	type RenderTerminalMarkdownOptions,
+	renderTerminalMarkdown,
 	Theme,
 	type ThemeColor,
 } from "./modes/interactive/theme/theme.ts";

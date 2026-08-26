@@ -24,8 +24,8 @@ import {
 } from "../modes/interactive/theme/theme.ts";
 
 const OFFICIAL_PACKAGE_NAME = "@earendil-works/forge-coding-agent";
-const OFFICIAL_APP_NAME = "pi";
-const OFFICIAL_CONFIG_DIR_NAME = ".pi";
+const OFFICIAL_APP_NAME = "forge";
+const OFFICIAL_CONFIG_DIR_NAME = ".forge";
 
 interface DistributionMetadata {
 	packageName: string;

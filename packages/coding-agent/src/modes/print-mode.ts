@@ -10,6 +10,7 @@ import type { AssistantMessage, ImageContent } from "@earendil-works/forge-ai";
 import type { AgentSessionRuntime } from "../core/agent-session-runtime.ts";
 import { flushRawStdout, waitForRawStdoutBackpressure, writeRawStdout } from "../core/output-guard.ts";
 import { killTrackedDetachedChildren } from "../utils/shell.ts";
+import { renderTerminalMarkdown } from "./interactive/theme/theme.ts";
 import { toJsonEvent } from "./json-event.ts";
 
 /**
@@ -24,6 +25,10 @@ export interface PrintModeOptions {
 	initialMessage?: string;
 	/** Images to attach to the initial message */
 	initialImages?: ImageContent[];
+	/** Format text output with styled terminal markdown */
+	pretty?: boolean;
+	/** Output raw text without terminal formatting */
+	plain?: boolean;
 }
 
 /**
@@ -148,7 +153,13 @@ export async function runPrintMode(runtimeHost: AgentSessionRuntime, options: Pr
 				} else {
 					for (const content of assistantMsg.content) {
 						if (content.type === "text") {
-							writeRawStdout(`${content.text}\n`);
+							const shouldPretty = options.pretty ?? (options.plain ? false : Boolean(process.stdout.isTTY));
+							if (shouldPretty) {
+								const rendered = renderTerminalMarkdown(content.text);
+								writeRawStdout(`${rendered}\n`);
+							} else {
+								writeRawStdout(`${content.text}\n`);
+							}
 						}
 					}
 				}

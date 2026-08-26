@@ -214,7 +214,12 @@ export class FileSettingsStorage implements SettingsStorage {
 		const resolvedCwd = resolvePath(cwd);
 		const resolvedAgentDir = resolvePath(agentDir);
 		this.globalSettingsPath = join(resolvedAgentDir, "settings.json");
-		this.projectSettingsPath = join(resolvedCwd, CONFIG_DIR_NAME, "settings.json");
+		const primaryProjectPath = join(resolvedCwd, CONFIG_DIR_NAME, "settings.json");
+		const legacyProjectPath = join(resolvedCwd, ".pi", "settings.json");
+		this.projectSettingsPath =
+			existsSync(primaryProjectPath) || !existsSync(legacyProjectPath)
+				? primaryProjectPath
+				: legacyProjectPath;
 	}
 
 	private acquireLockSyncWithRetry(path: string): () => void {

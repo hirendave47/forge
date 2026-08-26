@@ -928,7 +928,12 @@ export class DefaultPackageManager implements PackageManager {
 		await this.resolvePackageSources(packageSources, accumulator, onMissing);
 
 		const globalBaseDir = this.agentDir;
-		const projectBaseDir = join(this.cwd, CONFIG_DIR_NAME);
+		const primaryProjectBaseDir = join(this.cwd, CONFIG_DIR_NAME);
+		const legacyProjectBaseDir = join(this.cwd, ".pi");
+		const projectBaseDir =
+			existsSync(primaryProjectBaseDir) || !existsSync(legacyProjectBaseDir)
+				? primaryProjectBaseDir
+				: legacyProjectBaseDir;
 
 		for (const resourceType of RESOURCE_TYPES) {
 			const target = this.getTargetMap(accumulator, resourceType);

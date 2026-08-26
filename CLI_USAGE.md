@@ -130,6 +130,8 @@ forge run "<goal>" [options]
 |---|---|---|
 | `--profile <name>` | Agent profile: `sysadmin`, `devops`, `sre`, `software-engineer`, `security` | `default` |
 | `--timeout <seconds>` | Maximum execution duration | `120` |
+| `--pretty` | Format output with styled terminal Markdown (box borders for tables, colors, syntax highlighting) | `true` in TTY |
+| `--plain`, `--no-pretty` | Output raw plain Markdown text without ANSI styling (ideal for scripting / piping) | `true` if piped |
 | `--tools, -t <tools>` | Comma-separated allowlist of tools | (dynamic selection) |
 | `--exclude-tools, -xt` | Comma-separated denylist of tools | — |
 | `--append-system-prompt` | Additional prompt instructions | — |
@@ -138,16 +140,22 @@ forge run "<goal>" [options]
 ### Examples
 
 ```bash
-# 1. Investigate system memory usage
+# 1. Investigate system memory usage (renders styled tables & Markdown in terminal)
 forge run "Investigate system memory usage, identify top 5 processes"
 
-# 2. Sysadmin troubleshooting with custom profile
+# 2. Explicitly force styled terminal Markdown
+forge run --pretty "Check disk usage across all mountpoints"
+
+# 3. Output raw plain Markdown for piping into files or downstream scripts
+forge run --plain "List active docker containers" > containers.md
+
+# 4. Sysadmin troubleshooting with custom profile
 forge run --profile sysadmin "Why is nginx returning HTTP 502 Bad Gateway?"
 
-# 3. Security audit with 5-minute timeout
+# 5. Security audit with 5-minute timeout
 forge run --profile security --timeout 300 "Audit /etc/ssh/sshd_config and open listening ports"
 
-# 4. Safe read-only inspection
+# 6. Safe read-only inspection
 forge run --tools read,grep,find,ls "Examine /var/log/syslog for kernel errors"
 ```
 

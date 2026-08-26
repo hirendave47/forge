@@ -4,10 +4,12 @@
 	"description": "Forge — Autonomous AI Agent Framework for Linux",
 	"type": "module",
 	"forgeConfig": {
-		"name": "forge"
+		"name": "forge",
+		"configDir": ".forge"
 	},
 	"piConfig": {
-		"name": "forge"
+		"name": "forge",
+		"configDir": ".forge"
 	},
 	"bin": {
 		"forge": "dist/bundle/cli.js",

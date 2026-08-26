@@ -977,6 +977,8 @@ export async function main(args: string[], options?: MainOptions) {
 			messages: parsed.messages,
 			initialMessage,
 			initialImages,
+			pretty: parsed.pretty,
+			plain: parsed.plain,
 		});
 		stopThemeWatcher();
 		restoreStdout();

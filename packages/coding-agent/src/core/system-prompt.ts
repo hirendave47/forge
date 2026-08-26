@@ -78,7 +78,17 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 
 	// Build tools list based on selected tools.
 	// A tool appears in Available tools only when the caller provides a one-line snippet.
-	const tools = selectedTools || ["read", "bash", "edit", "write"];
+	const tools = selectedTools || [
+		"read",
+		"bash",
+		"edit",
+		"write",
+		"grep",
+		"find",
+		"ls",
+		"wait_interval",
+		"send_notification",
+	];
 	const visibleTools = tools.filter((name) => !!toolSnippets?.[name]);
 	const toolsList =
 		visibleTools.length > 0 ? visibleTools.map((name) => `- ${name}: ${toolSnippets![name]}`).join("\n") : "(none)";
@@ -148,7 +158,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 ## Core Operational Protocol
 1. **Direct Tool Execution & Autonomous Pursuit**:
    - When given an operational, diagnostic, monitoring, or coding request, you MUST immediately invoke the appropriate tools (\`bash\`, \`read\`, \`write\`, \`edit\`, \`wait_interval\`, \`send_notification\`).
-   - **Do NOT output conversational preambles, markdown action plans, or code blocks in place of tool execution.** Invoke the tool directly on your first turn to begin the work.
+   - **Do NOT output conversational preambles, markdown action plans, or JSON tool code blocks (e.g. \`\`\`json {"tool": ...} \`\`\`) in place of tool execution.** Invoke tools natively through function calling on your first turn.
    - Internally formulate your Purpose, Operational Plan, and Goal & Exit Criteria.
    - Inspect tool results, evaluate whether conditions satisfy the Exit Criteria, and continue executing tools iteratively until the task is complete.
    - Only present your final report and summary after all operational actions and verifications have actually been executed via tool calls.

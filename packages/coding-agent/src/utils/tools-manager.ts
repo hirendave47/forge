@@ -101,13 +101,10 @@ export function getToolPath(tool: "fd" | "rg"): string | null {
 		}
 	}
 
-	// Fallback to ~/.pi/agent/bin if available
-	const homeDir = process.env.HOME || process.env.USERPROFILE;
-	if (homeDir) {
-		const fallbackPath = join(homeDir, ".pi", "agent", "bin", config.binaryName + binaryExt);
-		if (existsSync(fallbackPath)) {
-			return fallbackPath;
-		}
+	// Fallback to agent bin directory if available
+	const fallbackPath = join(getBinDir(), config.binaryName + binaryExt);
+	if (existsSync(fallbackPath)) {
+		return fallbackPath;
 	}
 
 	return null;

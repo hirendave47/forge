@@ -49,6 +49,8 @@ export interface Args {
 	offline?: boolean;
 	tuiMode?: TuiMode;
 	verbose?: boolean;
+	pretty?: boolean;
+	plain?: boolean;
 	projectTrustOverride?: boolean;
 	messages: string[];
 	fileArgs: string[];
@@ -216,6 +218,10 @@ export function parseArgs(args: string[]): Args {
 			}
 		} else if (arg === "--verbose") {
 			result.verbose = true;
+		} else if (arg === "--pretty") {
+			result.pretty = true;
+		} else if (arg === "--plain" || arg === "--no-pretty") {
+			result.plain = true;
 		} else if (arg === "--approve" || arg === "-a") {
 			result.projectTrustOverride = true;
 		} else if (arg === "--no-approve" || arg === "-na") {

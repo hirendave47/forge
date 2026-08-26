@@ -5,6 +5,7 @@
  * Uses the TaskRuntime.executeOneShot() which invokes createAgentSession() directly.
  */
 
+import { renderTerminalMarkdown } from "@earendil-works/forge-coding-agent";
 import chalk from "chalk";
 import { getExitCode, type ProgressEvent, TaskRuntime } from "../runtime/task-runtime.ts";
 
@@ -13,6 +14,7 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 	let goal: string | undefined;
 	let profile: string | undefined;
 	let timeoutSeconds: number | undefined;
+	let pretty: boolean | undefined;
 	const tools: string[] = [];
 	const excludeTools: string[] = [];
 	const appendSystemPrompt: string[] = [];
@@ -22,6 +24,10 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 		const arg = args[i];
 		if (arg === "--help" || arg === "-h") {
 			showHelp = true;
+		} else if (arg === "--pretty") {
+			pretty = true;
+		} else if (arg === "--plain" || arg === "--no-pretty") {
+			pretty = false;
 		} else if (arg === "--profile" && i + 1 < args.length) {
 			profile = args[++i];
 		} else if (arg === "--timeout" && i + 1 < args.length) {
@@ -54,7 +60,7 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 
 	if (!goal) {
 		console.error(chalk.red("Error: No goal specified."));
-		console.error(chalk.dim('Usage: forge run "<goal>" [--profile NAME] [--timeout SECONDS]'));
+		console.error(chalk.dim('Usage: forge run "<goal>" [--profile NAME] [--timeout SECONDS] [--pretty]'));
 		process.exitCode = 3;
 		return;
 	}
@@ -77,7 +83,13 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 		});
 
 		if (result.resultSummary) {
-			process.stdout.write(`${result.resultSummary}\n`);
+			const shouldPretty = pretty ?? Boolean(process.stdout.isTTY);
+			if (shouldPretty) {
+				const rendered = renderTerminalMarkdown(result.resultSummary);
+				process.stdout.write(`${rendered}\n`);
+			} else {
+				process.stdout.write(`${result.resultSummary}\n`);
+			}
 		}
 
 		if (result.error) {
@@ -103,6 +115,8 @@ ${chalk.bold("Usage:")}
 ${chalk.bold("Options:")}
   --profile <name>          Agent profile: sysadmin, devops, sre, software-engineer, security
   --timeout <seconds>       Execution timeout (default: 120)
+  --pretty                  Format output with terminal markdown styling (default when running in TTY)
+  --plain, --no-pretty      Output raw markdown without styling
   --tools, -t <tools>       Comma-separated allowlist of tool names
   --exclude-tools, -xt      Comma-separated denylist of tool names
   --append-system-prompt    Additional system prompt text
@@ -110,6 +124,8 @@ ${chalk.bold("Options:")}
 
 ${chalk.bold("Examples:")}
   forge run "Investigate system memory usage, identify top 5 processes"
+  forge run --pretty "Check disk usage across all mountpoints"
+  forge run --plain "List active docker containers"
   forge run --profile sysadmin "Why is nginx returning HTTP 502?"
   forge run --timeout 300 "Audit /etc/ssh/sshd_config for security issues"
 
