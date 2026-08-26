@@ -1,0 +1,20 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"paths": {
+			"@earendil-works/forge-coding-agent": ["./src/index.ts"],
+			"@earendil-works/forge-coding-agent/hooks": ["./src/core/hooks/index.ts"],
+			"@earendil-works/forge-tui": ["../tui/src/index.ts"],
+			"@earendil-works/forge-ai": ["../ai/src/index.ts"],
+			"@earendil-works/forge-coding-agent": ["./src/index.ts"],
+			"@earendil-works/forge-coding-agent/hooks": ["./src/core/hooks/index.ts"],
+			"@earendil-works/forge-tui": ["../tui/src/index.ts"],
+			"@earendil-works/forge-ai": ["../ai/src/index.ts"],
+			"typebox": ["../../node_modules/typebox"]
+		},
+		"skipLibCheck": true
+	},
+	"include": ["examples/**/*.ts"],
+	"exclude": ["node_modules", "dist"]
+}

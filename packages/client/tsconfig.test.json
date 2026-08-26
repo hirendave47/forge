@@ -1,0 +1,14 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"types": ["node", "vitest"],
+		"paths": {
+			"@earendil-works/forge-protocol": ["../protocol/src/index.ts"],
+			"@earendil-works/forge-protocol": ["../protocol/src/index.ts"]
+		}
+	},
+	"include": ["src/**/*.ts", "test/**/*.ts"]
+}

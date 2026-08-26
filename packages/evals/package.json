@@ -1,0 +1,27 @@
+{
+	"name": "@earendil-works/forge-evals",
+	"version": "0.84.3",
+	"author": "Hiren Dave (https://github.com/hirendave47)",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/hirendave47/forge.git",
+		"directory": "packages/evals"
+	},
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"clean": "shx rm -rf .eval",
+		"eval": "node scripts/run-evals.mjs",
+		"test": "vitest run --config vitest.test.config.ts"
+	},
+	"devDependencies": {
+		"@earendil-works/forge-ai": "^0.84.3",
+		"@earendil-works/forge-coding-agent": "^0.84.3",
+		"@types/node": "22.19.19",
+		"shx": "0.4.0",
+		"typescript": "5.9.3",
+		"vitest-evals": "0.15.0",
+		"vitest": "4.1.9"
+	}
+}

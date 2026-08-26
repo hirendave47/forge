@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# Build Outputs & Bundles
+dist/
+**/dist/
+dist-chrome/
+dist-firefox/
+build/
+**/build/
+out/
+**/out/
+*.bun-build
+*.tar.gz
+*.zip
+*.tgz
+*.cpuprofile
+*.tsbuildinfo
+
+# Package Specific
+.artifacts/
+compaction-results/
+coverage/
+.nyc_output/
+.eval/
+packages/*/dist/
+packages/*/dist-chrome/
+packages/*/dist-firefox/
+packages/ai/src/providers/data/
+packages/ai/src/providers/.model-generation-*/
+packages/coding-agent/binaries/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+tui-debug.log
+
+# Environment & Secrets
+.env
+.env.*
+.env.local
+.env.*.local
+
+# Editor & OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.zed/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+
+# Pi CLI local / runtime data
+.npm/
+.pi_config/
+.opencode/
+syntax.jsonl
+out.jsonl
+pi-*.html
+out.html
+todo.md
+plans/
+.pi/hf-sessions/
+.pi/hf-sessions-backup/
+collect.sh

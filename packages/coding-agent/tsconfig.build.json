@@ -1,0 +1,30 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "./dist",
+		"paths": {
+			"@earendil-works/forge-agent-core": ["../agent/dist/index.d.ts"],
+			"@earendil-works/forge-agent-core/*": ["../agent/dist/*.d.ts"],
+			"@earendil-works/forge-ai": ["../ai/dist/index.d.ts"],
+			"@earendil-works/forge-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"],
+			"@earendil-works/forge-client": ["../client/dist/index.d.ts"],
+			"@earendil-works/forge-linux-agent": ["../linux-agent/dist/index.d.ts"],
+			"@earendil-works/forge-linux-agent/cli": ["../linux-agent/dist/cli/index.d.ts"],
+			"@earendil-works/forge-linux-agent/*": ["../linux-agent/dist/*.d.ts"],
+			"@earendil-works/forge-protocol": ["../protocol/dist/index.d.ts"],
+			"@earendil-works/forge-tui": ["../tui/dist/index.d.ts"],
+			"@earendil-works/forge-tui/*": ["../tui/dist/*.d.ts", "../tui/dist/components/*.d.ts"],
+			"@earendil-works/forge-agent-core": ["../agent/dist/index.d.ts"],
+			"@earendil-works/forge-agent-core/*": ["../agent/dist/*.d.ts"],
+			"@earendil-works/forge-ai": ["../ai/dist/index.d.ts"],
+			"@earendil-works/forge-ai/*": ["../ai/dist/*.d.ts", "../ai/dist/providers/*.d.ts"],
+			"@earendil-works/forge-client": ["../client/dist/index.d.ts"],
+			"@earendil-works/forge-protocol": ["../protocol/dist/index.d.ts"],
+			"@earendil-works/forge-tui": ["../tui/dist/index.d.ts"],
+			"@earendil-works/forge-tui/*": ["../tui/dist/*.d.ts", "../tui/dist/components/*.d.ts"]
+		},
+		"rootDir": "./src"
+	},
+	"include": ["src/**/*.ts", "src/**/*.d.ts"],
+	"exclude": ["node_modules", "dist"]
+}
