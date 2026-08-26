@@ -15,6 +15,7 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 	let profile: string | undefined;
 	let timeoutSeconds: number | undefined;
 	let pretty: boolean | undefined;
+	let debug = false;
 	const tools: string[] = [];
 	const excludeTools: string[] = [];
 	const appendSystemPrompt: string[] = [];
@@ -24,6 +25,8 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 		const arg = args[i];
 		if (arg === "--help" || arg === "-h") {
 			showHelp = true;
+		} else if (arg === "--debug" || arg === "-d") {
+			debug = true;
 		} else if (arg === "--pretty") {
 			pretty = true;
 		} else if (arg === "--plain" || arg === "--no-pretty") {
@@ -60,7 +63,7 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 
 	if (!goal) {
 		console.error(chalk.red("Error: No goal specified."));
-		console.error(chalk.dim('Usage: forge run "<goal>" [--profile NAME] [--timeout SECONDS] [--pretty]'));
+		console.error(chalk.dim('Usage: forge run "<goal>" [--profile NAME] [--timeout SECONDS] [--pretty] [--debug]'));
 		process.exitCode = 3;
 		return;
 	}
@@ -68,8 +71,10 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 	const runtime = new TaskRuntime({
 		cwd: process.cwd(),
 		onProgress: (event: ProgressEvent) => {
-			const time = new Date(event.timestamp).toLocaleTimeString();
-			console.error(chalk.dim(`[${time}] ${event.message}`));
+			if (!debug) {
+				const time = new Date(event.timestamp).toLocaleTimeString();
+				console.error(chalk.dim(`[${time}] ${event.message}`));
+			}
 		},
 	});
 
@@ -80,6 +85,7 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 			excludeTools: excludeTools.length > 0 ? excludeTools : undefined,
 			timeoutSeconds,
 			appendSystemPrompt: appendSystemPrompt.length > 0 ? appendSystemPrompt : undefined,
+			debug,
 		});
 
 		if (result.resultSummary) {
@@ -115,6 +121,7 @@ ${chalk.bold("Usage:")}
 ${chalk.bold("Options:")}
   --profile <name>          Agent profile: sysadmin, devops, sre, software-engineer, security
   --timeout <seconds>       Execution timeout (default: 120)
+  --debug, -d               Enable debug tracing (logs token telemetry, timestamps, tool calls)
   --pretty                  Format output with terminal markdown styling (default when running in TTY)
   --plain, --no-pretty      Output raw markdown without styling
   --tools, -t <tools>       Comma-separated allowlist of tool names
@@ -124,6 +131,7 @@ ${chalk.bold("Options:")}
 
 ${chalk.bold("Examples:")}
   forge run "Investigate system memory usage, identify top 5 processes"
+  forge run --debug "Diagnose high CPU usage and report token telemetry"
   forge run --pretty "Check disk usage across all mountpoints"
   forge run --plain "List active docker containers"
   forge run --profile sysadmin "Why is nginx returning HTTP 502?"

@@ -9,6 +9,7 @@
 import type { AssistantMessage, ImageContent } from "@earendil-works/forge-ai";
 import type { AgentSessionRuntime } from "../core/agent-session-runtime.ts";
 import { flushRawStdout, waitForRawStdoutBackpressure, writeRawStdout } from "../core/output-guard.ts";
+import { formatTokenSummary, logDebug } from "../utils/debug-logger.ts";
 import { killTrackedDetachedChildren } from "../utils/shell.ts";
 import { renderTerminalMarkdown } from "./interactive/theme/theme.ts";
 import { toJsonEvent } from "./json-event.ts";
@@ -29,6 +30,8 @@ export interface PrintModeOptions {
 	pretty?: boolean;
 	/** Output raw text without terminal formatting */
 	plain?: boolean;
+	/** Enable full debug tracing with token counts and timestamps */
+	debug?: boolean;
 }
 
 /**
@@ -110,9 +113,68 @@ export async function runPrintMode(runtimeHost: AgentSessionRuntime, options: Pr
 
 		unsubscribe?.();
 		unsubscribeBackpressure?.();
+		const toolStartTimes = new Map<string, number>();
+		let cumInputTokens = 0;
+		let cumOutputTokens = 0;
+		let turnCount = 0;
+
 		unsubscribe = session.subscribe((event) => {
 			if (mode === "json") {
 				writeRawStdout(`${JSON.stringify(toJsonEvent(event))}\n`);
+			}
+
+			if (options.debug) {
+				if (event.type === "agent_start") {
+					logDebug(
+						"agent_start",
+						`Session started with model '${session.state.model?.id ?? "default"}' (${session.state.model?.provider ?? "default"})`,
+					);
+				} else if (event.type === "turn_start") {
+					turnCount++;
+					logDebug("turn_start", `Turn ${turnCount} started`);
+				} else if (event.type === "tool_execution_start") {
+					toolStartTimes.set(event.toolCallId, Date.now());
+					const argsStr = event.args ? JSON.stringify(event.args) : "{}";
+					logDebug("tool_call", `Tool '${event.toolName}' (id: ${event.toolCallId}) args: ${argsStr}`);
+				} else if (event.type === "tool_execution_end") {
+					const toolStartTime = toolStartTimes.get(event.toolCallId) ?? Date.now();
+					const toolDurationMs = Date.now() - toolStartTime;
+					const status = event.isError ? "FAILED" : "SUCCESS";
+					const resultLen = JSON.stringify(event.result ?? "").length;
+					logDebug(
+						"tool_result",
+						`Tool '${event.toolName}' (id: ${event.toolCallId}) ${status} in ${toolDurationMs}ms (output size: ${resultLen} chars)`,
+					);
+				} else if (event.type === "message_end" && event.message.role === "assistant") {
+					const msg = event.message as {
+						model?: string;
+						provider?: string;
+						stopReason?: string;
+						usage?: {
+							input?: number;
+							output?: number;
+							cacheRead?: number;
+							cacheWrite?: number;
+							totalTokens?: number;
+						};
+					};
+					if (msg.usage) {
+						cumInputTokens += msg.usage.input ?? 0;
+						cumOutputTokens += msg.usage.output ?? 0;
+						const summary = formatTokenSummary(msg.usage);
+						logDebug(
+							"llm_tokens",
+							`Model '${msg.model ?? "default"}' completion (${msg.stopReason ?? "done"}) — ${summary}`,
+						);
+					}
+				} else if (event.type === "turn_end") {
+					logDebug("turn_end", `Turn ${turnCount} completed`);
+				} else if (event.type === "agent_end") {
+					logDebug(
+						"agent_end",
+						`Run complete | Total Tokens: In=${cumInputTokens.toLocaleString()}, Out=${cumOutputTokens.toLocaleString()}, Total=${(cumInputTokens + cumOutputTokens).toLocaleString()}`,
+					);
+				}
 			}
 		});
 		unsubscribeBackpressure =

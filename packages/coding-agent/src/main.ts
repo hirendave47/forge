@@ -979,6 +979,7 @@ export async function main(args: string[], options?: MainOptions) {
 			initialImages,
 			pretty: parsed.pretty,
 			plain: parsed.plain,
+			debug: parsed.debug,
 		});
 		stopThemeWatcher();
 		restoreStdout();

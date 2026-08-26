@@ -421,6 +421,13 @@ export {
 } from "./modes/interactive/theme/theme.ts";
 // Clipboard utilities
 export { copyToClipboard } from "./utils/clipboard.ts";
+// Debug and logging utilities
+export {
+	formatDebugTimestamp,
+	formatTokenSummary,
+	logDebug,
+	type TokenUsageStats,
+} from "./utils/debug-logger.ts";
 export { parseFrontmatter, stripFrontmatter } from "./utils/frontmatter.ts";
 export { convertToPng } from "./utils/image-convert.ts";
 export { formatDimensionNote, type ResizedImage, resizeImage } from "./utils/image-resize.ts";

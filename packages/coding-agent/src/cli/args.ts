@@ -49,6 +49,7 @@ export interface Args {
 	offline?: boolean;
 	tuiMode?: TuiMode;
 	verbose?: boolean;
+	debug?: boolean;
 	pretty?: boolean;
 	plain?: boolean;
 	projectTrustOverride?: boolean;
@@ -218,6 +219,8 @@ export function parseArgs(args: string[]): Args {
 			}
 		} else if (arg === "--verbose") {
 			result.verbose = true;
+		} else if (arg === "--debug" || arg === "-d") {
+			result.debug = true;
 		} else if (arg === "--pretty") {
 			result.pretty = true;
 		} else if (arg === "--plain" || arg === "--no-pretty") {
@@ -326,6 +329,9 @@ ${chalk.bold("Options:")}
   --export <file>                Export session file to HTML and exit
   --list-models [search]         List available models (with optional fuzzy search)
   --verbose                      Force verbose startup (overrides quietStartup setting)
+  --debug, -d                    Enable debug tracing (logs token telemetry, timestamps, tool calls)
+  --pretty                       Format output as styled terminal markdown
+  --plain, --no-pretty           Output raw plain markdown
   --tui-mode <mode>              TUI mode: regular (default) or fullscreen
   --approve, -a                  Trust project-local files for this run
   --no-approve, -na              Ignore project-local files for this run

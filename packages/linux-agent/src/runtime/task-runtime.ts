@@ -88,15 +88,23 @@ export class TaskRuntime {
 			timeoutSeconds?: number;
 			systemPrompt?: string;
 			appendSystemPrompt?: string[];
+			debug?: boolean;
 		},
 	): Promise<ExecutionResult> {
 		const startTime = Date.now();
+		const isDebug = Boolean(options?.debug || process.env.FORGE_DEBUG || process.env.DEBUG);
 
-		const { createAgentSession, SessionManager, DefaultResourceLoader, getAgentDir } = await import(
-			"@earendil-works/forge-coding-agent"
-		);
+		const { createAgentSession, SessionManager, DefaultResourceLoader, getAgentDir, logDebug, formatTokenSummary } =
+			await import("@earendil-works/forge-coding-agent");
 
-		this.emitProgress("agent", "Creating agent session...");
+		if (isDebug) {
+			logDebug(
+				"agent_start",
+				`Starting one-shot execution with goal: "${goal}" (profile: ${options?.profile ?? "default"})`,
+			);
+		} else {
+			this.emitProgress("agent", "Creating agent session...");
+		}
 
 		// Build system prompt augmentation from profile
 		const profilePrompt = options?.profile ? buildProfilePrompt(options.profile) : undefined;
@@ -122,25 +130,81 @@ export class TaskRuntime {
 			excludeTools: options?.excludeTools,
 		});
 
-		this.emitProgress("agent", "Agent session created. Sending goal...");
+		if (isDebug) {
+			const modelInfo = `${session.state.model?.id ?? "default"} (${session.state.model?.provider ?? "default"})`;
+			logDebug(
+				"agent_start",
+				`Agent session ready | Model: ${modelInfo} | Active tools: [${session.getActiveToolNames().join(", ")}]`,
+			);
+		} else {
+			this.emitProgress("agent", "Agent session created. Sending goal...");
+		}
 
 		let toolCalls = 0;
 		let inputTokens = 0;
 		let outputTokens = 0;
+		let turnCount = 0;
+		const toolStartTimes = new Map<string, number>();
 
 		const unsubscribe = session.subscribe((event) => {
-			if (event.type === "tool_execution_start") {
+			if (event.type === "turn_start") {
+				turnCount++;
+				if (isDebug) {
+					logDebug("turn_start", `Turn ${turnCount} started`);
+				}
+			} else if (event.type === "tool_execution_start") {
 				toolCalls++;
+				toolStartTimes.set(event.toolCallId, Date.now());
 				const argsSummary = event.args ? ` (${JSON.stringify(event.args).slice(0, 60)})` : "";
-				this.emitProgress("agent", `Executing tool: ${event.toolName}${argsSummary}`);
+				if (isDebug) {
+					logDebug(
+						"tool_call",
+						`Tool '${event.toolName}' (id: ${event.toolCallId}) args: ${JSON.stringify(event.args)}`,
+					);
+				} else {
+					this.emitProgress("agent", `Executing tool: ${event.toolName}${argsSummary}`);
+				}
 			} else if (event.type === "tool_execution_end") {
+				const durationMs = Date.now() - (toolStartTimes.get(event.toolCallId) ?? Date.now());
 				const status = event.isError ? "failed" : "completed";
-				this.emitProgress("agent", `Tool ${event.toolName} ${status}`);
+				if (isDebug) {
+					const resultLen = JSON.stringify(event.result ?? "").length;
+					logDebug(
+						"tool_result",
+						`Tool '${event.toolName}' (id: ${event.toolCallId}) ${status.toUpperCase()} in ${durationMs}ms (output size: ${resultLen} chars)`,
+					);
+				} else {
+					this.emitProgress("agent", `Tool ${event.toolName} ${status}`);
+				}
 			} else if (event.type === "message_end" && event.message.role === "assistant") {
-				const msg = event.message as { usage?: { input?: number; output?: number } };
+				const msg = event.message as {
+					model?: string;
+					provider?: string;
+					stopReason?: string;
+					usage?: {
+						input?: number;
+						output?: number;
+						cacheRead?: number;
+						cacheWrite?: number;
+						totalTokens?: number;
+					};
+				};
 				if (msg.usage) {
-					inputTokens += msg.usage.input ?? 0;
-					outputTokens += msg.usage.output ?? 0;
+					const inTok = msg.usage.input ?? 0;
+					const outTok = msg.usage.output ?? 0;
+					inputTokens += inTok;
+					outputTokens += outTok;
+					if (isDebug) {
+						const summary = formatTokenSummary(msg.usage);
+						logDebug(
+							"llm_tokens",
+							`Model '${msg.model ?? session.state.model?.id ?? "default"}' completion (${msg.stopReason ?? "done"}) — ${summary}`,
+						);
+					}
+				}
+			} else if (event.type === "turn_end") {
+				if (isDebug) {
+					logDebug("turn_end", `Turn ${turnCount} completed`);
 				}
 			}
 		});
@@ -179,7 +243,14 @@ export class TaskRuntime {
 			}
 
 			const durationMs = Date.now() - startTime;
-			this.emitProgress("complete", `Execution completed in ${(durationMs / 1000).toFixed(1)}s — ${status}`);
+			if (isDebug) {
+				logDebug(
+					"agent_end",
+					`Execution finished in ${(durationMs / 1000).toFixed(2)}s | Status: ${status} | Cumulative Tokens: Input=${inputTokens.toLocaleString()}, Output=${outputTokens.toLocaleString()}, Total=${(inputTokens + outputTokens).toLocaleString()} | Tool Calls: ${toolCalls}`,
+				);
+			} else {
+				this.emitProgress("complete", `Execution completed in ${(durationMs / 1000).toFixed(1)}s — ${status}`);
+			}
 
 			return {
 				runId: sessionManager.getSessionId(),
@@ -194,6 +265,9 @@ export class TaskRuntime {
 		} catch (err: unknown) {
 			const durationMs = Date.now() - startTime;
 			const errorMessage = err instanceof Error ? err.message : String(err);
+			if (isDebug) {
+				logDebug("agent_error", `Execution failed in ${(durationMs / 1000).toFixed(2)}s: ${errorMessage}`);
+			}
 			return {
 				runId: sessionManager.getSessionId(),
 				status: controller.signal.aborted ? "TIMED_OUT" : "FAILED",
