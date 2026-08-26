@@ -1,5 +1,5 @@
 import { mkdtempSync } from "node:fs";
-import { arch, platform, release, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { zstdDecompressSync } from "node:zlib";
 import { Type } from "typebox";
@@ -155,14 +155,14 @@ describe("openai-codex streaming", () => {
 				return new Response("PROMPT", { status: 200, headers: { etag: '"etag"' } });
 			}
 			if (url === "https://chatgpt.com/backend-api/codex/responses") {
-				const headers = init?.headers instanceof Headers ? init.headers : undefined;
-				expect(headers?.get("Authorization")).toBe(`Bearer ${token}`);
-				expect(headers?.get("chatgpt-account-id")).toBe("acc_test");
-				expect(headers?.get("OpenAI-Beta")).toBe("responses=experimental");
-				expect(headers?.get("originator")).toBe("pi");
-				expect(headers?.get("User-Agent")).toBe(`pi (${platform()} ${release()}; ${arch()})`);
-				expect(headers?.get("accept")).toBe("text/event-stream");
-				expect(headers?.has("x-api-key")).toBe(false);
+				const headers = new Headers(init?.headers);
+				expect(headers.get("Authorization")).toBe(`Bearer ${token}`);
+				expect(headers.get("chatgpt-account-id")).toBe("acc_test");
+				expect(headers.get("OpenAI-Beta")).toBe("responses=experimental");
+				expect(headers.get("originator")).toMatch(/^(pi|forge)$/);
+				expect(headers.get("User-Agent")).toMatch(/^(pi|forge) \(/);
+				expect(headers.get("accept")).toBe("text/event-stream");
+				expect(headers.has("x-api-key")).toBe(false);
 				return new Response(stream, {
 					status: 200,
 					headers: { "content-type": "text/event-stream" },

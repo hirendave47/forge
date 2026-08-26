@@ -103,7 +103,7 @@ export class TaskRuntime {
 		const appendSystemPrompt = [
 			...(options?.appendSystemPrompt ?? []),
 			...(profilePrompt ? [profilePrompt] : []),
-			`\n## Current Task\nGoal: ${goal}\n`,
+			`\n## Current Task\nGoal: ${goal}\nExecute all necessary operational commands directly using your tools to fulfill this goal and verify the exit criteria before completing.\n`,
 		];
 
 		const sessionManager = SessionManager.inMemory(this.cwd);
@@ -118,11 +118,32 @@ export class TaskRuntime {
 			cwd: this.cwd,
 			sessionManager,
 			resourceLoader,
-			tools: options?.tools,
+			tools: options?.tools ?? ["read", "bash", "edit", "write", "wait_interval", "send_notification"],
 			excludeTools: options?.excludeTools,
 		});
 
 		this.emitProgress("agent", "Agent session created. Sending goal...");
+
+		let toolCalls = 0;
+		let inputTokens = 0;
+		let outputTokens = 0;
+
+		const unsubscribe = session.subscribe((event) => {
+			if (event.type === "tool_execution_start") {
+				toolCalls++;
+				const argsSummary = event.args ? ` (${JSON.stringify(event.args).slice(0, 60)})` : "";
+				this.emitProgress("agent", `Executing tool: ${event.toolName}${argsSummary}`);
+			} else if (event.type === "tool_execution_end") {
+				const status = event.isError ? "failed" : "completed";
+				this.emitProgress("agent", `Tool ${event.toolName} ${status}`);
+			} else if (event.type === "message_end" && event.message.role === "assistant") {
+				const msg = event.message as { usage?: { input?: number; output?: number } };
+				if (msg.usage) {
+					inputTokens += msg.usage.input ?? 0;
+					outputTokens += msg.usage.output ?? 0;
+				}
+			}
+		});
 
 		// Set up timeout
 		const timeoutMs = (options?.timeoutSeconds ?? 120) * 1000;
@@ -133,7 +154,8 @@ export class TaskRuntime {
 			await session.prompt(goal);
 
 			const state = session.state;
-			const lastMessage = state.messages[state.messages.length - 1];
+			const assistantMessages = state.messages.filter((m) => m.role === "assistant");
+			const lastMessage = assistantMessages[assistantMessages.length - 1];
 
 			let resultSummary: string | undefined;
 			let status: TaskState = "SUCCEEDED";
@@ -165,9 +187,9 @@ export class TaskRuntime {
 				resultSummary,
 				error,
 				durationMs,
-				inputTokens: 0,
-				outputTokens: 0,
-				toolCalls: 0,
+				inputTokens,
+				outputTokens,
+				toolCalls,
 			};
 		} catch (err: unknown) {
 			const durationMs = Date.now() - startTime;
@@ -177,12 +199,13 @@ export class TaskRuntime {
 				status: controller.signal.aborted ? "TIMED_OUT" : "FAILED",
 				error: errorMessage,
 				durationMs,
-				inputTokens: 0,
-				outputTokens: 0,
-				toolCalls: 0,
+				inputTokens,
+				outputTokens,
+				toolCalls,
 			};
 		} finally {
 			clearTimeout(timeout);
+			unsubscribe();
 		}
 	}
 
@@ -298,6 +321,27 @@ export class TaskRuntime {
 
 			this.store.recordEvent(taskId, run.id, "agent_started");
 
+			let toolCalls = 0;
+			let inputTokens = 0;
+			let outputTokens = 0;
+
+			const unsubscribe = session.subscribe((event) => {
+				if (event.type === "tool_execution_start") {
+					toolCalls++;
+					const argsSummary = event.args ? ` (${JSON.stringify(event.args).slice(0, 60)})` : "";
+					this.emitProgress("agent", `Executing tool: ${event.toolName}${argsSummary}`);
+				} else if (event.type === "tool_execution_end") {
+					const status = event.isError ? "failed" : "completed";
+					this.emitProgress("agent", `Tool ${event.toolName} ${status}`);
+				} else if (event.type === "message_end" && event.message.role === "assistant") {
+					const msg = event.message as { usage?: { input?: number; output?: number } };
+					if (msg.usage) {
+						inputTokens += msg.usage.input ?? 0;
+						outputTokens += msg.usage.output ?? 0;
+					}
+				}
+			});
+
 			// Timeout
 			const timeoutMs = task.timeoutSeconds * 1000;
 			const controller = new AbortController();
@@ -307,7 +351,8 @@ export class TaskRuntime {
 				await session.prompt(task.goal);
 
 				const state = session.state;
-				const lastMessage = state.messages[state.messages.length - 1];
+				const assistantMessages = state.messages.filter((m) => m.role === "assistant");
+				const lastMessage = assistantMessages[assistantMessages.length - 1];
 
 				let resultSummary: string | undefined;
 				let status: TaskState = "SUCCEEDED";
@@ -357,9 +402,9 @@ export class TaskRuntime {
 					resultSummary,
 					error,
 					durationMs,
-					inputTokens: 0,
-					outputTokens: 0,
-					toolCalls: 0,
+					inputTokens,
+					outputTokens,
+					toolCalls,
 				};
 			} catch (err: unknown) {
 				clearTimeout(timeout);
@@ -376,10 +421,9 @@ export class TaskRuntime {
 				});
 
 				this.store.updateTaskLastRun(taskId, finishedAt, false);
-				this.store.recordEvent(taskId, run.id, status === "TIMED_OUT" ? "run_timed_out" : "run_failed", {
-					error: errorMessage,
-					durationMs,
-				});
+				this.store.recordEvent(taskId, run.id, "run_failed", { error: errorMessage, durationMs });
+
+				this.emitProgress("complete", `Task failed — ${status}: ${errorMessage}`);
 
 				return {
 					runId: run.id,
@@ -387,10 +431,12 @@ export class TaskRuntime {
 					status,
 					error: errorMessage,
 					durationMs,
-					inputTokens: 0,
-					outputTokens: 0,
-					toolCalls: 0,
+					inputTokens,
+					outputTokens,
+					toolCalls,
 				};
+			} finally {
+				unsubscribe();
 			}
 		} finally {
 			clearInterval(heartbeatInterval);

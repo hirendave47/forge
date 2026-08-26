@@ -36,7 +36,7 @@ interface DistributionMetadata {
 function isOfficialDistribution({ packageName, appName, configDirName }: DistributionMetadata): boolean {
 	return (
 		packageName === OFFICIAL_PACKAGE_NAME &&
-		appName === OFFICIAL_APP_NAME &&
+		(appName === "forge" || appName === OFFICIAL_APP_NAME) &&
 		configDirName === OFFICIAL_CONFIG_DIR_NAME
 	);
 }

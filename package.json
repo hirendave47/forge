@@ -19,6 +19,7 @@
 		"packages/coding-agent/examples/extensions/gondolin"
 	],
 	"scripts": {
+		"dev": "./forge-test.sh",
 		"clean": "npm run clean --workspaces",
 		"build": "cd packages/tui && npm run build && cd ../telemetry && npm run build && cd ../ai && npm run build && cd ../agent && npm run build && cd ../session-backends/sqlite-node && npm run build && cd ../../protocol && npm run build && cd ../client && npm run build && cd ../server && npm run build && cd ../coding-agent && npm run build:unbundled && cd ../linux-agent && npm run build && cd ../coding-agent && npm run build:bundle",
 		"build:offline": "cd packages/tui && npm run build && cd ../telemetry && npm run build && cd ../ai && npm run build:offline && cd ../agent && npm run build && cd ../session-backends/sqlite-node && npm run build && cd ../../protocol && npm run build && cd ../client && npm run build && cd ../server && npm run build && cd ../coding-agent && npm run build:unbundled && cd ../linux-agent && npm run build && cd ../coding-agent && npm run build:bundle",

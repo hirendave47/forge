@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import lockfile from "proper-lockfile";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ENV_AGENT_DIR, PACKAGE_NAME, VERSION } from "../src/config.ts";
+import { APP_NAME, ENV_AGENT_DIR, PACKAGE_NAME, VERSION } from "../src/config.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";
 import type { ResolvedPaths } from "../src/core/package-manager.ts";
 import { InMemorySettingsStorage, SettingsManager } from "../src/core/settings-manager.ts";
@@ -68,14 +68,16 @@ fs.writeFileSync(${JSON.stringify(npmRecordPath)}, JSON.stringify(args));
 if (${npmExitCode} !== 0) process.exit(${npmExitCode});
 const binDir = path.join(process.cwd(), "node_modules", ".bin");
 fs.mkdirSync(binDir, { recursive: true });
-const piPath = path.join(binDir, process.platform === "win32" ? "pi.cmd" : "pi");
-fs.writeFileSync(
-	piPath,
-	process.platform === "win32"
-		? "@echo off\\r\\necho ${targetVersion}\\r\\n"
-		: "#!/bin/sh\\nprintf '%s\\n' ${targetVersion}\\n",
-);
-if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
+for (const b of ["${APP_NAME}", "pi", "forge"]) {
+	const p = path.join(binDir, process.platform === "win32" ? b + ".cmd" : b);
+	fs.writeFileSync(
+		p,
+		process.platform === "win32"
+			? "@echo off\\r\\necho ${targetVersion}\\r\\n"
+			: "#!/bin/sh\\nprintf '%s\\n' ${targetVersion}\\n",
+	);
+	if (process.platform !== "win32") fs.chmodSync(p, 0o755);
+}
 `,
 		);
 		const npmPath = join(binDir, process.platform === "win32" ? "npm.cmd" : "npm");
@@ -448,7 +450,7 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stdout).toContain("Usage:");
-			expect(stdout).toContain("pi install <source> [-l]");
+			expect(stdout).toMatch(/(pi|forge) install <source> \[-l\]/);
 			expect(errorSpy).not.toHaveBeenCalled();
 			expect(process.exitCode).toBeUndefined();
 		} finally {
@@ -533,7 +535,9 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stderr).toContain('Unknown option --unknown for "install".');
-			expect(stderr).toContain('Use "pi --help" or "pi install <source> [-l] [--approve|--no-approve]".');
+			expect(stderr).toMatch(
+				/Use "(pi|forge) --help" or "(pi|forge) install <source> \[-l\] \[--approve\|--no-approve\]"\./,
+			);
 			expect(process.exitCode).toBe(1);
 		} finally {
 			errorSpy.mockRestore();
@@ -548,7 +552,7 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stderr).toContain("Missing install source.");
-			expect(stderr).toContain("Usage: pi install <source> [-l]");
+			expect(stderr).toMatch(/Usage: (pi|forge) install <source> \[-l\]/);
 			expect(stderr).not.toContain("at ");
 			expect(process.exitCode).toBe(1);
 		} finally {
@@ -568,9 +572,9 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
 
 			expect(fetchMock).toHaveBeenCalledOnce();
-			expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
-				`pi is already up to date (v${VERSION})`,
-			);
+			const output = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
+			expect(output).toMatch(/(pi|forge) is already up to date/);
+			expect(output).toContain(`v${VERSION}`);
 			expect(errorSpy).not.toHaveBeenCalled();
 			expect(process.exitCode).toBeUndefined();
 		} finally {
@@ -628,9 +632,10 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 		expect(JSON.parse(readFileSync(npmRecordPath, "utf8")) as string[]).toEqual(
 			expect.arrayContaining(["ci", "--ignore-scripts"]),
 		);
-		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
-			`Updated pi from ${VERSION} to ${targetVersion}`,
-		);
+		const output = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
+		expect(output).toMatch(/Updated (pi|forge) from/);
+		expect(output).toContain(VERSION);
+		expect(output).toContain(targetVersion);
 		expect(errorSpy).not.toHaveBeenCalled();
 		expect(process.exitCode).toBeUndefined();
 	});
@@ -651,7 +656,7 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 
 		expect(readFileSync(join(managedRoot, "current-version"), "utf8")).toBe(`${VERSION}\n`);
 		expect(existsSync(npmRecordPath)).toBe(false);
-		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toContain("Updated pi from");
+		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toMatch(/Updated (pi|forge) from/);
 		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
 			"Another managed Pi update is already running.",
 		);
@@ -669,8 +674,8 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 
 		expect(fetchMock).not.toHaveBeenCalled();
 		expect(existsSync(npmRecordPath)).toBe(false);
-		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
-			"Managed pi installations do not support --force",
+		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toMatch(
+			/Managed (pi|forge) installations do not support --force/,
 		);
 		expect(process.exitCode).toBe(1);
 	});
@@ -687,7 +692,7 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 		expect(readFileSync(join(managedRoot, "current-version"), "utf8")).toBe(`${VERSION}\n`);
 		expect(existsSync(join(managedRoot, "releases", targetVersion))).toBe(false);
 		expect(readdirSync(join(managedRoot, "staging"))).toEqual([]);
-		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toContain("Updated pi from");
+		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toMatch(/Updated (pi|forge) from/);
 		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain("exited with code 23");
 		expect(process.exitCode).toBe(1);
 	});
@@ -745,7 +750,8 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 			expect(recordedArgs).toContain(`${PACKAGE_NAME}@${VERSION}`);
 			expect(recordedArgs).not.toContain(PACKAGE_NAME);
 			expect(recordedArgs).not.toContain(projectPrefix);
-			expect(stdout).toContain(`Updated pi from ${VERSION} to ${VERSION}`);
+			expect(stdout).toMatch(/Updated (pi|forge) from/);
+			expect(stdout).toContain(VERSION);
 		} finally {
 			logSpy.mockRestore();
 			errorSpy.mockRestore();
@@ -791,7 +797,9 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 			const recordedArgs = JSON.parse(readFileSync(recordPath, "utf-8")) as string[];
 			expect(recordedArgs).toContain(`${PACKAGE_NAME}@${targetVersion}`);
 			expect(recordedArgs).not.toContain(PACKAGE_NAME);
-			expect(stdout).toContain(`Updated pi from ${VERSION} to ${targetVersion}`);
+			expect(stdout).toMatch(/Updated (pi|forge) from/);
+			expect(stdout).toContain(VERSION);
+			expect(stdout).toContain(targetVersion);
 		} finally {
 			logSpy.mockRestore();
 			errorSpy.mockRestore();
@@ -883,10 +891,10 @@ else {
 			expect(process.exitCode).toBe(1);
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).not.toContain("Updated pi");
+			expect(stdout).not.toMatch(/Updated (pi|forge)/);
 			expect(stderr).toContain("exited with code 23");
 			expect(stderr).toContain("If pnpm reports missing package versions");
-			expect(stderr).toContain("Run `pnpm store prune` and retry `pi update --self`.");
+			expect(stderr).toMatch(/Run `pnpm store prune` and retry `(pi|forge) update --self`\./);
 		} finally {
 			logSpy.mockRestore();
 			errorSpy.mockRestore();
@@ -936,7 +944,7 @@ if(args.includes("install")) process.exit(23);
 			expect(process.exitCode).toBe(1);
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).not.toContain(`Updated pi`);
+			expect(stdout).not.toMatch(/Updated (pi|forge)/);
 			expect(stderr).toContain("exited with code 23");
 			const recordedCalls = JSON.parse(readFileSync(recordPath, "utf-8")) as string[][];
 			expect(recordedCalls).toEqual([

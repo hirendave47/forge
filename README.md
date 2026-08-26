@@ -51,6 +51,26 @@ See **[CLI_USAGE.md](CLI_USAGE.md)** for full documentation.
 
 ---
 
+## Running Directly from Source (Zero-Build Development)
+
+You can run and test Forge immediately during development **without compiling or bundling**:
+
+```bash
+# 1. Install dependencies (one-time)
+npm install --ignore-scripts
+
+# 2. Run CLI commands directly from TypeScript source:
+./forge-test.sh run "Investigate system memory usage and top 5 processes"
+./forge-test.sh task list
+./forge-test.sh -p "Say hello"
+./forge-test.sh                   # Launches interactive TUI
+
+# Or via npm script:
+npm run dev -- run "Investigate system memory usage and top 5 processes"
+```
+
+---
+
 ## Building Standalone Linux Executable
 
 To compile a 100% self-contained binary targeting `GNU/Linux 3.2.0+` using Docker and Bun and automatically install it to `/usr/local/bin/forge`:

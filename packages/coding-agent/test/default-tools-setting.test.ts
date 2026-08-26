@@ -63,7 +63,18 @@ describe("defaultTools setting", () => {
 				.getAllTools()
 				.map((tool) => tool.name)
 				.sort(),
-		).toEqual(["bash", "edit", "find", "grep", "ls", "powershell", "read", "write"]);
+		).toEqual([
+			"bash",
+			"edit",
+			"find",
+			"grep",
+			"ls",
+			"powershell",
+			"read",
+			"send_notification",
+			"wait_interval",
+			"write",
+		]);
 		expect(session.getActiveToolNames()).toEqual(["grep", "find"]);
 		expect(session.systemPrompt).toContain("- grep:");
 		expect(session.systemPrompt).not.toContain("- read:");
@@ -152,7 +163,18 @@ describe("defaultTools setting", () => {
 				.getAllTools()
 				.map((tool) => tool.name)
 				.sort(),
-		).toEqual(["bash", "edit", "find", "grep", "ls", "powershell", "read", "write"]);
+		).toEqual([
+			"bash",
+			"edit",
+			"find",
+			"grep",
+			"ls",
+			"powershell",
+			"read",
+			"send_notification",
+			"wait_interval",
+			"write",
+		]);
 		expect(session.getActiveToolNames()).toEqual(["ls"]);
 		session.dispose();
 	});

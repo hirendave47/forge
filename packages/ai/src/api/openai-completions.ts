@@ -1575,8 +1575,10 @@ function detectCompat(model: Model<"openai-completions">): ResolvedOpenAIComplet
 	const isNvidia = provider === "nvidia" || baseUrl.includes("integrate.api.nvidia.com");
 	const isAntLing = provider === "ant-ling" || baseUrl.includes("api.ant-ling.com");
 	const isDeepSeek = provider === "deepseek" || baseUrl.toLowerCase().includes("deepseek.com");
+	const isOllama = provider === "ollama" || baseUrl.includes(":11434") || baseUrl.includes("ollama");
 
 	const isNonStandard =
+		isOllama ||
 		isNvidia ||
 		provider === "cerebras" ||
 		baseUrl.includes("cerebras.ai") ||
@@ -1594,6 +1596,7 @@ function detectCompat(model: Model<"openai-completions">): ResolvedOpenAIComplet
 		isAntLing;
 
 	const useMaxTokens =
+		isOllama ||
 		baseUrl.includes("chutes.ai") ||
 		isDeepSeek ||
 		isMoonshot ||

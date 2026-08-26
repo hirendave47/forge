@@ -115,8 +115,8 @@ function runCommand(
 	return { ok: true, stdout };
 }
 
-function readClipboardImageViaWlPaste(): ClipboardImage | null {
-	const list = runCommand("wl-paste", ["--list-types"], { timeoutMs: DEFAULT_LIST_TIMEOUT_MS });
+function readClipboardImageViaWlPaste(env?: NodeJS.ProcessEnv): ClipboardImage | null {
+	const list = runCommand("wl-paste", ["--list-types"], { timeoutMs: DEFAULT_LIST_TIMEOUT_MS, env });
 	if (!list.ok) {
 		return null;
 	}
@@ -132,7 +132,7 @@ function readClipboardImageViaWlPaste(): ClipboardImage | null {
 		return null;
 	}
 
-	const data = runCommand("wl-paste", ["--type", selectedType, "--no-newline"]);
+	const data = runCommand("wl-paste", ["--type", selectedType, "--no-newline"], { env });
 	if (!data.ok || data.stdout.length === 0) {
 		return null;
 	}
@@ -143,6 +143,9 @@ function readClipboardImageViaWlPaste(): ClipboardImage | null {
 function isWSL(env: NodeJS.ProcessEnv = process.env): boolean {
 	if (env.WSL_DISTRO_NAME || env.WSLENV) {
 		return true;
+	}
+	if (env !== process.env) {
+		return false;
 	}
 
 	try {
@@ -158,11 +161,11 @@ function isWSL(env: NodeJS.ProcessEnv = process.env): boolean {
  * Windows screenshots (Win+Shift+S). PowerShell can access the Windows clipboard
  * directly, so we use it as a fallback.
  */
-function readClipboardImageViaPowerShell(): ClipboardImage | null {
+function readClipboardImageViaPowerShell(env?: NodeJS.ProcessEnv): ClipboardImage | null {
 	const tmpFile = join(tmpdir(), `pi-wsl-clip-${randomUUID()}.png`);
 
 	try {
-		const winPathResult = runCommand("wslpath", ["-w", tmpFile], { timeoutMs: DEFAULT_LIST_TIMEOUT_MS });
+		const winPathResult = runCommand("wslpath", ["-w", tmpFile], { timeoutMs: DEFAULT_LIST_TIMEOUT_MS, env });
 		if (!winPathResult.ok) {
 			return null;
 		}
@@ -183,6 +186,7 @@ function readClipboardImageViaPowerShell(): ClipboardImage | null {
 
 		const result = runCommand("powershell.exe", ["-NoProfile", "-Command", psScript], {
 			timeoutMs: DEFAULT_POWERSHELL_TIMEOUT_MS,
+			env,
 		});
 		if (!result.ok) {
 			return null;
@@ -210,9 +214,10 @@ function readClipboardImageViaPowerShell(): ClipboardImage | null {
 	}
 }
 
-function readClipboardImageViaXclip(): ClipboardImage | null {
+function readClipboardImageViaXclip(env?: NodeJS.ProcessEnv): ClipboardImage | null {
 	const targets = runCommand("xclip", ["-selection", "clipboard", "-t", "TARGETS", "-o"], {
 		timeoutMs: DEFAULT_LIST_TIMEOUT_MS,
+		env,
 	});
 
 	let candidateTypes: string[] = [];
@@ -228,7 +233,7 @@ function readClipboardImageViaXclip(): ClipboardImage | null {
 	const tryTypes = preferred ? [preferred, ...SUPPORTED_IMAGE_MIME_TYPES] : [...SUPPORTED_IMAGE_MIME_TYPES];
 
 	for (const mimeType of tryTypes) {
-		const data = runCommand("xclip", ["-selection", "clipboard", "-t", mimeType, "-o"]);
+		const data = runCommand("xclip", ["-selection", "clipboard", "-t", mimeType, "-o"], { env });
 		if (data.ok && data.stdout.length > 0) {
 			return { bytes: data.stdout, mimeType: baseMimeType(mimeType) };
 		}
@@ -269,15 +274,15 @@ export async function readClipboardImage(options?: {
 		const wayland = isWaylandSession(env);
 
 		if (wayland || wsl) {
-			image = readClipboardImageViaWlPaste() ?? readClipboardImageViaXclip();
+			image = readClipboardImageViaWlPaste(env) ?? readClipboardImageViaXclip(env);
 		}
 
 		if (!image && wsl) {
-			image = readClipboardImageViaPowerShell();
+			image = readClipboardImageViaPowerShell(env);
 		}
 
 		if (!image && !wayland) {
-			image = (await readClipboardImageViaNativeClipboard()) ?? readClipboardImageViaXclip();
+			image = (await readClipboardImageViaNativeClipboard()) ?? readClipboardImageViaXclip(env);
 		}
 	} else {
 		image = await readClipboardImageViaNativeClipboard();

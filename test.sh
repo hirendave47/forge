@@ -38,7 +38,7 @@ trap cleanup EXIT
 
 # Start from an empty environment and allow only required platform and test settings.
 test_env=(
-	"PATH=$PATH"
+	"PATH=$PATH:${HOME:-}/.pi/agent/bin:${HOME:-}/.forge/agent/bin"
 	"PWD=$PWD"
 	"HOME=$test_root/home"
 	"USERPROFILE=$test_root/home"

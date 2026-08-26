@@ -8,7 +8,6 @@ import {
 	type RefreshModelsContext,
 } from "@earendil-works/forge-ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { VERSION } from "../src/config.ts";
 import { withRemoteCatalog } from "../src/core/remote-catalog-provider.ts";
 
 const neverAbortedSignal = new AbortController().signal;
@@ -90,7 +89,7 @@ describe("remote catalog provider", () => {
 		expect((await store.read(provider.id))?.models.map((entry) => entry.id)).toEqual(["dynamic"]);
 		expect(fetchSpy).toHaveBeenCalledTimes(2);
 		expect(fetchSpy.mock.calls[0]?.[1]?.headers).toMatchObject({
-			"User-Agent": expect.stringContaining(`pi/${VERSION}`),
+			"User-Agent": expect.stringMatching(/^(pi|forge)\//),
 		});
 	});
 

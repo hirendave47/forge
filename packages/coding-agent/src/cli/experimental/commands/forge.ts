@@ -42,7 +42,7 @@ export const forgeCommand = new Command<ForgeCommand, ForgeCommandContext>("forg
 		return {
 			ok: true,
 			command: {
-				command: "forge",
+				command: "pi",
 				options,
 				...(auth === undefined ? {} : { auth }),
 				...(listen.length === 0 ? {} : { listen }),

@@ -85,23 +85,36 @@ npm install --ignore-scripts
 npm run hydrate:model-data
 ```
 
-### Build & Typecheck
+### Zero-Build Development Execution (Direct from Source)
+No build or bundling step is needed when developing. `tsx` executes TypeScript source directly using root `tsconfig.json` path mappings:
 ```bash
-# Offline build of all workspace packages
-npm run build:offline
+# Run one-shot tasks directly from source
+./forge-test.sh run "Investigate system memory usage and top 5 processes"
 
-# Code formatting and TypeScript typechecking
-npm run check
+# Run persistent task subcommands directly from source
+./forge-test.sh task list
+
+# Run print mode or interactive TUI
+./forge-test.sh -p "Say hello"
+./forge-test.sh
+
+# Alternatively using npm script
+npm run dev -- run "Investigate system memory usage and top 5 processes"
 ```
 
-### Testing
+### Static Check & Testing
 ```bash
-# Run CLI directly from source
-./forge-test.sh --help
-./forge-test.sh -p "Say hello"
+# Code formatting and TypeScript typechecking
+npm run check
 
 # Run test suite
 ./test.sh
+```
+
+### Optional Offline Build & Packaging
+```bash
+# Offline build of all workspace packages (when needed for bundling/releases)
+npm run build:offline
 ```
 
 ### Packaging Standalone Linux Binary & Local Installation

@@ -81,13 +81,36 @@ Forge bridges conversational LLMs with deterministic Linux operational engineeri
 # Binary installed to /usr/local/bin/forge
 ```
 
-### From Source
+### Running Directly From Source (Zero-Build Development Workflow)
+
+During local development, you do **not** need to compile, bundle, or build the monorepo when testing code changes. Forge provides instant execution wrappers that use `tsx` to load and execute all TypeScript packages directly from their source files:
 
 ```bash
+# 1. Install workspace dependencies (one-time setup)
 npm install --ignore-scripts
-npm run build:offline
-./forge-test.sh --help
+
+# 2. Run any command directly from TypeScript source:
+./forge-test.sh run "Investigate system memory usage and top 5 processes"
+./forge-test.sh task list
+./forge-test.sh -p "Check system health"
+./forge-test.sh                     # Launches interactive TUI directly from source
+
+# Alternatively via npm script:
+npm run dev -- run "Investigate system memory usage and top 5 processes"
+npm run dev -- task list
+npm run dev -- --help
 ```
+
+* **No Build Step Required**: Changes to any TypeScript file in `packages/*/src/` take effect immediately on your next `./forge-test.sh` invocation.
+* **Path Resolution**: `tsconfig.json` paths automatically route package imports (`@earendil-works/forge-coding-agent`, `@earendil-works/forge-linux-agent`, `@earendil-works/forge-ai`, etc.) directly to their active `src/` directories.
+* **Testing without Environment API Keys**: Pass `--no-env` to temporarily unset environment API keys and test local/unauthenticated fallbacks:
+  ```bash
+  ./forge-test.sh --no-env --help
+  ```
+* **Cross-Platform Development Wrappers**:
+  - Linux/macOS: `./forge-test.sh <args>`
+  - Windows PowerShell: `.\forge-test.ps1 <args>`
+  - Windows Command Prompt: `.\forge-test.bat <args>`
 
 ---
 
