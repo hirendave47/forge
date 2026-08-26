@@ -217,9 +217,7 @@ export class FileSettingsStorage implements SettingsStorage {
 		const primaryProjectPath = join(resolvedCwd, CONFIG_DIR_NAME, "settings.json");
 		const legacyProjectPath = join(resolvedCwd, ".pi", "settings.json");
 		this.projectSettingsPath =
-			existsSync(primaryProjectPath) || !existsSync(legacyProjectPath)
-				? primaryProjectPath
-				: legacyProjectPath;
+			existsSync(primaryProjectPath) || !existsSync(legacyProjectPath) ? primaryProjectPath : legacyProjectPath;
 	}
 
 	private acquireLockSyncWithRetry(path: string): () => void {
