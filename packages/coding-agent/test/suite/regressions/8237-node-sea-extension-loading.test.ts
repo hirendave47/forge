@@ -46,5 +46,7 @@ describe("Node SEA extension loading", () => {
 		expect(options.alias).toBeUndefined();
 		expect(options.virtualModules?.typebox).toBeDefined();
 		expect(options.virtualModules?.["@earendil-works/forge-coding-agent"]).toBeDefined();
+		expect(options.virtualModules?.["@earendil-works/pi-coding-agent"]).toBeDefined();
+		expect(options.virtualModules?.["@earendil-works/pi-tui"]).toBeDefined();
 	});
 });
