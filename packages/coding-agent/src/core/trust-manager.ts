@@ -187,9 +187,11 @@ export function hasTrustRequiringProjectResources(cwd: string): boolean {
 	const userAgentsSkillsDir = join(homeDir, ".agents", "skills");
 	let currentDir = canonicalizePath(resolvePath(cwd));
 
-	const configDir = join(currentDir, CONFIG_DIR_NAME);
-	if (TRUST_REQUIRING_PROJECT_CONFIG_RESOURCES.some((entry) => existsSync(join(configDir, entry)))) {
-		return true;
+	for (const dirName of [CONFIG_DIR_NAME, ".pi"]) {
+		const configDir = join(currentDir, dirName);
+		if (TRUST_REQUIRING_PROJECT_CONFIG_RESOURCES.some((entry) => existsSync(join(configDir, entry)))) {
+			return true;
+		}
 	}
 
 	while (true) {

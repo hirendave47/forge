@@ -16,6 +16,7 @@ type CallbackServerInfo = {
 	redirectUri: string;
 	cancelWait: () => void;
 	waitForCode: () => Promise<{ code: string; state: string } | null>;
+	close: () => Promise<void>;
 };
 
 type NodeApis = {
@@ -150,6 +151,16 @@ async function startCallbackServer(expectedState: string): Promise<CallbackServe
 			}
 		});
 
+		const close = async () => {
+			settleWait?.(null);
+			if (server.listening) {
+				server.closeAllConnections?.();
+				await new Promise<void>((resolveClose) => {
+					server.close(() => resolveClose());
+				});
+			}
+		};
+
 		server.on("error", (err) => {
 			reject(err);
 		});
@@ -162,6 +173,7 @@ async function startCallbackServer(expectedState: string): Promise<CallbackServe
 					settleWait?.(null);
 				},
 				waitForCode: () => waitForCodePromise,
+				close,
 			});
 		});
 	});
@@ -307,7 +319,7 @@ async function loginAnthropic(interaction: ProviderAuthInteraction): Promise<OAu
 	} finally {
 		interaction.signal.removeEventListener("abort", onAbort);
 		manualAbort.abort();
-		server.server.close();
+		await server.close();
 	}
 }
 

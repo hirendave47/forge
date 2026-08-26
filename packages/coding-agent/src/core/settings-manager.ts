@@ -220,6 +220,14 @@ export class FileSettingsStorage implements SettingsStorage {
 			existsSync(primaryProjectPath) || !existsSync(legacyProjectPath) ? primaryProjectPath : legacyProjectPath;
 	}
 
+	getGlobalSettingsPath(): string {
+		return this.globalSettingsPath;
+	}
+
+	getProjectSettingsPath(): string {
+		return this.projectSettingsPath;
+	}
+
 	private acquireLockSyncWithRetry(path: string): () => void {
 		const maxAttempts = 10;
 		const delayMs = 20;
@@ -342,8 +350,8 @@ export class SettingsManager {
 		const resolvedAgentDir = resolvePath(agentDir);
 		const storage = new FileSettingsStorage(resolvedCwd, resolvedAgentDir);
 		return SettingsManager.fromStorageWithPaths(storage, options, {
-			global: join(resolvedAgentDir, "settings.json"),
-			project: join(resolvedCwd, CONFIG_DIR_NAME, "settings.json"),
+			global: storage.getGlobalSettingsPath(),
+			project: storage.getProjectSettingsPath(),
 		});
 	}
 

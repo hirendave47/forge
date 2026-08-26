@@ -2033,7 +2033,9 @@ export class DefaultPackageManager implements PackageManager {
 		}
 		if (scope === "project") {
 			this.assertProjectTrustedForScope(scope);
-			return join(this.cwd, CONFIG_DIR_NAME, "npm");
+			const primary = join(this.cwd, CONFIG_DIR_NAME, "npm");
+			const legacy = join(this.cwd, ".pi", "npm");
+			return existsSync(primary) || !existsSync(legacy) ? primary : legacy;
 		}
 		return join(this.agentDir, "npm");
 	}
@@ -2074,7 +2076,9 @@ export class DefaultPackageManager implements PackageManager {
 		}
 		if (scope === "project") {
 			this.assertProjectTrustedForScope(scope);
-			return join(this.cwd, CONFIG_DIR_NAME, "npm", "node_modules", source.name);
+			const primary = join(this.cwd, CONFIG_DIR_NAME, "npm", "node_modules", source.name);
+			const legacy = join(this.cwd, ".pi", "npm", "node_modules", source.name);
+			return existsSync(primary) || !existsSync(legacy) ? primary : legacy;
 		}
 		return join(this.agentDir, "npm", "node_modules", source.name);
 	}
@@ -2113,7 +2117,9 @@ export class DefaultPackageManager implements PackageManager {
 		}
 		if (scope === "project") {
 			this.assertProjectTrustedForScope(scope);
-			return join(this.cwd, CONFIG_DIR_NAME, "git");
+			const primary = join(this.cwd, CONFIG_DIR_NAME, "git");
+			const legacy = join(this.cwd, ".pi", "git");
+			return existsSync(primary) || !existsSync(legacy) ? primary : legacy;
 		}
 		return join(this.agentDir, "git");
 	}
@@ -2139,7 +2145,9 @@ export class DefaultPackageManager implements PackageManager {
 	private getBaseDirForScope(scope: SourceScope): string {
 		if (scope === "project") {
 			this.assertProjectTrustedForScope(scope);
-			return join(this.cwd, CONFIG_DIR_NAME);
+			const primary = join(this.cwd, CONFIG_DIR_NAME);
+			const legacy = join(this.cwd, ".pi");
+			return existsSync(primary) || !existsSync(legacy) ? primary : legacy;
 		}
 		if (scope === "user") {
 			return this.agentDir;

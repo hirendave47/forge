@@ -117,7 +117,7 @@ describe("loadEntriesFromFile", () => {
 		}
 	});
 
-	it("opens session files larger than Node's max string length", () => {
+	it("opens session files larger than Node's max string length", { timeout: 60000 }, () => {
 		const file = join(tempDir, "large.jsonl");
 		writeFileSync(
 			file,

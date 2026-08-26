@@ -204,15 +204,18 @@ function startOAuthCallbackServer(expectedState: string, signal: AbortSignal): P
 			.listen(CALLBACK_PORT, CALLBACK_HOST, () => {
 				resolve({
 					waitForCode: () => wait,
-					close: () => {
+					close: async () => {
 						finish(null);
-						server.close();
+						if (server.listening) {
+							server.closeAllConnections?.();
+							await new Promise<void>((r) => server.close(() => r()));
+						}
 					},
 				});
 			})
 			.once("error", () => {
 				finish(null);
-				resolve({ waitForCode: async () => null, close: () => {} });
+				resolve({ waitForCode: async () => null, close: async () => {} });
 			});
 	});
 }
@@ -264,7 +267,7 @@ async function loginWithBrowser(
 			interaction.signal,
 		);
 	} finally {
-		callbackServer.close();
+		await callbackServer.close();
 	}
 }
 

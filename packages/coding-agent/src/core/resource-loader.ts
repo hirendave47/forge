@@ -872,7 +872,11 @@ export class DefaultResourceLoader implements ResourceLoader {
 		const themes: Theme[] = [];
 		const diagnostics: ResourceDiagnostic[] = [];
 		if (includeDefaults) {
-			const defaultDirs = [join(this.agentDir, "themes"), join(this.cwd, CONFIG_DIR_NAME, "themes")];
+			const defaultDirs = [
+				join(this.agentDir, "themes"),
+				join(this.cwd, CONFIG_DIR_NAME, "themes"),
+				join(this.cwd, ".pi", "themes"),
+			];
 
 			for (const dir of defaultDirs) {
 				this.loadThemesFromDir(dir, themes, diagnostics);
@@ -1025,6 +1029,10 @@ export class DefaultResourceLoader implements ResourceLoader {
 		if (this.settingsManager.isProjectTrusted() && existsSync(projectPath)) {
 			return projectPath;
 		}
+		const legacyProjectPath = join(this.cwd, ".pi", "SYSTEM.md");
+		if (this.settingsManager.isProjectTrusted() && existsSync(legacyProjectPath)) {
+			return legacyProjectPath;
+		}
 
 		const globalPath = join(this.agentDir, "SYSTEM.md");
 		if (existsSync(globalPath)) {
@@ -1038,6 +1046,10 @@ export class DefaultResourceLoader implements ResourceLoader {
 		const projectPath = join(this.cwd, CONFIG_DIR_NAME, "APPEND_SYSTEM.md");
 		if (this.settingsManager.isProjectTrusted() && existsSync(projectPath)) {
 			return projectPath;
+		}
+		const legacyProjectPath = join(this.cwd, ".pi", "APPEND_SYSTEM.md");
+		if (this.settingsManager.isProjectTrusted() && existsSync(legacyProjectPath)) {
+			return legacyProjectPath;
 		}
 
 		const globalPath = join(this.agentDir, "APPEND_SYSTEM.md");
