@@ -348,7 +348,7 @@ Content`,
 		it("should discover AGENTS.md context files", async () => {
 			writeFileSync(join(cwd, "AGENTS.md"), "# Project Guidelines\n\nBe helpful.");
 
-			const loader = new DefaultResourceLoader({ cwd, agentDir });
+			const loader = new DefaultResourceLoader({ cwd, agentDir, noContextFiles: false });
 			await loader.reload();
 
 			const { agentsFiles } = loader.getAgentsFiles();
@@ -364,7 +364,7 @@ Content`,
 			writeFileSync(join(nestedCwd, "AGENTS.md"), "service instructions");
 			writeFileSync(join(nestedCwd, "AGENTS.override.md"), "service override");
 
-			const loader = new DefaultResourceLoader({ cwd: nestedCwd, agentDir });
+			const loader = new DefaultResourceLoader({ cwd: nestedCwd, agentDir, noContextFiles: false });
 			await loader.reload();
 
 			expect(loader.getAgentsFiles().agentsFiles).toEqual([
@@ -380,7 +380,7 @@ Content`,
 			writeFileSync(join(cwd, "CLAUDE.md"), "Fallback instructions");
 			const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-			const loader = new DefaultResourceLoader({ cwd, agentDir });
+			const loader = new DefaultResourceLoader({ cwd, agentDir, noContextFiles: false });
 			await loader.reload();
 
 			expect(loader.getAgentsFiles().agentsFiles).toContainEqual({
@@ -446,7 +446,7 @@ Project skill content`,
 			writeFileSync(join(themesDir, "project.json"), JSON.stringify(themeData, null, 2));
 			const settingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
 
-			const loader = new DefaultResourceLoader({ cwd, agentDir, settingsManager });
+			const loader = new DefaultResourceLoader({ cwd, agentDir, settingsManager, noContextFiles: false });
 			await loader.reload();
 
 			expect(loader.getSystemPrompt()).toBe("Global system prompt.");

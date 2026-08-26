@@ -270,7 +270,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		this.noSkills = options.noSkills ?? false;
 		this.noPromptTemplates = options.noPromptTemplates ?? false;
 		this.noThemes = options.noThemes ?? false;
-		this.noContextFiles = options.noContextFiles ?? false;
+		this.noContextFiles = options.noContextFiles ?? true;
 		this.systemPromptSource = options.systemPrompt;
 		this.appendSystemPromptSource = options.appendSystemPrompt;
 		this.extensionsOverride = options.extensionsOverride;

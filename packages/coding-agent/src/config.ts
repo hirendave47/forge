@@ -384,7 +384,7 @@ export function findNodePackageDir(startDir: string): string {
 
 export function getPackageDir(): string {
 	// Allow override via environment variable (useful for Nix/Guix where store paths tokenize poorly)
-	const envDir = process.env.FORGE_PACKAGE_DIR || process.env.PI_PACKAGE_DIR;
+	const envDir = process.env.FORGE_PACKAGE_DIR;
 	if (envDir) {
 		return normalizePath(envDir);
 	}
@@ -505,7 +505,7 @@ export const APP_TITLE: string = configName ? APP_NAME : "Forge";
 export const CONFIG_DIR_NAME: string = configObj?.configDir || ".forge";
 export const VERSION: string = pkg.version || "0.0.0";
 
-// e.g., FORGE_CODING_AGENT_DIR or PI_CODING_AGENT_DIR
+// e.g., FORGE_CODING_AGENT_DIR
 export const ENV_AGENT_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_DIR`;
 export const ENV_SESSION_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_SESSION_DIR`;
 
@@ -517,7 +517,7 @@ const DEFAULT_SHARE_VIEWER_URL = "https://pi.dev/session/";
 
 /** Get the share viewer URL for a gist ID. */
 export function getShareViewerUrl(gistId: string): string {
-	const baseUrl = process.env.FORGE_SHARE_VIEWER_URL || process.env.PI_SHARE_VIEWER_URL || DEFAULT_SHARE_VIEWER_URL;
+	const baseUrl = process.env.FORGE_SHARE_VIEWER_URL || DEFAULT_SHARE_VIEWER_URL;
 	return `${baseUrl}#${gistId}`;
 }
 
@@ -527,9 +527,7 @@ export function getShareViewerUrl(gistId: string): string {
 
 /** Get the agent config directory (e.g., ~/.forge/agent/) */
 export function getAgentDir(): string {
-	const envDir =
-		process.env[ENV_AGENT_DIR] ||
-		(ENV_AGENT_DIR !== "PI_CODING_AGENT_DIR" ? process.env.PI_CODING_AGENT_DIR : undefined);
+	const envDir = process.env[ENV_AGENT_DIR];
 	if (envDir) {
 		return expandTildePath(envDir);
 	}

@@ -111,8 +111,8 @@ export function hasAuthForProvider(provider: string): boolean {
 	return provider in storage;
 }
 
-/** Path to the real pi agent config directory */
-export const PI_AGENT_DIR = join(homedir(), ".pi", "agent");
+/** Path to the real forge agent config directory */
+export const PI_AGENT_DIR = join(homedir(), ".forge", "agent");
 
 /**
  * Get an AuthStorage instance backed by ~/.pi/agent/auth.json

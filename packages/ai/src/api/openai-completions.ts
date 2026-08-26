@@ -297,7 +297,7 @@ function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEn
 	if (cacheRetention) {
 		return cacheRetention;
 	}
-	if (getProviderEnvValue("PI_CACHE_RETENTION", env) === "long") {
+	if (getProviderEnvValue("FORGE_CACHE_RETENTION", env) === "long") {
 		return "long";
 	}
 	return "short";

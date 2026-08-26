@@ -54,7 +54,7 @@ function commonBuildOptions() {
 		absWorkingDir: repoRoot,
 		banner,
 		bundle: true,
-		define: { FORGE_BUNDLED_NODE: "true", PI_BUNDLED_NODE: "true" },
+		define: { FORGE_BUNDLED_NODE: "true" },
 		external: ["@silvia-odwyer/photon-node"],
 		format: "esm",
 		legalComments: "none",

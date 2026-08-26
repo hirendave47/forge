@@ -28,7 +28,7 @@
 - Fixed required LaTeX arguments starting on a new line being parsed as empty ([#7760](https://github.com/earendil-works/pi/issues/7760)).
 - Fixed LaTeX control spaces split across line endings causing complete expressions to fall back to raw source.
 - Fixed focused fullscreen overlays not receiving mouse wheel or viewport scroll keys such as PageUp and PageDown ([#7894](https://github.com/earendil-works/pi/issues/7894)).
-- Fixed split `Alt+Enter` input over SSH being misread as Escape, added `PI_TUI_ESC_TIMEOUT` for high-latency terminals, and limited that timeout to lone Escape input ([#7899](https://github.com/earendil-works/pi/pull/7899) by [@powerfooI](https://github.com/powerfooI)).
+- Fixed split `Alt+Enter` input over SSH being misread as Escape, added `FORGE_TUI_ESC_TIMEOUT` for high-latency terminals, and limited that timeout to lone Escape input ([#7899](https://github.com/earendil-works/pi/pull/7899) by [@powerfooI](https://github.com/powerfooI)).
 - Fixed idle fullscreen sessions repainting and clearing text selection when the terminal loses focus ([#7892](https://github.com/earendil-works/pi/pull/7892) by [@terrorobe](https://github.com/terrorobe)).
 - Fixed fullscreen selection copy falsely reporting success when OSC 52 is unsupported by allowing host clipboard integration and reporting verified failures ([#8110](https://github.com/earendil-works/pi/pull/8110) by [@Panoplos](https://github.com/Panoplos)).
 
@@ -97,7 +97,7 @@
 
 ### Fixed
 
-- Fixed debug and crash logs to use the configured TUI log directory, including `PI_CODING_AGENT_DIR`, instead of always writing under `~/.pi/agent` ([#6958](https://github.com/earendil-works/pi/pull/6958) by [@davidbrai](https://github.com/davidbrai)).
+- Fixed debug and crash logs to use the configured TUI log directory, including `FORGE_CODING_AGENT_DIR`, instead of always writing under `~/.pi/agent` ([#6958](https://github.com/earendil-works/pi/pull/6958) by [@davidbrai](https://github.com/davidbrai)).
 - Fixed narrow terminals crashing when the editor's bottom scroll indicator exceeded the terminal width ([#7015](https://github.com/earendil-works/pi/pull/7015) by [@christianklotz](https://github.com/christianklotz)).
 
 ## [0.81.1] - 2026-07-21
@@ -465,7 +465,7 @@
 
 ### Added
 
-- Added support for `PI_TUI_WRITE_LOG` directory paths, creating a unique log file (`tui-<timestamp>-<pid>.log`) per instance for easier debugging of multiple pi sessions ([#2508](https://github.com/badlogic/pi-mono/pull/2508) by [@mrexodia](https://github.com/mrexodia))
+- Added support for `FORGE_TUI_WRITE_LOG` directory paths, creating a unique log file (`tui-<timestamp>-<pid>.log`) per instance for easier debugging of multiple pi sessions ([#2508](https://github.com/badlogic/pi-mono/pull/2508) by [@mrexodia](https://github.com/mrexodia))
 
 ### Fixed
 
@@ -710,12 +710,12 @@
 
 ### Added
 
-- Added `PI_DEBUG_REDRAW=1` env var for debugging full redraws (logs triggers to `~/.pi/agent/pi-debug.log`)
+- Added `FORGE_DEBUG_REDRAW=1` env var for debugging full redraws (logs triggers to `~/.pi/agent/pi-debug.log`)
 
 ### Changed
 
 - Terminal height changes no longer trigger full redraws, reducing flicker on resize
-- `clearOnShrink` now defaults to `false` (use `PI_CLEAR_ON_SHRINK=1` or `setClearOnShrink(true)` to enable)
+- `clearOnShrink` now defaults to `false` (use `FORGE_CLEAR_ON_SHRINK=1` or `setClearOnShrink(true)` to enable)
 
 ### Fixed
 
@@ -801,7 +801,7 @@
 ### Added
 
 - Added `fullRedraws` readonly property to TUI class for tracking full screen redraws
-- Added `PI_TUI_WRITE_LOG` environment variable to capture raw ANSI output for debugging
+- Added `FORGE_TUI_WRITE_LOG` environment variable to capture raw ANSI output for debugging
 
 ### Fixed
 
@@ -856,7 +856,7 @@
 
 ### Changed
 
-- Hardware cursor is now disabled by default for better terminal compatibility. Set `PI_HARDWARE_CURSOR=1` to enable (replaces `PI_NO_HARDWARE_CURSOR=1` which disabled it).
+- Hardware cursor is now disabled by default for better terminal compatibility. Set `FORGE_HARDWARE_CURSOR=1` to enable (replaces `FORGE_NO_HARDWARE_CURSOR=1` which disabled it).
 
 ### Fixed
 

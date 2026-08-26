@@ -23,7 +23,7 @@ import {
 	type TranscriptEvent,
 	toJsonValue,
 } from "vitest-evals/harness";
-import { PI_SESSION_SNAPSHOT_ARTIFACT } from "./vitest-evals/artifacts.ts";
+import { FORGE_SESSION_SNAPSHOT_ARTIFACT } from "./vitest-evals/artifacts.ts";
 
 export type ForgeCodingAgentInput = string | Array<{ type: "prompt"; content: string } | { type: "reload" }>;
 export type PiCodingAgentInput = ForgeCodingAgentInput;
@@ -52,12 +52,10 @@ export function resolveModelSelection(
 	environment: {
 		FORGE_PROVIDER?: string;
 		FORGE_MODEL?: string;
-		PI_PROVIDER?: string;
-		PI_MODEL?: string;
 	} = process.env,
 ): ForgeCodingAgentModelSelection {
-	const provider = (explicitModel?.provider ?? environment.FORGE_PROVIDER ?? environment.PI_PROVIDER)?.trim();
-	const id = (explicitModel?.id ?? environment.FORGE_MODEL ?? environment.PI_MODEL)?.trim();
+	const provider = (explicitModel?.provider ?? environment.FORGE_PROVIDER)?.trim();
+	const id = (explicitModel?.id ?? environment.FORGE_MODEL)?.trim();
 	if (!provider || !id) {
 		throw new Error("Select a harness model explicitly or set both FORGE_PROVIDER and FORGE_MODEL as defaults.");
 	}
@@ -223,7 +221,7 @@ async function runPiCodingAgent<TOutput extends JsonValue>(
 		try {
 			const sessionPath = sessionManager.getSessionFile();
 			if (sessionPath && existsSync(sessionPath)) {
-				setArtifact(PI_SESSION_SNAPSHOT_ARTIFACT, await readFile(sessionPath, "utf8"));
+				setArtifact(FORGE_SESSION_SNAPSHOT_ARTIFACT, await readFile(sessionPath, "utf8"));
 			}
 		} catch (error) {
 			cleanupErrors.push(error);

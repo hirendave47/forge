@@ -52,7 +52,7 @@ export async function getLatestPiRelease(
 	currentVersion: string,
 	options: { timeoutMs?: number; retry?: boolean } = {},
 ): Promise<LatestPiRelease | undefined> {
-	if (process.env.PI_OFFLINE) return undefined;
+	if (process.env.FORGE_OFFLINE) return undefined;
 
 	const response = await fetchWithRetry(
 		LATEST_VERSION_URL,

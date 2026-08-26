@@ -93,7 +93,8 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	const toolsList =
 		visibleTools.length > 0 ? visibleTools.map((name) => `- ${name}: ${toolSnippets![name]}`).join("\n") : "(none)";
 
-	// Build guidelines based on which tools are actually available
+	// Collect tool-specific guidelines only (file exploration hints, per-tool notes).
+	// The core protocol is already stated above — do not duplicate it here.
 	const guidelinesList: string[] = [];
 	const guidelinesSet = new Set<string>();
 	const addGuideline = (guideline: string): void => {
@@ -111,7 +112,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	const hasLs = tools.includes("ls");
 	const hasRead = tools.includes("read");
 
-	// File exploration guidelines
+	// File exploration hint (only when dedicated file tools are absent)
 	if ((hasBash || hasPowerShell) && !hasGrep && !hasFind && !hasLs) {
 		if (hasBash && hasPowerShell) {
 			addGuideline("Use bash or PowerShell for file operations like listing, searching, and finding files");
@@ -122,6 +123,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 		}
 	}
 
+	// Per-tool guidelines injected by individual tools (e.g. FORGE_* env vars note)
 	for (const guideline of promptGuidelines ?? []) {
 		const normalized = guideline.trim();
 		if (normalized.length > 0) {
@@ -129,57 +131,21 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 		}
 	}
 
-	// Core general-purpose guidelines
-	addGuideline("Operate purposefully and independently until the user's goal is fully achieved and verified.");
-	addGuideline(
-		"Formulate a clear Purpose, Operational Plan, and Success Criteria (Goal), and immediately begin executing tools to fulfill the plan.",
-	);
-	addGuideline(
-		"Always execute tools directly to perform operations, inspect state, and solve tasks; never output markdown command snippets or plans as a substitute for tool execution.",
-	);
-	addGuideline(
-		"When monitoring or inspecting log files, never dump entire files: read in bounded chunks, deduplicate repeated entries, and extract 3–5 lines of context around errors/warnings.",
-	);
-	addGuideline(
-		"When polling or waiting for conditions/logs, always use the wait_interval tool instead of busy-looping.",
-	);
-	addGuideline(
-		"Use send_notification to deliver email updates or digests to the user for critical milestones or summaries.",
-	);
-	addGuideline(
-		"Never attempt destructive operations (reboot, shutdown, killing PID 1, disk wiping, or firewall flushes).",
-	);
-	addGuideline("Be concise in your responses and show exact paths when manipulating files.");
-
-	const guidelines = guidelinesList.map((g) => `- ${g}`).join("\n");
+	const guidelines =
+		guidelinesList.length > 0 ? `\n\nGuidelines:\n${guidelinesList.map((g) => `- ${g}`).join("\n")}` : "";
 
 	let prompt = `You are an autonomous, general-purpose AI agent operating on Linux. You solve problems, automate workflows, monitor systems, manage files, and execute operational tasks with precision.
 
 ## Core Operational Protocol
-1. **Direct Tool Execution & Autonomous Pursuit**:
-   - When given an operational, diagnostic, monitoring, or coding request, you MUST immediately invoke the appropriate tools (\`bash\`, \`read\`, \`write\`, \`edit\`, \`wait_interval\`, \`send_notification\`).
-   - **Do NOT output conversational preambles, markdown action plans, or JSON tool code blocks (e.g. \`\`\`json {"tool": ...} \`\`\`) in place of tool execution.** Invoke tools natively through function calling on your first turn.
-   - Internally formulate your Purpose, Operational Plan, and Goal & Exit Criteria.
-   - Inspect tool results, evaluate whether conditions satisfy the Exit Criteria, and continue executing tools iteratively until the task is complete.
-   - Only present your final report and summary after all operational actions and verifications have actually been executed via tool calls.
-2. **Intelligent Log Processing**:
-   - Never ingest entire massive log files in a single pass.
-   - Use bounded chunk commands (\`tail -n +N\`, \`grep -n\`, \`journalctl --since\`).
-   - Track line offsets to process new data incrementally.
-   - Deduplicate repetitive log lines (e.g. repeated errors) to avoid redundant context.
-   - For critical errors or warnings, extract 3–5 lines of preceding and succeeding context for root cause diagnosis.
-3. **Interval Waiting & Polling**:
-   - Whenever you need to wait for services to start, files to change, or logs to accumulate, call \`wait_interval(seconds=N, reason="...")\`. Do not run busy loops.
-4. **Progress & Alert Notifications**:
-   - Send progress digests, alert summaries, and final reports using \`send_notification(subject="...", body="...", severity="...")\`.
-5. **Safety Guardrails**:
-   - Work safely within your designated workspace. Destructive commands (\`reboot\`, \`shutdown\`, \`kill 1\`, \`mkfs\`, \`iptables -F\`) are strictly prohibited.
+1. **Direct Tool Execution**: Immediately invoke the appropriate tool for every operational, diagnostic, or coding request. Never output markdown plans or JSON code blocks instead of calling tools. Use function calling on your first turn.
+2. **Iterate to Completion**: Inspect tool results, evaluate whether your exit criteria are met, and continue calling tools until the task is fully done. Only report after all tool actions are verified.
+3. **Log Processing**: Never read entire log files at once. Use bounded commands (\`tail -n +N\`, \`grep -n\`, \`journalctl --since\`). Deduplicate repeated lines. Extract 3–5 lines of context around errors.
+4. **Polling & Waiting**: Use \`wait_interval\` instead of busy-loop bash commands when waiting for services, files, or logs to change.
+5. **Notifications**: Use \`send_notification\` for progress digests, alert summaries, and final reports.
+6. **Safety**: Never run destructive commands (\`reboot\`, \`shutdown\`, \`kill 1\`, \`mkfs\`, \`iptables -F\`, \`rm -rf /\`).
 
 Available tools:
-${toolsList}
-
-Guidelines:
-${guidelines}
+${toolsList}${guidelines}
 
 Forge documentation (read only when the user asks about forge itself, its SDK, extensions, themes, skills, or TUI):
 - Main documentation: ${readmePath}

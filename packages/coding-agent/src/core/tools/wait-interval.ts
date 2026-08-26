@@ -4,13 +4,8 @@ import type { ToolDefinition } from "../extensions/types.ts";
 import { wrapToolDefinition } from "./tool-definition-wrapper.ts";
 
 const waitIntervalSchema = Type.Object({
-	seconds: Type.Number({ description: "Number of seconds to pause/wait before resuming execution (e.g. 5, 30, 60)" }),
-	reason: Type.Optional(
-		Type.String({
-			description:
-				"Reason for waiting (e.g. 'Waiting for new log entries to accumulate', 'Waiting for service to restart')",
-		}),
-	),
+	seconds: Type.Number({ description: "Number of seconds to pause before resuming" }),
+	reason: Type.Optional(Type.String({ description: "Why we are waiting" })),
 });
 
 export type WaitIntervalToolInput = Static<typeof waitIntervalSchema>;
@@ -19,12 +14,9 @@ export function createWaitIntervalToolDefinition(): ToolDefinition<typeof waitIn
 	return {
 		name: "wait_interval",
 		label: "wait_interval",
-		description:
-			"Pause/sleep for a specified number of seconds before taking the next action. Essential for monitoring loops, polling service health, or waiting for logs to accumulate without busy-looping.",
+		description: "Pause for N seconds before the next action. Use instead of busy-loop polling.",
 		promptSnippet: "Pause execution for an interval in seconds before the next check",
-		promptGuidelines: [
-			"Use wait_interval whenever you are polling, monitoring log files, or waiting for services to change state instead of repeatedly calling bash commands in a busy-loop.",
-		],
+		promptGuidelines: [],
 		parameters: waitIntervalSchema,
 		async execute(_toolCallId, { seconds, reason }, signal) {
 			if (signal?.aborted) {

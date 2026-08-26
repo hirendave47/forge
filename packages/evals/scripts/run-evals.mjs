@@ -6,8 +6,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const artifactDirectory = process.env.PI_EVAL_ARTIFACT_DIR
-	? resolve(packageRoot, process.env.PI_EVAL_ARTIFACT_DIR)
+const artifactDirectory = process.env.FORGE_EVAL_ARTIFACT_DIR
+	? resolve(packageRoot, process.env.FORGE_EVAL_ARTIFACT_DIR)
 	: resolve(
 			packageRoot,
 			".eval",
@@ -54,10 +54,10 @@ if (hasCliModelSelection) {
 		process.exit(1);
 	}
 } else {
-	provider = process.env.PI_PROVIDER?.trim() || undefined;
-	model = process.env.PI_MODEL?.trim() || undefined;
+	provider = process.env.FORGE_PROVIDER?.trim() || undefined;
+	model = process.env.FORGE_MODEL?.trim() || undefined;
 	if (Boolean(provider) !== Boolean(model)) {
-		console.error("Default model selection requires both PI_PROVIDER and PI_MODEL.");
+		console.error("Default model selection requires both FORGE_PROVIDER and FORGE_MODEL.");
 		process.exit(1);
 	}
 }
@@ -71,14 +71,14 @@ console.error(`[eval] default-model=${provider && model ? `${provider}/${model}`
 console.error(`[eval] artifacts=${artifactDirectory}`);
 const childEnvironment = {
 	...process.env,
-	PI_EVAL_ARTIFACT_DIR: artifactDirectory,
+	FORGE_EVAL_ARTIFACT_DIR: artifactDirectory,
 };
 if (provider && model) {
-	childEnvironment.PI_PROVIDER = provider;
-	childEnvironment.PI_MODEL = model;
+	childEnvironment.FORGE_PROVIDER = provider;
+	childEnvironment.FORGE_MODEL = model;
 } else {
-	delete childEnvironment.PI_PROVIDER;
-	delete childEnvironment.PI_MODEL;
+	delete childEnvironment.FORGE_PROVIDER;
+	delete childEnvironment.FORGE_MODEL;
 }
 const result = spawnSync(
 	process.execPath,

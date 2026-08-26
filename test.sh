@@ -60,7 +60,6 @@ test_env=(
 	"NPM_CONFIG_GLOBALCONFIG=$test_root/npm-globalconfig"
 	"NPM_CONFIG_CACHE=$test_root/cache/npm"
 	"FORGE_NO_LOCAL_LLM=1"
-	"PI_NO_LOCAL_LLM=1"
 	"AWS_EC2_METADATA_DISABLED=true"
 )
 

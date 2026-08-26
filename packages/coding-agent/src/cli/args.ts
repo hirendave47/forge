@@ -194,8 +194,8 @@ export function parseArgs(args: string[]): Args {
 			result.noPromptTemplates = true;
 		} else if (arg === "--no-themes") {
 			result.noThemes = true;
-		} else if (arg === "--no-context-files" || arg === "-nc") {
-			result.noContextFiles = true;
+		} else if (arg === "--context-files" || arg === "-cf") {
+			result.noContextFiles = false;
 		} else if (arg === "--list-models") {
 			// Check if next arg is a search pattern (not a flag or file arg)
 			if (i + 1 < args.length && !args[i + 1].startsWith("-") && !args[i + 1].startsWith("@")) {
@@ -325,7 +325,7 @@ ${chalk.bold("Options:")}
   --theme <path>                 Load a theme file or directory (can be used multiple times)
   --use-theme <name[/name]>      Set the initial interactive theme for this run
   --no-themes                    Disable theme discovery and loading
-  --no-context-files, -nc        Disable AGENTS.md and CLAUDE.md discovery and loading
+  --context-files, -cf           Enable AGENTS.md and CLAUDE.md discovery and injection into the system prompt (disabled by default)
   --export <file>                Export session file to HTML and exit
   --list-models [search]         List available models (with optional fuzzy search)
   --verbose                      Force verbose startup (overrides quietStartup setting)
@@ -335,7 +335,7 @@ ${chalk.bold("Options:")}
   --tui-mode <mode>              TUI mode: regular (default) or fullscreen
   --approve, -a                  Trust project-local files for this run
   --no-approve, -na              Ignore project-local files for this run
-  --offline                      Disable startup network operations (same as PI_OFFLINE=1)
+  --offline                      Disable startup network operations (same as FORGE_OFFLINE=1)
   --                             End option parsing; treat remaining arguments as messages/files
   --help, -h                     Show this help
   --version, -v                  Show version number
@@ -449,10 +449,10 @@ ${chalk.bold("Environment Variables:")}
   AWS_REGION                       - AWS region for Amazon Bedrock (e.g., us-east-1)
   ${ENV_AGENT_DIR.padEnd(32)} - Config directory (default: ~/${CONFIG_DIR_NAME}/agent)
   ${ENV_SESSION_DIR.padEnd(32)} - Session storage directory (overridden by --session-dir)
-  PI_PACKAGE_DIR                   - Override package directory (for Nix/Guix store paths)
-  PI_OFFLINE                       - Disable startup network operations when set to 1/true/yes
-  PI_TELEMETRY                     - Override install telemetry when set to 1/true/yes or 0/false/no
-  PI_SHARE_VIEWER_URL              - Base URL for /share command (default: https://pi.dev/session/)
+  FORGE_PACKAGE_DIR                - Override package directory (for Nix/Guix store paths)
+  FORGE_OFFLINE                    - Disable startup network operations when set to 1/true/yes
+  FORGE_TELEMETRY                  - Override install telemetry when set to 1/true/yes or 0/false/no
+  FORGE_SHARE_VIEWER_URL           - Base URL for /share command (default: https://pi.dev/session/)
 
 ${chalk.bold("Built-in Tool Names:")}
   read              - Read file contents

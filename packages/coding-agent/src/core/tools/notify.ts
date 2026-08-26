@@ -5,17 +5,13 @@ import type { ToolDefinition } from "../extensions/types.ts";
 import { wrapToolDefinition } from "./tool-definition-wrapper.ts";
 
 const notifySchema = Type.Object({
-	subject: Type.String({
-		description: "Subject line of the email / notification (e.g. 'Nginx Log Monitoring Summary')",
-	}),
-	body: Type.String({ description: "Detailed message body or progress report" }),
+	subject: Type.String({ description: "Notification subject line" }),
+	body: Type.String({ description: "Message body or progress report" }),
 	severity: Type.Optional(
-		Type.String({ description: "Severity level: 'info', 'warning', 'critical', or 'summary'. Defaults to 'info'." }),
+		Type.String({ description: "Severity: 'info', 'warning', 'critical', or 'summary'. Default: 'info'" }),
 	),
-	to: Type.Optional(Type.String({ description: "Recipient email override (default: hiren.dave@ibm.com)" })),
-	from: Type.Optional(
-		Type.String({ description: "Sender email override (default: noreply@qforge.dev.fyre.ibm.com)" }),
-	),
+	to: Type.Optional(Type.String({ description: "Recipient email override" })),
+	from: Type.Optional(Type.String({ description: "Sender email override" })),
 });
 
 export type NotifyToolInput = Static<typeof notifySchema>;
@@ -118,24 +114,16 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 	return {
 		name: "send_notification",
 		label: "send_notification",
-		description:
-			"Send progress reports, alert digests, or final task summaries to the user via email / webhook. Keeps the user updated on autonomous operations.",
+		description: "Send progress reports, alerts, or task summaries to the user via email or webhook.",
 		promptSnippet: "Send progress updates and summaries via email or webhook",
-		promptGuidelines: [
-			"Use send_notification to update the user when completing milestones, discovering critical errors, or finishing monitoring summaries.",
-		],
+		promptGuidelines: [],
 		parameters: notifySchema,
 		async execute(_toolCallId, { subject, body, severity = "info", to, from }, _signal) {
-			const smtpHost = process.env.FORGE_SMTP_HOST || process.env.PI_SMTP_HOST || "localhost";
-			const smtpPort = parseInt(process.env.FORGE_SMTP_PORT || process.env.PI_SMTP_PORT || "25", 10);
-			const fromAddr =
-				from ||
-				process.env.FORGE_NOTIFICATION_FROM ||
-				process.env.PI_NOTIFICATION_FROM ||
-				"noreply@qforge.dev.fyre.ibm.com";
-			const toAddr =
-				to || process.env.FORGE_NOTIFICATION_TO || process.env.PI_NOTIFICATION_TO || "hiren.dave@ibm.com";
-			const webhookUrl = process.env.FORGE_NOTIFICATION_WEBHOOK || process.env.PI_NOTIFICATION_WEBHOOK;
+			const smtpHost = process.env.FORGE_SMTP_HOST || "localhost";
+			const smtpPort = parseInt(process.env.FORGE_SMTP_PORT || "25", 10);
+			const fromAddr = from || process.env.FORGE_NOTIFICATION_FROM || "noreply@qforge.dev.fyre.ibm.com";
+			const toAddr = to || process.env.FORGE_NOTIFICATION_TO || "hiren.dave@ibm.com";
+			const webhookUrl = process.env.FORGE_NOTIFICATION_WEBHOOK;
 
 			const results: string[] = [];
 

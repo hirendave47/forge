@@ -345,7 +345,7 @@ function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEn
 		return cacheRetention;
 	}
 	// Backend defaults apply when unset; only the legacy env opt-in is mapped.
-	const val = getProviderEnvValue("FORGE_CACHE_RETENTION", env) ?? getProviderEnvValue("PI_CACHE_RETENTION", env);
+	const val = getProviderEnvValue("FORGE_CACHE_RETENTION", env);
 	return val === "long" ? "long" : undefined;
 }
 

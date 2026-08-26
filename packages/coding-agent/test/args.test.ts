@@ -315,15 +315,20 @@ describe("parseArgs", () => {
 		});
 	});
 
-	describe("--no-context-files flag", () => {
-		test("parses --no-context-files flag", () => {
-			const result = parseArgs(["--no-context-files"]);
-			expect(result.noContextFiles).toBe(true);
+	describe("--context-files flag", () => {
+		test("context files are disabled by default", () => {
+			const result = parseArgs([]);
+			expect(result.noContextFiles).toBeUndefined();
 		});
 
-		test("parses -nc shorthand", () => {
-			const result = parseArgs(["-nc"]);
-			expect(result.noContextFiles).toBe(true);
+		test("parses --context-files flag", () => {
+			const result = parseArgs(["--context-files"]);
+			expect(result.noContextFiles).toBe(false);
+		});
+
+		test("parses -cf shorthand", () => {
+			const result = parseArgs(["-cf"]);
+			expect(result.noContextFiles).toBe(false);
 		});
 	});
 

@@ -71,5 +71,5 @@ if [[ ! -x "$dev_forge" ]]; then
 	exit 1
 fi
 
-export FORGE_EXPERIMENTAL="${FORGE_EXPERIMENTAL:-${PI_EXPERIMENTAL:-1}}"
+export FORGE_EXPERIMENTAL="${FORGE_EXPERIMENTAL:-1}"
 exec "$dev_forge" ${args[@]+"${args[@]}"}
