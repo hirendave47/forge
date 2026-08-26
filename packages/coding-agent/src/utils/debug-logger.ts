@@ -1,5 +1,7 @@
 import chalk from "chalk";
 
+const PAYLOAD_INDENT = "  ";
+
 /**
  * Format a date to `YYYY-MM-DD HH:mm:ss.SSS` timestamp string.
  */
@@ -56,4 +58,77 @@ export function logDebug(category: string, message: string, data?: unknown): voi
 	} else {
 		console.error(`${prefix} ${message}`);
 	}
+}
+
+/**
+ * Render a single content block to a human-readable string.
+ * Used for tracing actual tokens sent/received by the LLM.
+ */
+function renderContentBlock(block: { type: string; [key: string]: unknown }): string {
+	switch (block.type) {
+		case "text":
+			return String(block.text ?? "");
+		case "toolCall": {
+			const args =
+				block.arguments !== undefined
+					? typeof block.arguments === "string"
+						? block.arguments
+						: JSON.stringify(block.arguments, null, 2)
+					: "{}";
+			return `[tool_call id=${block.id} name=${block.name}]\n${args}`;
+		}
+		case "toolResult": {
+			const parts = Array.isArray(block.content)
+				? (block.content as Array<{ type: string; text?: string }>)
+						.filter((c) => c.type === "text")
+						.map((c) => c.text ?? "")
+						.join("")
+				: String(block.content ?? "");
+			return `[tool_result id=${block.toolCallId} name=${block.toolName} isError=${block.isError}]\n${parts}`;
+		}
+		case "thinking":
+			return `[thinking]\n${block.thinking ?? ""}`;
+		default:
+			return `[${block.type}] ${JSON.stringify(block)}`;
+	}
+}
+
+/**
+ * Print a multi-block payload (input context or output content) under a debug header.
+ * Each message is rendered as a labelled section.
+ */
+export function logDebugPayload(
+	category: string,
+	header: string,
+	messages: Array<{
+		role: string;
+		content?: unknown;
+		[key: string]: unknown;
+	}>,
+): void {
+	const time = formatDebugTimestamp();
+	const prefix = chalk.cyan(`[${time}] [DEBUG] [${category}]`);
+	const sep = chalk.dim("─".repeat(60));
+	console.error(`${prefix} ${header}`);
+	console.error(sep);
+	for (const msg of messages) {
+		const roleLabel = chalk.bold(`[${msg.role.toUpperCase()}]`);
+		const content = msg.content;
+		let rendered: string;
+		if (content === undefined || content === null) {
+			rendered = "";
+		} else if (typeof content === "string") {
+			rendered = content;
+		} else if (Array.isArray(content)) {
+			rendered = (content as Array<{ type: string; [key: string]: unknown }>).map(renderContentBlock).join("\n");
+		} else {
+			rendered = JSON.stringify(content);
+		}
+		const indented = rendered
+			.split("\n")
+			.map((line) => `${PAYLOAD_INDENT}${line}`)
+			.join("\n");
+		console.error(`${roleLabel}\n${indented}`);
+	}
+	console.error(sep);
 }

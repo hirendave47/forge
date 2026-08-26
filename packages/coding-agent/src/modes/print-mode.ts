@@ -9,7 +9,7 @@
 import type { AssistantMessage, ImageContent } from "@earendil-works/forge-ai";
 import type { AgentSessionRuntime } from "../core/agent-session-runtime.ts";
 import { flushRawStdout, waitForRawStdoutBackpressure, writeRawStdout } from "../core/output-guard.ts";
-import { formatTokenSummary, logDebug } from "../utils/debug-logger.ts";
+import { formatTokenSummary, logDebug, logDebugPayload } from "../utils/debug-logger.ts";
 import { killTrackedDetachedChildren } from "../utils/shell.ts";
 import { renderTerminalMarkdown } from "./interactive/theme/theme.ts";
 import { toJsonEvent } from "./json-event.ts";
@@ -146,10 +146,11 @@ export async function runPrintMode(runtimeHost: AgentSessionRuntime, options: Pr
 						`Tool '${event.toolName}' (id: ${event.toolCallId}) ${status} in ${toolDurationMs}ms (output size: ${resultLen} chars)`,
 					);
 				} else if (event.type === "message_end" && event.message.role === "assistant") {
-					const msg = event.message as {
+					const msg = event.message as unknown as {
 						model?: string;
 						provider?: string;
 						stopReason?: string;
+						content?: Array<{ type: string; [key: string]: unknown }>;
 						usage?: {
 							input?: number;
 							output?: number;
@@ -167,6 +168,32 @@ export async function runPrintMode(runtimeHost: AgentSessionRuntime, options: Pr
 							`Model '${msg.model ?? "default"}' completion (${msg.stopReason ?? "done"}) — ${summary}`,
 						);
 					}
+
+					// Dump actual input context (all messages before this assistant reply)
+					const allMessages = session.messages as unknown as Array<{
+						role: string;
+						content?: unknown;
+						[key: string]: unknown;
+					}>;
+					const assistantIdx = allMessages.lastIndexOf(event.message as never);
+					const inputMessages = assistantIdx >= 0 ? allMessages.slice(0, assistantIdx) : allMessages.slice(0, -1);
+					const systemPrompt = session.systemPrompt;
+					const inputPayload: Array<{ role: string; content?: unknown; [key: string]: unknown }> = [];
+					if (systemPrompt) {
+						inputPayload.push({ role: "system", content: systemPrompt });
+					}
+					inputPayload.push(...inputMessages);
+					logDebugPayload(
+						"llm_input",
+						`Input context (${inputPayload.length} messages sent to LLM)`,
+						inputPayload,
+					);
+
+					// Dump actual output content received from LLM
+					const outputPayload: Array<{ role: string; content?: unknown }> = [
+						{ role: "assistant", content: msg.content ?? [] },
+					];
+					logDebugPayload("llm_output", "Output content received from LLM", outputPayload);
 				} else if (event.type === "turn_end") {
 					logDebug("turn_end", `Turn ${turnCount} completed`);
 				} else if (event.type === "agent_end") {
