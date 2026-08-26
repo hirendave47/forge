@@ -13,6 +13,10 @@
 		"./cli": {
 			"types": "./dist/cli/index.d.ts",
 			"import": "./dist/cli/index.js"
+		},
+		"./*": {
+			"types": "./dist/*.d.ts",
+			"import": "./dist/*.js"
 		}
 	},
 	"scripts": {

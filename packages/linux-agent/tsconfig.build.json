@@ -3,8 +3,13 @@
 	"compilerOptions": {
 		"outDir": "./dist",
 		"rootDir": "./src",
-		"composite": true
+		"paths": {
+			"@earendil-works/forge-agent-core": ["../agent/dist/index.d.ts"],
+			"@earendil-works/forge-agent-core/*": ["../agent/dist/*.d.ts"],
+			"@earendil-works/forge-ai": ["../ai/dist/index.d.ts"],
+			"@earendil-works/forge-ai/*": ["../ai/dist/*.d.ts"]
+		}
 	},
-	"include": ["src/**/*.ts"],
+	"include": ["src/**/*.ts", "src/**/*.d.ts"],
 	"exclude": ["node_modules", "dist", "test"]
 }
