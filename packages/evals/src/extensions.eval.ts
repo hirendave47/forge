@@ -9,7 +9,7 @@ import { evalHarnessTable } from "./vitest-evals/harness-table.ts";
 type ExtensionAuthoringOutput = {
 	response: string;
 	systemPromptHasGuidelines: boolean;
-	systemPromptHasPiDocs: boolean;
+	systemPromptHasForgeDocs: boolean;
 	extensionErrors: Array<{ path: string; error: string }>;
 	loadedExtensions: Array<{ path: string; tools: string[] }>;
 	extensionSource: string | null;
@@ -22,15 +22,11 @@ function createExtensionAuthoringHarness(name: string, transformSystemPrompt?: (
 		output: ({ response, session }): ExtensionAuthoringOutput => {
 			const extensions = session.resourceLoader.getExtensions();
 			const forgeExtPath = join(session.sessionManager.getCwd(), ".forge", "extensions", "hello.ts");
-			const piExtPath = join(session.sessionManager.getCwd(), ".pi", "extensions", "hello.ts");
-			const extensionPath = existsSync(forgeExtPath) ? forgeExtPath : piExtPath;
-			const extensionSource = existsSync(extensionPath) ? readFileSync(extensionPath, "utf8") : null;
+			const extensionSource = existsSync(forgeExtPath) ? readFileSync(forgeExtPath, "utf8") : null;
 			return {
 				response,
 				systemPromptHasGuidelines: session.systemPrompt.includes("\nGuidelines:\n"),
-				systemPromptHasPiDocs:
-					session.systemPrompt.includes("\nForge documentation (read only") ||
-					session.systemPrompt.includes("\nPi documentation (read only"),
+				systemPromptHasForgeDocs: session.systemPrompt.includes("\nForge documentation (read only"),
 				extensionErrors: extensions.errors,
 				loadedExtensions: extensions.extensions.map(({ path, tools }) => ({
 					path,
@@ -101,14 +97,14 @@ const ExtensionAuthoringJudge = createJudge<ForgeCodingAgentInput, ExtensionAuth
 	},
 );
 
-const extensionHarnessTable = evalHarnessTable("Pi extension authoring system prompt", {
+const extensionHarnessTable = evalHarnessTable("Forge extension authoring system prompt", {
 	baseline: createExtensionAuthoringHarness("system-prompt-without-docs", excludeGuidelinesAndDocumentation),
 	candidate: createExtensionAuthoringHarness("default-system-prompt", prepareDefaultPromptOverride),
 });
 
 describe.for(extensionHarnessTable)("$name", ({ harness }) => {
 	describeEval(
-		"Pi extension authoring system prompt",
+		"Forge extension authoring system prompt",
 		{ harness, judges: [ExtensionAuthoringJudge], judgeThreshold: null },
 		(it) => {
 			it("creates, reloads, and uses a hello extension", async ({ run, task }) => {
@@ -127,7 +123,7 @@ describe.for(extensionHarnessTable)("$name", ({ harness }) => {
 				]);
 				if (result.output.extensionSource !== null) {
 					const runId = result.artifacts?.runId;
-					if (typeof runId !== "string") throw new Error("Pi eval run did not record a run ID.");
+					if (typeof runId !== "string") throw new Error("Forge eval run did not record a run ID.");
 					await recordEvalSourceArtifact(task, runId, {
 						name: "hello.ts",
 						contentType: "text/typescript",
@@ -137,7 +133,7 @@ describe.for(extensionHarnessTable)("$name", ({ harness }) => {
 				}
 				const expectsFullPrompt = harness.name === "default-system-prompt";
 				expect(result.output.systemPromptHasGuidelines).toBe(expectsFullPrompt);
-				expect(result.output.systemPromptHasPiDocs).toBe(expectsFullPrompt);
+				expect(result.output.systemPromptHasForgeDocs).toBe(expectsFullPrompt);
 			});
 		},
 	);

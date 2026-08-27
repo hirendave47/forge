@@ -1,4 +1,4 @@
-# Using Pi
+# Using Forge
 
 This page collects day-to-day usage details that do not fit on the quickstart page.
 
@@ -74,15 +74,15 @@ Configure delivery in [Settings](settings.md) with `steeringMode` and `followUpM
 
 ## Sessions
 
-Sessions are saved automatically to `~/.pi/agent/sessions/`, organized by working directory.
+Sessions are saved automatically to `~/.forge/agent/sessions/`, organized by working directory.
 
 ```bash
-pi -c                  # Continue most recent session
-pi -r                  # Browse and select a session
-pi --no-session        # Ephemeral mode; do not save
-pi --name "my task"    # Set session display name at startup
-pi --session <path|id> # Use a specific session file or session ID
-pi --fork <path|id>    # Fork a session into a new session file
+forge -c                  # Continue most recent session
+forge -r                  # Browse and select a session
+forge --no-session        # Ephemeral mode; do not save
+forge --name "my task"    # Set session display name at startup
+forge --session <path|id> # Use a specific session file or session ID
+forge --fork <path|id>    # Fork a session into a new session file
 ```
 
 Useful session commands:
@@ -97,9 +97,9 @@ See [Sessions](sessions.md) and [Compaction](compaction.md) for details.
 
 ## Context Files
 
-Pi loads `AGENTS.md` or `CLAUDE.md` at startup from:
+Forge loads `AGENTS.md` or `CLAUDE.md` at startup from:
 
-- `~/.pi/agent/AGENTS.md` for global instructions
+- `~/.forge/agent/AGENTS.md` for global instructions
 - parent directories, walking up from the current working directory
 - the current directory
 
@@ -111,24 +111,24 @@ Use context files for project conventions, commands, safety rules, and preferenc
 
 Replace the default system prompt with:
 
-- `.pi/SYSTEM.md` for a project
-- `~/.pi/agent/SYSTEM.md` globally
+- `.forge/SYSTEM.md` for a project
+- `~/.forge/agent/SYSTEM.md` globally
 
 Append to the default prompt without replacing it with `APPEND_SYSTEM.md` in either location.
 
 ### Project Trust
 
-On interactive startup, forge asks before trusting a project folder that contains project-local settings, resources, or project `.agents/skills` and has no saved decision for the folder or a parent folder in `~/.pi/agent/trust.json`. Trusting a project allows forge to load `.pi/settings.json` and `.pi` resources, install missing project packages, and execute project extensions.
+On interactive startup, forge asks before trusting a project folder that contains project-local settings, resources, or project `.agents/skills` and has no saved decision for the folder or a parent folder in `~/.forge/agent/trust.json`. Trusting a project allows forge to load `.forge/settings.json` and `.forge` resources, install missing project packages, and execute project extensions.
 
 Before the trust decision, forge loads only context files, user/global extensions, and CLI `-e` extensions so they can handle the `project_trust` event. Project-local extensions, project package-managed extensions, and project settings are loaded only after the project is trusted. This split also applies when switching to a session from a different cwd whose trust has not been resolved in the current process.
 
 Non-interactive modes (`-p`, `--mode json`, and `--mode rpc`) do not show a trust prompt. Without an applicable saved trust decision, they use `defaultProjectTrust` from global settings: `ask` (default) and `never` ignore those project resources, while `always` trusts them. Pass `--approve`/`-a` or `--no-approve`/`-na` to override project trust for one run.
 
-If no extension or saved decision applies, `defaultProjectTrust` controls the fallback behavior. Set it to `"ask"`, `"always"`, or `"never"` in `~/.pi/agent/settings.json`, or change it with `/settings`.
+If no extension or saved decision applies, `defaultProjectTrust` controls the fallback behavior. Set it to `"ask"`, `"always"`, or `"never"` in `~/.forge/agent/settings.json`, or change it with `/settings`.
 
-`pi config` and package commands use the same project trust flow, except `pi update` never prompts. Pass `--approve` to trust project-local settings for one command or `--no-approve` to ignore them.
+`forge config` and package commands use the same project trust flow, except `forge update` never prompts. Pass `--approve` to trust project-local settings for one command or `--no-approve` to ignore them.
 
-Use `/trust` in interactive mode to save a project trust decision for future sessions, including trust for the immediate parent folder. It writes `~/.pi/agent/trust.json` only; the current session is not reloaded, so restart forge for changes to take effect.
+Use `/trust` in interactive mode to save a project trust decision for future sessions, including trust for the immediate parent folder. It writes `~/.forge/agent/trust.json` only; the current session is not reloaded, so restart forge for changes to take effect.
 
 
 ## Exporting and Sharing Sessions
@@ -137,33 +137,33 @@ Use `/export [file]` to write a session to HTML.
 
 Use `/share` to upload a private GitHub gist with a shareable HTML link.
 
-If you use forge for open source work and want to publish sessions for model, prompt, tool, and evaluation research, see [`badlogic/pi-share-hf`](https://github.com/badlogic/pi-share-hf). It publishes sessions to Hugging Face datasets.
+If you use forge for open source work and want to publish sessions for model, prompt, tool, and evaluation research, see [`hirendave47/forge-share-hf`](https://github.com/hirendave47/forge-share-hf). It publishes sessions to Hugging Face datasets.
 
 ## CLI Reference
 
 ```bash
-pi [options] [--] [@files...] [messages...]
+forge [options] [--] [@files...] [messages...]
 ```
 
 ### Package Commands
 
 ```bash
-pi install <source> [-l]     # Install package, -l for project-local
-pi remove <source> [-l]      # Remove package
-pi uninstall <source> [-l]   # Alias for remove
-pi update [source|self|pi]   # Update forge only, or one package source
-pi update --all              # Update forge and packages; reconcile pinned git refs
-pi update --extensions       # Update packages only; reconcile pinned git refs
-pi update --models           # Refresh model catalogs only
-pi update --self             # Update forge only
-pi update --extension <src>  # Update one package
-pi list                      # List installed packages
-pi config                    # Enable/disable package resources
+forge install <source> [-l]     # Install package, -l for project-local
+forge remove <source> [-l]      # Remove package
+forge uninstall <source> [-l]   # Alias for remove
+forge update [source|self|forge]   # Update forge only, or one package source
+forge update --all              # Update forge and packages; reconcile pinned git refs
+forge update --extensions       # Update packages only; reconcile pinned git refs
+forge update --models           # Refresh model catalogs only
+forge update --self             # Update forge only
+forge update --extension <src>  # Update one package
+forge list                      # List installed packages
+forge config                    # Enable/disable package resources
 ```
 
-These commands manage forge packages and `pi update` can update the forge CLI installation. To uninstall forge itself, see [Quickstart](quickstart.md#uninstall). `pi config` and project package commands accept `--approve`/`--no-approve` to trust or ignore project-local settings for one command. `pi update` never prompts for project trust.
+These commands manage forge packages and `forge update` can update the forge CLI installation. To uninstall forge itself, see [Quickstart](quickstart.md#uninstall). `forge config` and project package commands accept `--approve`/`--no-approve` to trust or ignore project-local settings for one command. `forge update` never prompts for project trust.
 
-See [Pi Packages](packages.md) for package sources and security notes.
+See [Forge Packages](packages.md) for package sources and security notes.
 
 ### Modes
 
@@ -232,7 +232,7 @@ Built-in tools: `read`, `bash`, `powershell` (Windows), `edit`, `write`, `grep`,
 Combine `--no-*` with explicit flags to load exactly what you need, ignoring settings. Example:
 
 ```bash
-pi --no-extensions -e ./my-extension.ts
+forge --no-extensions -e ./my-extension.ts
 ```
 
 ### Other Options
@@ -259,52 +259,52 @@ Set **TUI mode** in `/settings` to switch between `regular` and `fullscreen` imm
 Prefix files with `@` to include them in the message:
 
 ```bash
-pi @prompt.md "Answer this"
-pi -p @screenshot.png "What's in this image?"
-pi @code.ts @test.ts "Review these files"
+forge @prompt.md "Answer this"
+forge -p @screenshot.png "What's in this image?"
+forge @code.ts @test.ts "Review these files"
 ```
 
 ### Examples
 
 ```bash
 # Interactive with initial prompt
-pi "List all .ts files in src/"
+forge "List all .ts files in src/"
 
 # Non-interactive
-pi -p "Summarize this codebase"
+forge -p "Summarize this codebase"
 
 # Prompt beginning with a dash
-pi -p -- "- Summarize these points"
+forge -p -- "- Summarize these points"
 
 # Non-interactive with piped stdin
 cat README.md | forge -p "Summarize this text"
 
 # Named one-shot session
-pi --name "release audit" -p "Audit this repository"
+forge --name "release audit" -p "Audit this repository"
 
 # Different model
-pi --provider openai --model gpt-4o "Help me refactor"
+forge --provider openai --model gpt-4o "Help me refactor"
 
 # Model with provider prefix
-pi --model openai/gpt-4o "Help me refactor"
+forge --model openai/gpt-4o "Help me refactor"
 
 # Model with thinking level shorthand
-pi --model sonnet:high "Solve this complex problem"
+forge --model sonnet:high "Solve this complex problem"
 
 # Limit model cycling
-pi --models "claude-*,gpt-4o"
+forge --models "claude-*,gpt-4o"
 
 # Read-only mode
-pi --tools read,grep,find,ls -p "Review the code"
+forge --tools read,grep,find,ls -p "Review the code"
 
 # Disable one extension or built-in tool while keeping the rest available
-pi --exclude-tools ask_question
+forge --exclude-tools ask_question
 ```
 
 ## Design Principles
 
-Pi keeps the core small and pushes workflow-specific behavior into extensions, skills, prompt templates, and packages.
+Forge keeps the core small and pushes workflow-specific behavior into extensions, skills, prompt templates, and packages.
 
 It intentionally does not include built-in MCP, sub-agents, permission popups, plan mode, to-dos, or background bash. You can build or install those workflows as extensions or packages, or use external tools such as containers and tmux.
 
-For the full rationale, read the [blog post](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/).
+For the full rationale, read the [blog post](https://mariozechner.at/posts/2025-11-30-forge-coding-agent/).

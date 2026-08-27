@@ -1,6 +1,6 @@
 # Forge evals
 
-Pi evals are behavioral, model-backed checks for Forge workflows. They adapt a real `AgentSession` to `vitest-evals`, run
+Forge evals are behavioral, model-backed checks for Forge workflows. They adapt a real `AgentSession` to `vitest-evals`, run
 it in isolated temporary project and agent directories, and attach native Forge session artifacts.
 Use them to measure end-to-end behavior and compare prompts, tools, skills, models, or other harness configurations.
 
@@ -19,7 +19,7 @@ FORGE_PROVIDER=openai FORGE_MODEL=gpt-5.6-sol npm run eval
 ```
 
 CLI values take precedence and become defaults for harnesses that do not select a model explicitly. Provider and model must be supplied together. The runner also allows no default when every executed harness configures its own model.
-Authentication comes from Pi's normal `ModelRuntime`, including Forge subscription credentials and provider API-key
+Authentication comes from Forge's normal `ModelRuntime`, including Forge subscription credentials and provider API-key
 environment variables.
 
 Additional arguments are forwarded to Vitest:
@@ -36,17 +36,17 @@ output.
 ## Writing evals
 
 Follow [`vitest-evals`](https://github.com/getsentry/vitest-evals) for general suite, judge, assertion, and normalized
-trace guidance. Pi-specific evals use `createPiCodingAgentHarness(...)` from `src/pi-harness.ts`, with one harness bound
+trace guidance. Forge-specific evals use `createForgeCodingAgentHarness(...)` from `src/forge-harness.ts`, with one harness bound
 to each `describeEval(...)` suite:
 
 ```ts
 import { expect } from "vitest";
 import { describeEval } from "vitest-evals";
-import { createPiCodingAgentHarness } from "./pi-harness.ts";
+import { createForgeCodingAgentHarness } from "./forge-harness.ts";
 
-const harness = createPiCodingAgentHarness({ noTools: "all" });
+const harness = createForgeCodingAgentHarness({ noTools: "all" });
 
-describeEval("Pi smoke", { harness }, (it) => {
+describeEval("Forge smoke", { harness }, (it) => {
 	it("answers a factual question", async ({ run }) => {
 		const result = await run("What is the capital of France? Reply with only the city name.");
 		expect(result.output).toBe("Paris");
@@ -56,18 +56,18 @@ describeEval("Pi smoke", { harness }, (it) => {
 
 ### Configuring the Forge harness
 
-`createPiCodingAgentHarness(...)` accepts:
+`createForgeCodingAgentHarness(...)` accepts:
 
 - `name`: stable harness identity used by reports and comparisons.
 - `model`: optional `{ provider, id }` selection. It overrides the runner's default model.
-- `noTools`: Pi's tool-disable configuration.
+- `noTools`: Forge's tool-disable configuration.
 - `transformSystemPrompt`: transforms the complete default prompt before the eval starts.
 - `output`: transforms the final response and `AgentSession` into a JSON-safe domain result.
 
 An explicitly selected model makes model-comparison harnesses independent of the runner default:
 
 ```ts
-const harness = createPiCodingAgentHarness({
+const harness = createForgeCodingAgentHarness({
 	name: "claude-opus-4-6",
 	model: { provider: "anthropic", id: "claude-opus-4-6" },
 });
@@ -89,7 +89,7 @@ const result = await run([
 Use `output` to expose scenario-specific, JSON-safe behavior without adding that behavior to the generic Forge adapter:
 
 ```ts
-const harness = createPiCodingAgentHarness({
+const harness = createForgeCodingAgentHarness({
 	output: ({ response, session }) => ({
 		response,
 		activeTools: session.getActiveToolNames(),

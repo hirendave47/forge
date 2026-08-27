@@ -13,7 +13,7 @@ export class PiServerError extends Error {
 }
 
 export class PiDisconnectedError extends Error {
-	constructor(message = "Pi client is disconnected") {
+	constructor(message = "Forge client is disconnected") {
 		super(message);
 		this.name = "PiDisconnectedError";
 	}
@@ -21,7 +21,7 @@ export class PiDisconnectedError extends Error {
 
 export class PiClientDisposedError extends Error {
 	constructor() {
-		super("Pi client is disposed");
+		super("Forge client is disposed");
 		this.name = "PiClientDisposedError";
 	}
 }

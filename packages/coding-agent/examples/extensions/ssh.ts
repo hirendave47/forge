@@ -111,8 +111,8 @@ function createRemoteBashOps(remote: string, remoteCwd: string, localCwd: string
 	};
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerFlag("ssh", { description: "SSH remote: user@host or user@host:/path", type: "string" });
+export default function (forge: ExtensionAPI) {
+	forge.registerFlag("ssh", { description: "SSH remote: user@host or user@host:/path", type: "string" });
 
 	const localCwd = process.cwd();
 	const localRead = createReadTool(localCwd);
@@ -125,7 +125,7 @@ export default function (pi: ExtensionAPI) {
 
 	const getSsh = () => resolvedSsh;
 
-	pi.registerTool({
+	forge.registerTool({
 		...localRead,
 		async execute(id, params, signal, onUpdate, _ctx) {
 			const ssh = getSsh();
@@ -139,7 +139,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	forge.registerTool({
 		...localWrite,
 		async execute(id, params, signal, onUpdate, _ctx) {
 			const ssh = getSsh();
@@ -153,7 +153,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	forge.registerTool({
 		...localEdit,
 		async execute(id, params, signal, onUpdate, _ctx) {
 			const ssh = getSsh();
@@ -167,7 +167,7 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerTool({
+	forge.registerTool({
 		...localBash,
 		async execute(id, params, signal, onUpdate, _ctx) {
 			const ssh = getSsh();
@@ -181,9 +181,9 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.on("session_start", async (_event, ctx) => {
+	forge.on("session_start", async (_event, ctx) => {
 		// Resolve SSH config now that CLI flags are available
-		const arg = pi.getFlag("ssh") as string | undefined;
+		const arg = forge.getFlag("ssh") as string | undefined;
 		if (arg) {
 			if (arg.includes(":")) {
 				const [remote, path] = arg.split(":");
@@ -200,14 +200,14 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Handle user ! commands via SSH
-	pi.on("user_bash", (_event) => {
+	forge.on("user_bash", (_event) => {
 		const ssh = getSsh();
 		if (!ssh) return; // No SSH, use local execution
 		return { operations: createRemoteBashOps(ssh.remote, ssh.remoteCwd, localCwd) };
 	});
 
 	// Replace local cwd with remote cwd in system prompt
-	pi.on("before_agent_start", async (event) => {
+	forge.on("before_agent_start", async (event) => {
 		const ssh = getSsh();
 		if (ssh) {
 			const modified = event.systemPrompt.replace(

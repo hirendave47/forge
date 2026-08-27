@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { streamSimple as streamAnthropic } from "../src/api/anthropic-messages.ts";
 import { streamSimple as streamAzureOpenAIResponses } from "../src/api/azure-openai-responses.ts";
-import { streamSimple as streamPiMessages } from "../src/api/forge-messages.ts";
+import { streamSimple as streamForgeMessages } from "../src/api/forge-messages.ts";
 import { streamSimple as streamGoogleGenerativeAI } from "../src/api/google-generative-ai.ts";
 import { streamSimple as streamGoogleVertex } from "../src/api/google-vertex.ts";
 import { streamSimple as streamMistral } from "../src/api/mistral-conversations.ts";
@@ -99,7 +99,7 @@ describe("fetch stream option", () => {
 		expect(globalThis.fetch).toBe(fallback);
 	});
 
-	it("uses fetch for Mistral, Codex SSE, and pi-messages HTTP requests", async () => {
+	it("uses fetch for Mistral, Codex SSE, and forge-messages HTTP requests", async () => {
 		const { custom, fallback } = mockFetches();
 		await streamMistral(createModel("mistral-conversations"), context, {
 			apiKey: "test-key",
@@ -111,7 +111,7 @@ describe("fetch stream option", () => {
 			transport: "sse",
 			maxRetries: 0,
 		}).result();
-		await streamPiMessages(createModel("pi-messages"), context, {
+		await streamForgeMessages(createModel("forge-messages"), context, {
 			apiKey: "test-key",
 			fetch: custom,
 		}).result();

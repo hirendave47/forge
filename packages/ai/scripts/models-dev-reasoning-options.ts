@@ -11,7 +11,7 @@ export type ModelsDevReasoningOption =
 const THINKING_LEVELS: readonly ThinkingLevel[] = ["minimal", "low", "medium", "high", "xhigh", "max"];
 
 /**
- * Converts models.dev verified effort values into Pi's selectable thinking levels.
+ * Converts models.dev verified effort values into Forge's selectable thinking levels.
  * Values without a Forge equivalent (`default` and JSON `null`) are intentionally
  * omitted.
  */

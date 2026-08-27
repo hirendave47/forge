@@ -75,7 +75,7 @@ describe("credential print commands", () => {
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stderr).toContain('Unknown option --credentails for "auth check".');
 			expect(stderr).toMatch(
-				/Use "(pi|forge) --help" or "(pi|forge) auth check --provider <provider> \[--json\] \[--credentials\] \[--no-refresh\]"/,
+				/Use "forge --help" or "forge auth check --provider <provider> \[--json\] \[--credentials\] \[--no-refresh\]"/,
 			);
 			expect(process.exitCode).toBe(1);
 		} finally {

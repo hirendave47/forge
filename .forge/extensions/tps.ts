@@ -7,14 +7,14 @@ function isAssistantMessage(message: unknown): message is AssistantMessage {
 	return role === "assistant";
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (forge: ExtensionAPI) {
 	let agentStartMs: number | null = null;
 
-	pi.on("agent_start", () => {
+	forge.on("agent_start", () => {
 		agentStartMs = Date.now();
 	});
 
-	pi.on("agent_end", (event, ctx) => {
+	forge.on("agent_end", (event, ctx) => {
 		if (!ctx.hasUI) return;
 		if (agentStartMs === null) return;
 

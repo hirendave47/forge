@@ -41,8 +41,7 @@
 		}
 	},
 	"bin": {
-		"forge-ai": "dist/cli.js",
-		"pi-ai": "dist/cli.js"
+		"forge-ai": "dist/cli.js"
 	},
 	"files": [
 		"dist",

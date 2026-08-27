@@ -8,12 +8,12 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/forge-coding-agent";
 
 async function checkDirtyRepo(
-	pi: ExtensionAPI,
+	forge: ExtensionAPI,
 	ctx: ExtensionContext,
 	action: string,
 ): Promise<{ cancel: boolean } | undefined> {
 	// Check for uncommitted changes
-	const { stdout, code } = await pi.exec("git", ["status", "--porcelain"]);
+	const { stdout, code } = await forge.exec("git", ["status", "--porcelain"]);
 
 	if (code !== 0) {
 		// Not a git repo, allow the action
@@ -44,13 +44,13 @@ async function checkDirtyRepo(
 	}
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_before_switch", async (event, ctx) => {
+export default function (forge: ExtensionAPI) {
+	forge.on("session_before_switch", async (event, ctx) => {
 		const action = event.reason === "new" ? "new session" : "switch session";
-		return checkDirtyRepo(pi, ctx, action);
+		return checkDirtyRepo(forge, ctx, action);
 	});
 
-	pi.on("session_before_fork", async (_event, ctx) => {
-		return checkDirtyRepo(pi, ctx, "fork");
+	forge.on("session_before_fork", async (_event, ctx) => {
+		return checkDirtyRepo(forge, ctx, "fork");
 	});
 }

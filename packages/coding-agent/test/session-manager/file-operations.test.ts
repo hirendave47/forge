@@ -335,9 +335,7 @@ describe("SessionManager.setSessionFile with corrupted files", () => {
 			'{"type":"message","id":"abc","parentId":"orphaned","timestamp":"2025-01-01T00:00:00Z","message":{"role":"assistant","content":"test"}}\n';
 		writeFileSync(noHeaderFile, originalContent);
 
-		expect(() => SessionManager.open(noHeaderFile, tempDir)).toThrow(
-			/Session file is not a valid (pi|forge) session:/,
-		);
+		expect(() => SessionManager.open(noHeaderFile, tempDir)).toThrow(/Session file is not a valid forge session:/);
 		expect(readFileSync(noHeaderFile, "utf-8")).toBe(originalContent);
 	});
 
@@ -346,9 +344,7 @@ describe("SessionManager.setSessionFile with corrupted files", () => {
 		const originalContent = '{"type":"event","data":"not a session"}\n';
 		writeFileSync(nonSessionFile, originalContent);
 
-		expect(() => SessionManager.open(nonSessionFile, tempDir)).toThrow(
-			/Session file is not a valid (pi|forge) session:/,
-		);
+		expect(() => SessionManager.open(nonSessionFile, tempDir)).toThrow(/Session file is not a valid forge session:/);
 		expect(readFileSync(nonSessionFile, "utf-8")).toBe(originalContent);
 	});
 

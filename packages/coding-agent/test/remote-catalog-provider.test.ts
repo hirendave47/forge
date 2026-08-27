@@ -42,7 +42,7 @@ function testProvider(localGeneratedAt?: number) {
 				},
 			},
 		}),
-		"https://pi.dev",
+		"https://forge.dev",
 		localGeneratedAt,
 	);
 }
@@ -89,7 +89,7 @@ describe("remote catalog provider", () => {
 		expect((await store.read(provider.id))?.models.map((entry) => entry.id)).toEqual(["dynamic"]);
 		expect(fetchSpy).toHaveBeenCalledTimes(2);
 		expect(fetchSpy.mock.calls[0]?.[1]?.headers).toMatchObject({
-			"User-Agent": expect.stringMatching(/^(pi|forge)\//),
+			"User-Agent": expect.stringMatching(/^forge\//),
 		});
 	});
 
@@ -228,7 +228,7 @@ describe("remote catalog provider", () => {
 		expect((await store.read(provider.id))?.models.map((entry) => entry.id)).toEqual(["newer"]);
 	});
 
-	it("treats unimplemented pi.dev catalog routes as an unavailable overlay", async () => {
+	it("treats unimplemented forge.dev catalog routes as an unavailable overlay", async () => {
 		vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("not implemented", { status: 501 }));
 		const provider = testProvider();
 		const store = new InMemoryModelsStore();

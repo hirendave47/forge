@@ -334,7 +334,7 @@ export function getSelfUpdateUnavailableInstruction(
 	const method = detectInstallMethod();
 	const target = normalizeSelfUpdatePackageTarget(updatePackageTarget);
 	if (method === "bun-binary") {
-		return `Download from: https://github.com/earendil-works/pi-mono/releases/latest`;
+		return `Download from: https://github.com/hirendave47/forge/releases/latest`;
 	}
 	const command = getSelfUpdateCommandForMethod(method, packageName, target, npmCommand);
 	if (command) {
@@ -497,7 +497,7 @@ try {
 	if (err.code !== "ENOENT") throw e;
 }
 
-const configObj = pkg.forgeConfig ?? pkg.piConfig;
+const configObj = pkg.forgeConfig;
 const configName: string | undefined = configObj?.name;
 export const PACKAGE_NAME: string = pkg.name || "@earendil-works/forge-coding-agent";
 export const APP_NAME: string = configName || "forge";
@@ -513,7 +513,7 @@ export function expandTildePath(path: string): string {
 	return normalizePath(path);
 }
 
-const DEFAULT_SHARE_VIEWER_URL = "https://pi.dev/session/";
+const DEFAULT_SHARE_VIEWER_URL = "https://forge.dev/session/";
 
 /** Get the share viewer URL for a gist ID. */
 export function getShareViewerUrl(gistId: string): string {

@@ -25,7 +25,7 @@ describe("SettingsManager - External Edit Preservation", () => {
 			rmSync(testDir, { recursive: true });
 		}
 		mkdirSync(agentDir, { recursive: true });
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
 	});
 
 	afterEach(() => {
@@ -42,15 +42,15 @@ describe("SettingsManager - External Edit Preservation", () => {
 			settingsPath,
 			JSON.stringify({
 				theme: "dark",
-				packages: ["npm:pi-mcp-adapter"],
+				packages: ["npm:forge-mcp-adapter"],
 			}),
 		);
 
 		// Forge starts up, loads settings into memory
 		const manager = SettingsManager.create(projectDir, agentDir);
 
-		// At this point, globalSettings.packages = ["npm:pi-mcp-adapter"]
-		expect(manager.getPackages()).toEqual(["npm:pi-mcp-adapter"]);
+		// At this point, globalSettings.packages = ["npm:forge-mcp-adapter"]
+		expect(manager.getPackages()).toEqual(["npm:forge-mcp-adapter"]);
 
 		// User externally edits settings.json to remove the package
 		const currentSettings = JSON.parse(readFileSync(settingsPath, "utf-8"));
@@ -100,7 +100,7 @@ describe("SettingsManager - External Edit Preservation", () => {
 	});
 
 	it("should preserve external project settings changes when updating unrelated project field", async () => {
-		const projectSettingsPath = join(projectDir, ".pi", "settings.json");
+		const projectSettingsPath = join(projectDir, ".forge", "settings.json");
 		writeFileSync(
 			projectSettingsPath,
 			JSON.stringify({
@@ -124,7 +124,7 @@ describe("SettingsManager - External Edit Preservation", () => {
 	});
 
 	it("should let in-memory project changes override external changes for the same project field", async () => {
-		const projectSettingsPath = join(projectDir, ".pi", "settings.json");
+		const projectSettingsPath = join(projectDir, ".forge", "settings.json");
 		writeFileSync(
 			projectSettingsPath,
 			JSON.stringify({

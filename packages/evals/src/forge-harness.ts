@@ -126,7 +126,7 @@ async function runPiCodingAgent<TOutput extends JsonValue>(
 	const model = modelRuntime.getModel(selection.provider, selection.id);
 	if (!model) throw new Error(`Eval model not found: ${selection.provider}/${selection.id}`);
 
-	const root = await mkdtemp(join(tmpdir(), "pi-eval-"));
+	const root = await mkdtemp(join(tmpdir(), "forge-eval-"));
 	const cwd = join(root, "workspace");
 	const agentDir = join(root, "agent");
 	let transformedSystemPrompt: string | undefined;
@@ -182,7 +182,7 @@ async function runPiCodingAgent<TOutput extends JsonValue>(
 					await evalSession.reload();
 				}
 			}
-			if (response === undefined) throw new Error("Pi eval input must include at least one prompt step.");
+			if (response === undefined) throw new Error("Forge eval input must include at least one prompt step.");
 			const output = "output" in options ? await options.output({ response, session: evalSession }) : response;
 			const stats = evalSession.getSessionStats();
 			const hasPricing = [model.cost, ...(model.cost.tiers ?? [])].some(
@@ -264,5 +264,3 @@ export function createForgeCodingAgentHarness<TOutput extends JsonValue>(
 		run: ({ input, signal, setArtifact }) => runPiCodingAgent(input, signal, setArtifact, options),
 	});
 }
-
-export const createPiCodingAgentHarness = createForgeCodingAgentHarness;

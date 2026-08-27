@@ -63,7 +63,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	let tempDir: string;
 
 	beforeEach(async () => {
-		tempDir = join(tmpdir(), `pi-concurrent-test-${Date.now()}`);
+		tempDir = join(tmpdir(), `forge-concurrent-test-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 	});
 
@@ -240,11 +240,11 @@ describe("AgentSession concurrent prompt guard", () => {
 		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
 
 		const extensionsResult = await createTestExtensionsResult([
-			(pi) => {
-				(globalThis as typeof globalThis & { testExtensionApi?: unknown }).testExtensionApi = pi;
+			(forge) => {
+				(globalThis as typeof globalThis & { testExtensionApi?: unknown }).testExtensionApi = forge;
 			},
-			(pi) => {
-				pi.on("input", async (event) => {
+			(forge) => {
+				forge.on("input", async (event) => {
 					lastInputSource = event.source;
 				});
 			},
@@ -268,16 +268,16 @@ describe("AgentSession concurrent prompt guard", () => {
 		await new Promise((resolve) => setTimeout(resolve, 10));
 		expect(session.isStreaming).toBe(true);
 
-		const pi = (
+		const forge = (
 			globalThis as typeof globalThis & {
 				testExtensionApi?: {
 					sendUserMessage: (content: string, options?: { deliverAs?: "steer" | "followUp" }) => void;
 				};
 			}
 		).testExtensionApi;
-		expect(pi).toBeDefined();
+		expect(forge).toBeDefined();
 
-		pi!.sendUserMessage("Steer from extension", { deliverAs: "steer" });
+		forge!.sendUserMessage("Steer from extension", { deliverAs: "steer" });
 		await new Promise((resolve) => setTimeout(resolve, 25));
 
 		expect(session.pendingMessageCount).toBe(1);

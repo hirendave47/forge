@@ -12,10 +12,10 @@ import type { AssistantMessage } from "@earendil-works/forge-ai";
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/forge-tui";
 
-export default function (pi: ExtensionAPI) {
+export default function (forge: ExtensionAPI) {
 	let enabled = false;
 
-	pi.registerCommand("footer", {
+	forge.registerCommand("footer", {
 		description: "Toggle custom footer",
 		handler: async (_args, ctx) => {
 			enabled = !enabled;

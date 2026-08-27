@@ -143,7 +143,7 @@ describe("xAI Responses provider", () => {
 			},
 			{
 				apiKey: "xai-test-token",
-				sessionId: "pi-session-123",
+				sessionId: "forge-session-123",
 				cacheRetention: "long",
 				reasoningEffort: "medium",
 			},
@@ -152,12 +152,12 @@ describe("xAI Responses provider", () => {
 		expect(captured.url).toBe("https://api.x.ai/v1/responses");
 		expect(captured.headers.get("authorization")).toBe("Bearer xai-test-token");
 		expect(captured.headers.get("user-agent")).toBe(FORGE_USER_AGENT);
-		expect(captured.headers.get("session_id")).toBe("pi-session-123");
+		expect(captured.headers.get("session_id")).toBe("forge-session-123");
 		expect(captured.body).toMatchObject({
 			model: "grok-4.5",
 			store: false,
 			stream: true,
-			prompt_cache_key: "pi-session-123",
+			prompt_cache_key: "forge-session-123",
 			reasoning: { effort: "medium" },
 			include: ["reasoning.encrypted_content"],
 		});
@@ -231,7 +231,7 @@ describe("xAI Responses provider", () => {
 		});
 	});
 
-	it("uses pi's User-Agent by default for Responses requests", async () => {
+	it("uses forge's User-Agent by default for Responses requests", async () => {
 		let userAgent: string | null = null;
 		vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
 			userAgent = new Request(input, init).headers.get("user-agent");
@@ -263,7 +263,7 @@ describe("xAI Responses provider", () => {
 		expect(captured.headers.get("user-agent")).toBe("custom-agent");
 	});
 
-	it("uses pi's User-Agent by default for Completions requests", async () => {
+	it("uses forge's User-Agent by default for Completions requests", async () => {
 		expect(await captureCompletionsUserAgent()).toBe(FORGE_USER_AGENT);
 	});
 

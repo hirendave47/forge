@@ -28,8 +28,8 @@ describe("pre-prompt compaction regression", () => {
 			models: [{ id: "faux-1", contextWindow: 100, maxTokens: 100 }],
 			settings: { compaction: { enabled: true, keepRecentTokens: 1, reserveTokens: 0 } },
 			extensionFactories: [
-				(pi) => {
-					pi.on("session_before_compact", async (event) => ({
+				(forge) => {
+					forge.on("session_before_compact", async (event) => ({
 						compaction: {
 							summary: "pre-prompt summary",
 							firstKeptEntryId: event.preparation.firstKeptEntryId,

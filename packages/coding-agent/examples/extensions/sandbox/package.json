@@ -1,5 +1,5 @@
 {
-	"name": "pi-extension-sandbox",
+	"name": "forge-extension-sandbox",
 	"private": true,
 	"version": "1.14.3",
 	"type": "module",
@@ -8,7 +8,7 @@
 		"build": "echo 'nothing to build'",
 		"check": "echo 'nothing to check'"
 	},
-	"pi": {
+	"forge": {
 		"extensions": [
 			"./index.ts"
 		]

@@ -6,7 +6,7 @@
 
 Schema version: 1
 
-### `pi.ai.request`
+### `forge.ai.request`
 
 One logical request to an AI provider
 
@@ -18,12 +18,12 @@ One logical request to an AI provider
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.ai.operation` | `string` | yes | stream, fetch_deferred, cancel_deferred, generate_images |  | Logical provider operation |
-| `pi.ai.provider` | `string` | yes |  |  | Selected provider id |
-| `pi.ai.model` | `string` | yes |  |  | Requested model id |
-| `pi.ai.api` | `string` | yes |  |  | Provider API id |
-| `pi.ai.streaming` | `boolean` | yes |  |  | Whether this operation returns a stream |
-| `pi.ai.deferred` | `boolean` | no |  |  | Whether the operation requests or participates in deferred execution |
+| `forge.ai.operation` | `string` | yes | stream, fetch_deferred, cancel_deferred, generate_images |  | Logical provider operation |
+| `forge.ai.provider` | `string` | yes |  |  | Selected provider id |
+| `forge.ai.model` | `string` | yes |  |  | Requested model id |
+| `forge.ai.api` | `string` | yes |  |  | Provider API id |
+| `forge.ai.streaming` | `boolean` | yes |  |  | Whether this operation returns a stream |
+| `forge.ai.deferred` | `boolean` | no |  |  | Whether the operation requests or participates in deferred execution |
 
 #### End attributes
 
@@ -31,20 +31,20 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.ai.response.model` | `string` |  |  | Concrete response model |
-| `pi.ai.response.id` | `string` |  | high cardinality | Provider response id |
-| `pi.ai.response.stop_reason` | `string` | stop, length, tool_use, error, aborted, deferred |  | Normalized terminal response reason |
-| `pi.ai.http.status_code` | `number` |  |  | Final HTTP status |
-| `pi.ai.usage.input_tokens` | `number` |  |  | Reported input tokens |
-| `pi.ai.usage.output_tokens` | `number` |  |  | Reported output tokens |
-| `pi.ai.usage.cache_read_tokens` | `number` |  |  | Reported cache-read tokens |
-| `pi.ai.usage.cache_write_tokens` | `number` |  |  | Reported cache-write tokens |
-| `pi.ai.usage.reasoning_tokens` | `number` |  |  | Reported reasoning tokens |
-| `pi.ai.usage.total_tokens` | `number` |  |  | Reported total tokens |
-| `pi.ai.usage.cost` | `number` |  |  | Reported total cost |
-| `pi.ai.stream.chunk_count` | `number` |  |  | Streamed update chunk count |
-| `pi.ai.stream.time_to_first_chunk_ms` | `number` |  |  | Elapsed milliseconds to first update chunk |
-| `pi.ai.error.type` | `string` |  | low cardinality | Provider or transport error class |
+| `forge.ai.response.model` | `string` |  |  | Concrete response model |
+| `forge.ai.response.id` | `string` |  | high cardinality | Provider response id |
+| `forge.ai.response.stop_reason` | `string` | stop, length, tool_use, error, aborted, deferred |  | Normalized terminal response reason |
+| `forge.ai.http.status_code` | `number` |  |  | Final HTTP status |
+| `forge.ai.usage.input_tokens` | `number` |  |  | Reported input tokens |
+| `forge.ai.usage.output_tokens` | `number` |  |  | Reported output tokens |
+| `forge.ai.usage.cache_read_tokens` | `number` |  |  | Reported cache-read tokens |
+| `forge.ai.usage.cache_write_tokens` | `number` |  |  | Reported cache-write tokens |
+| `forge.ai.usage.reasoning_tokens` | `number` |  |  | Reported reasoning tokens |
+| `forge.ai.usage.total_tokens` | `number` |  |  | Reported total tokens |
+| `forge.ai.usage.cost` | `number` |  |  | Reported total cost |
+| `forge.ai.stream.chunk_count` | `number` |  |  | Streamed update chunk count |
+| `forge.ai.stream.time_to_first_chunk_ms` | `number` |  |  | Elapsed milliseconds to first update chunk |
+| `forge.ai.error.type` | `string` |  | low cardinality | Provider or transport error class |
 
 #### Events
 
@@ -54,7 +54,7 @@ No declared span events.
 
 Schema version: 1
 
-### `pi.harness.run`
+### `forge.harness.run`
 
 One admitted in-process run invocation
 
@@ -66,11 +66,11 @@ One admitted in-process run invocation
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.session.id` | `string` | yes |  | high cardinality | Session id |
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
-| `pi.operation.recovery` | `boolean` | yes |  |  | Whether this invocation resumes durable work |
-| `pi.operation.kind` | `string` | yes | run |  | Run operation kind |
+| `forge.session.id` | `string` | yes |  | high cardinality | Session id |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
+| `forge.operation.recovery` | `boolean` | yes |  |  | Whether this invocation resumes durable work |
+| `forge.operation.kind` | `string` | yes | run |  | Run operation kind |
 
 #### End attributes
 
@@ -78,15 +78,15 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.operation.outcome` | `string` | completed, aborted, failed, suspended |  | Run invocation outcome |
-| `pi.error.code` | `string` |  | low cardinality | Stable operation error code |
-| `pi.error.type` | `string` |  | low cardinality | Low-cardinality operation error class |
+| `forge.operation.outcome` | `string` | completed, aborted, failed, suspended |  | Run invocation outcome |
+| `forge.error.code` | `string` |  | low cardinality | Stable operation error code |
+| `forge.error.type` | `string` |  | low cardinality | Low-cardinality operation error class |
 
 #### Events
 
 No declared span events.
 
-### `pi.harness.compaction`
+### `forge.harness.compaction`
 
 One admitted in-process manual compaction invocation
 
@@ -98,11 +98,11 @@ One admitted in-process manual compaction invocation
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.session.id` | `string` | yes |  | high cardinality | Session id |
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
-| `pi.operation.recovery` | `boolean` | yes |  |  | Whether this invocation resumes durable work |
-| `pi.operation.kind` | `string` | yes | compaction |  | Compaction operation kind |
+| `forge.session.id` | `string` | yes |  | high cardinality | Session id |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
+| `forge.operation.recovery` | `boolean` | yes |  |  | Whether this invocation resumes durable work |
+| `forge.operation.kind` | `string` | yes | compaction |  | Compaction operation kind |
 
 #### End attributes
 
@@ -110,15 +110,15 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.operation.outcome` | `string` | completed, declined, aborted, failed |  | Compaction invocation outcome |
-| `pi.error.code` | `string` |  | low cardinality | Stable operation error code |
-| `pi.error.type` | `string` |  | low cardinality | Low-cardinality operation error class |
+| `forge.operation.outcome` | `string` | completed, declined, aborted, failed |  | Compaction invocation outcome |
+| `forge.error.code` | `string` |  | low cardinality | Stable operation error code |
+| `forge.error.type` | `string` |  | low cardinality | Low-cardinality operation error class |
 
 #### Events
 
 No declared span events.
 
-### `pi.harness.navigation`
+### `forge.harness.navigation`
 
 One admitted in-process navigation invocation
 
@@ -130,11 +130,11 @@ One admitted in-process navigation invocation
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.session.id` | `string` | yes |  | high cardinality | Session id |
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
-| `pi.operation.recovery` | `boolean` | yes |  |  | Whether this invocation resumes durable work |
-| `pi.operation.kind` | `string` | yes | navigation |  | Navigation operation kind |
+| `forge.session.id` | `string` | yes |  | high cardinality | Session id |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
+| `forge.operation.recovery` | `boolean` | yes |  |  | Whether this invocation resumes durable work |
+| `forge.operation.kind` | `string` | yes | navigation |  | Navigation operation kind |
 
 #### End attributes
 
@@ -142,19 +142,19 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.operation.outcome` | `string` | completed, declined, aborted, failed |  | Navigation invocation outcome |
-| `pi.error.code` | `string` |  | low cardinality | Stable operation error code |
-| `pi.error.type` | `string` |  | low cardinality | Low-cardinality operation error class |
+| `forge.operation.outcome` | `string` | completed, declined, aborted, failed |  | Navigation invocation outcome |
+| `forge.error.code` | `string` |  | low cardinality | Stable operation error code |
+| `forge.error.type` | `string` |  | low cardinality | Low-cardinality operation error class |
 
 #### Events
 
 No declared span events.
 
-### `pi.harness.checkpoint`
+### `forge.harness.checkpoint`
 
 One run checkpoint
 
-- Parents: `pi.harness.run`
+- Parents: `forge.harness.run`
 - Default status: `ok`
 - Error when: Checkpoint work throws
 
@@ -162,9 +162,9 @@ One run checkpoint
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
-| `pi.checkpoint.kind` | `string` | yes | normal, failure_drain, abort_reconcile |  | Checkpoint purpose |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
+| `forge.checkpoint.kind` | `string` | yes | normal, failure_drain, abort_reconcile |  | Checkpoint purpose |
 
 #### End attributes
 
@@ -178,11 +178,11 @@ All end attributes are optional completion enrichment.
 
 No declared span events.
 
-### `pi.harness.turn`
+### `forge.harness.turn`
 
 One assistant response and its tool batch
 
-- Parents: `pi.harness.run`
+- Parents: `forge.harness.run`
 - Default status: `ok`
 - Error when: Turn work throws
 
@@ -190,9 +190,9 @@ One assistant response and its tool batch
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
-| `pi.turn.id` | `string` | yes |  | high cardinality | Invocation-local turn id |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
+| `forge.turn.id` | `string` | yes |  | high cardinality | Invocation-local turn id |
 
 #### End attributes
 
@@ -206,11 +206,11 @@ All end attributes are optional completion enrichment.
 
 No declared span events.
 
-### `pi.harness.step`
+### `forge.harness.step`
 
 One durable retry attempt
 
-- Parents: `pi.harness.turn`, `pi.harness.checkpoint`, `pi.harness.compaction`, `pi.harness.navigation`
+- Parents: `forge.harness.turn`, `forge.harness.checkpoint`, `forge.harness.compaction`, `forge.harness.navigation`
 - Default status: `ok`
 - Error when: The attempt retries, fails, or throws
 
@@ -218,11 +218,11 @@ One durable retry attempt
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
-| `pi.step.kind` | `string` | yes | assistant, compaction, branch_summary |  | Retryable step kind |
-| `pi.step.attempt` | `number` | yes |  |  | One-based durable attempt number |
-| `pi.compaction.reason` | `string` | no | manual, threshold, overflow |  | Compaction trigger |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
+| `forge.step.kind` | `string` | yes | assistant, compaction, branch_summary |  | Retryable step kind |
+| `forge.step.attempt` | `number` | yes |  |  | One-based durable attempt number |
+| `forge.compaction.reason` | `string` | no | manual, threshold, overflow |  | Compaction trigger |
 
 #### End attributes
 
@@ -230,17 +230,17 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.step.outcome` | `string` | succeeded, retry, failed, aborted, deferred, overflow |  | Attempt outcome |
+| `forge.step.outcome` | `string` | succeeded, retry, failed, aborted, deferred, overflow |  | Attempt outcome |
 
 #### Events
 
 No declared span events.
 
-### `pi.harness.tool`
+### `forge.harness.tool`
 
 One raw phase-2 tool execution
 
-- Parents: `pi.harness.turn`, `pi.harness.run`
+- Parents: `forge.harness.turn`, `forge.harness.run`
 - Default status: `ok`
 - Error when: Raw phase-2 execution returns an error
 
@@ -248,13 +248,13 @@ One raw phase-2 tool execution
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
-| `pi.turn.id` | `string` | no |  | high cardinality | Invocation-local live turn id |
-| `pi.tool.name` | `string` | yes |  |  | Tool name |
-| `pi.tool.call_id` | `string` | yes |  | high cardinality | Tool call id |
-| `pi.tool.replay` | `string` | yes | never, safe |  | Declared replay policy |
-| `pi.tool.recovery` | `boolean` | yes |  |  | Whether this is recovery execution |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
+| `forge.turn.id` | `string` | no |  | high cardinality | Invocation-local live turn id |
+| `forge.tool.name` | `string` | yes |  |  | Tool name |
+| `forge.tool.call_id` | `string` | yes |  | high cardinality | Tool call id |
+| `forge.tool.replay` | `string` | yes | never, safe |  | Declared replay policy |
+| `forge.tool.recovery` | `boolean` | yes |  |  | Whether this is recovery execution |
 
 #### End attributes
 
@@ -262,13 +262,13 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.tool.is_error` | `boolean` |  |  | Whether raw phase-2 execution returned an error |
+| `forge.tool.is_error` | `boolean` |  |  | Whether raw phase-2 execution returned an error |
 
 #### Events
 
 No declared span events.
 
-### `pi.harness.hook`
+### `forge.harness.hook`
 
 One registered hook handler invocation
 
@@ -280,10 +280,10 @@ One registered hook handler invocation
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | no |  | high cardinality | Durable operation id when accepted |
-| `pi.hook.name` | `string` | yes | before_run, before_resume, before_run_end, transform_context, before_request, before_payload, after_response, before_tool, after_tool, before_compaction, before_navigation |  | Hook name |
-| `pi.hook.registration_id` | `string` | no |  |  | Stable hook registration id |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | no |  | high cardinality | Durable operation id when accepted |
+| `forge.hook.name` | `string` | yes | before_run, before_resume, before_run_end, transform_context, before_request, before_payload, after_response, before_tool, after_tool, before_compaction, before_navigation |  | Hook name |
+| `forge.hook.registration_id` | `string` | no |  |  | Stable hook registration id |
 
 #### End attributes
 
@@ -291,17 +291,17 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.hook.outcome` | `string` | completed, skipped, blocked, failed |  | Handler outcome |
+| `forge.hook.outcome` | `string` | completed, skipped, blocked, failed |  | Handler outcome |
 
 #### Events
 
 No declared span events.
 
-### `pi.harness.sleep`
+### `forge.harness.sleep`
 
 One retry delay
 
-- Parents: `pi.harness.step`, `pi.harness.run`
+- Parents: `forge.harness.step`, `forge.harness.run`
 - Default status: `ok`
 - Error when: Sleep work throws
 
@@ -309,8 +309,8 @@ One retry delay
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
-| `pi.sleep.delay_ms` | `number` | yes |  |  | Requested delay in milliseconds |
+| `forge.operation.id` | `string` | yes |  | high cardinality | Durable operation id |
+| `forge.sleep.delay_ms` | `number` | yes |  |  | Requested delay in milliseconds |
 
 #### End attributes
 
@@ -318,13 +318,13 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.sleep.outcome` | `string` | elapsed, aborted |  | Delay outcome |
+| `forge.sleep.outcome` | `string` | elapsed, aborted |  | Delay outcome |
 
 #### Events
 
 No declared span events.
 
-### `pi.harness.event_handler`
+### `forge.harness.event_handler`
 
 One passive event listener invocation
 
@@ -336,8 +336,8 @@ One passive event listener invocation
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.event.type` | `string` | yes | run_start, run_resume, run_suspend, run_abort, run_end, fault, handler_error, turn_start, turn_end, retry_scheduled, retry_start, retry_end, message_start, message_update, message_end, tool_start, tool_update, tool_end, entry_added, write_pending, queue_update, fact_update, config_update, compaction_start, compaction_end, navigation_start, navigation_end, lane_created, usage | low cardinality | Delivered harness event type |
-| `pi.lane.name` | `string` | no |  | high cardinality | Lane name for lane-scoped events |
+| `forge.event.type` | `string` | yes | run_start, run_resume, run_suspend, run_abort, run_end, fault, handler_error, turn_start, turn_end, retry_scheduled, retry_start, retry_end, message_start, message_update, message_end, tool_start, tool_update, tool_end, entry_added, write_pending, queue_update, fact_update, config_update, compaction_start, compaction_end, navigation_start, navigation_end, lane_created, usage | low cardinality | Delivered harness event type |
+| `forge.lane.name` | `string` | no |  | high cardinality | Lane name for lane-scoped events |
 
 #### End attributes
 
@@ -351,7 +351,7 @@ All end attributes are optional completion enrichment.
 
 No declared span events.
 
-### `pi.session.write`
+### `forge.session.write`
 
 One committed session mutation
 
@@ -363,10 +363,10 @@ One committed session mutation
 
 | Name | Type | Required | Values | Notes | Description |
 |---|---|---:|---|---|---|
-| `pi.lane.name` | `string` | yes |  | high cardinality | Lane name |
-| `pi.operation.id` | `string` | no |  | high cardinality | Durable operation id when accepted |
-| `pi.session.mutation` | `string` | yes | entry, record, lane, fact |  | Session mutation kind |
-| `pi.session.item_type` | `string` | no |  |  | Entry, record, lane, or fact subtype |
+| `forge.lane.name` | `string` | yes |  | high cardinality | Lane name |
+| `forge.operation.id` | `string` | no |  | high cardinality | Durable operation id when accepted |
+| `forge.session.mutation` | `string` | yes | entry, record, lane, fact |  | Session mutation kind |
+| `forge.session.item_type` | `string` | no |  |  | Entry, record, lane, or fact subtype |
 
 #### End attributes
 
@@ -374,7 +374,7 @@ All end attributes are optional completion enrichment.
 
 | Name | Type | Values | Notes | Description |
 |---|---|---|---|---|
-| `pi.session.seq` | `number` |  |  | Committed session sequence when exposed |
+| `forge.session.seq` | `number` |  |  | Committed session sequence when exposed |
 
 #### Events
 

@@ -875,7 +875,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 			const defaultDirs = [
 				join(this.agentDir, "themes"),
 				join(this.cwd, CONFIG_DIR_NAME, "themes"),
-				join(this.cwd, ".pi", "themes"),
+				join(this.cwd, ".forge", "themes"),
 			];
 
 			for (const dir of defaultDirs) {
@@ -1029,7 +1029,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		if (this.settingsManager.isProjectTrusted() && existsSync(projectPath)) {
 			return projectPath;
 		}
-		const legacyProjectPath = join(this.cwd, ".pi", "SYSTEM.md");
+		const legacyProjectPath = join(this.cwd, ".forge", "SYSTEM.md");
 		if (this.settingsManager.isProjectTrusted() && existsSync(legacyProjectPath)) {
 			return legacyProjectPath;
 		}
@@ -1047,7 +1047,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		if (this.settingsManager.isProjectTrusted() && existsSync(projectPath)) {
 			return projectPath;
 		}
-		const legacyProjectPath = join(this.cwd, ".pi", "APPEND_SYSTEM.md");
+		const legacyProjectPath = join(this.cwd, ".forge", "APPEND_SYSTEM.md");
 		if (this.settingsManager.isProjectTrusted() && existsSync(legacyProjectPath)) {
 			return legacyProjectPath;
 		}

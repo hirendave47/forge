@@ -69,10 +69,10 @@ Thumbs.db
 .opencode/
 syntax.jsonl
 out.jsonl
-pi-*.html
+forge-*.html
 out.html
 todo.md
 plans/
-.pi/hf-sessions/
-.pi/hf-sessions-backup/
+.forge/hf-sessions/
+.forge/hf-sessions-backup/
 collect.sh

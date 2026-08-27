@@ -1,25 +1,25 @@
 # Settings
 
-Pi uses JSON settings files with project settings overriding global settings.
+Forge uses JSON settings files with project settings overriding global settings.
 
 | Location | Scope |
 |----------|-------|
-| `~/.pi/agent/settings.json` | Global (all projects) |
-| `.pi/settings.json` | Project (current directory) |
+| `~/.forge/agent/settings.json` | Global (all projects) |
+| `.forge/settings.json` | Project (current directory) |
 
 Edit directly or use `/settings` for common options.
 
 ## Project Trust
 
-On interactive startup, forge asks before trusting a project folder that contains project-local settings, resources, or project `.agents/skills` and has no saved decision for the folder or a parent folder in `~/.pi/agent/trust.json`. Trusting a project allows forge to load `.pi/settings.json` and `.pi` resources, install missing project packages, and execute project extensions.
+On interactive startup, forge asks before trusting a project folder that contains project-local settings, resources, or project `.agents/skills` and has no saved decision for the folder or a parent folder in `~/.forge/agent/trust.json`. Trusting a project allows forge to load `.forge/settings.json` and `.forge` resources, install missing project packages, and execute project extensions.
 
 Non-interactive modes (`-p`, `--mode json`, and `--mode rpc`) do not show a trust prompt. Without an applicable saved trust decision, they use `defaultProjectTrust` from global settings: `ask` (default) and `never` ignore those project resources, while `always` trusts them. Pass `--approve`/`-a` or `--no-approve`/`-na` to override project trust for one run.
 
-If no extension or saved decision applies, `defaultProjectTrust` controls the fallback behavior. Set it to `"ask"`, `"always"`, or `"never"` in `~/.pi/agent/settings.json`, or change it with `/settings`.
+If no extension or saved decision applies, `defaultProjectTrust` controls the fallback behavior. Set it to `"ask"`, `"always"`, or `"never"` in `~/.forge/agent/settings.json`, or change it with `/settings`.
 
-`pi config` and package commands use the same project trust flow, except `pi update` never prompts. Pass `--approve` to trust project-local settings for one command or `--no-approve` to ignore them.
+`forge config` and package commands use the same project trust flow, except `forge update` never prompts. Pass `--approve` to trust project-local settings for one command or `--no-approve` to ignore them.
 
-Use `/trust` in interactive mode to save a project trust decision for future sessions, including trust for the immediate parent folder. It writes `~/.pi/agent/trust.json` only; the current session is not reloaded, so restart forge for changes to take effect.
+Use `/trust` in interactive mode to save a project trust decision for future sessions, including trust for the immediate parent folder. It writes `~/.forge/agent/trust.json` only; the current session is not reloaded, so restart forge for changes to take effect.
 
 ## All Settings
 
@@ -79,7 +79,7 @@ For VS Code, include `--wait` so forge resumes after the editor exits:
 
 ### Telemetry and update checks
 
-`enableInstallTelemetry` only controls the anonymous install/update ping to `https://pi.dev/api/report-install`. Opting out of telemetry does not disable update checks; Forge can still fetch `https://pi.dev/api/latest-version` to look for the latest version.
+`enableInstallTelemetry` only controls the anonymous install/update ping to `https://forge.dev/api/report-install`. Opting out of telemetry does not disable update checks; Forge can still fetch `https://forge.dev/api/latest-version` to look for the latest version.
 
 Set `FORGE_SKIP_VERSION_CHECK=1` to disable the Forge version update check. Use `--offline` or `FORGE_OFFLINE=1` to disable all startup network operations described here, including update checks, package update checks, and install/update telemetry.
 
@@ -212,7 +212,7 @@ Windows paths in JSON must use forward slashes or escaped backslashes:
 }
 ```
 
-`npmCommand` is used for all npm package-manager operations, including installs, uninstalls, and dependency installs inside git packages. User-scoped npm packages install under `~/.pi/agent/npm/`; project-scoped npm packages install under `.pi/npm/`. Use argv-style entries exactly as the process should be launched. When `npmCommand` is configured, git package dependency installs use plain `install` to avoid npm-specific flags in wrappers or alternate package managers.
+`npmCommand` is used for all npm package-manager operations, including installs, uninstalls, and dependency installs inside git packages. User-scoped npm packages install under `~/.forge/agent/npm/`; project-scoped npm packages install under `.forge/npm/`. Use argv-style entries exactly as the process should be launched. When `npmCommand` is configured, git package dependency installs use plain `install` to avoid npm-specific flags in wrappers or alternate package managers.
 
 ### Tools
 
@@ -245,7 +245,7 @@ An empty array starts with no built-in tools while preserving extension and SDK 
 | `sessionDir` | string | - | Directory where session files are stored. Accepts absolute or relative paths, plus `~`. |
 
 ```json
-{ "sessionDir": ".pi/sessions" }
+{ "sessionDir": ".forge/sessions" }
 ```
 
 When multiple sources specify a session directory, precedence is `--session-dir`, `FORGE_CODING_AGENT_SESSION_DIR`, then `sessionDir` in settings.json.
@@ -273,7 +273,7 @@ When multiple sources specify a session directory, precedence is `--session-dir`
 
 These settings define where to load extensions, skills, prompts, and themes from.
 
-Paths in `~/.pi/agent/settings.json` resolve relative to `~/.pi/agent`. Paths in `.pi/settings.json` resolve relative to `.pi`. Absolute paths and `~` are supported.
+Paths in `~/.forge/agent/settings.json` resolve relative to `~/.forge/agent`. Paths in `.forge/settings.json` resolve relative to `.forge`. Absolute paths and `~` are supported.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
@@ -292,7 +292,7 @@ String form loads all resources from a package:
 
 ```json
 {
-  "packages": ["pi-skills", "@org/my-extension"]
+  "packages": ["forge-skills", "@org/my-extension"]
 }
 ```
 
@@ -302,7 +302,7 @@ Object form filters which resources to load:
 {
   "packages": [
     {
-      "source": "pi-skills",
+      "source": "forge-skills",
       "skills": ["brave-search", "transcribe"],
       "extensions": []
     }
@@ -333,22 +333,22 @@ See [packages.md](packages.md) for package management details.
   "warnings": {
     "anthropicExtraUsage": true
   },
-  "packages": ["pi-skills"]
+  "packages": ["forge-skills"]
 }
 ```
 
 ## Project Overrides
 
-Project settings (`.pi/settings.json`) override global settings. Nested objects are merged:
+Project settings (`.forge/settings.json`) override global settings. Nested objects are merged:
 
 ```json
-// ~/.pi/agent/settings.json (global)
+// ~/.forge/agent/settings.json (global)
 {
   "theme": "dark",
   "compaction": { "enabled": true, "reserveTokens": 16384 }
 }
 
-// .pi/settings.json (project)
+// .forge/settings.json (project)
 {
   "compaction": { "reserveTokens": 8192 }
 }

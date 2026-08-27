@@ -67,8 +67,8 @@ describe.skipIf(!oauthToken)("Anthropic OAuth tool name normalization", () => {
 		expect(toolCallName).toBe("todowrite");
 	});
 
-	it("should handle pi's built-in tools (read, write, edit, bash)", async () => {
-		// Pi's tools use lowercase names, CC uses PascalCase
+	it("should handle forge's built-in tools (read, write, edit, bash)", async () => {
+		// Forge's tools use lowercase names, CC uses PascalCase
 		const readTool: Tool = {
 			name: "read",
 			description: "Read a file",

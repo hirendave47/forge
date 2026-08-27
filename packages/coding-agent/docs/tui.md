@@ -4,7 +4,7 @@
 
 Extensions and custom tools can render custom TUI components for interactive user interfaces. This page covers the component system and available building blocks.
 
-**Source:** [`@earendil-works/pi-tui`](https://github.com/earendil-works/pi-mono/tree/main/packages/tui)
+**Source:** [`@earendil-works/forge-tui`](https://github.com/hirendave47/forge/tree/main/packages/tui)
 
 ## Component Interface
 
@@ -33,7 +33,7 @@ The TUI appends a full SGR reset and OSC 8 reset at the end of each rendered lin
 Components that display a text cursor and need IME (Input Method Editor) support should implement the `Focusable` interface:
 
 ```typescript
-import { CURSOR_MARKER, type Component, type Focusable } from "@earendil-works/pi-tui";
+import { CURSOR_MARKER, type Component, type Focusable } from "@earendil-works/forge-tui";
 
 class MyInput implements Component, Focusable {
   focused: boolean = false;  // Set by TUI when focus changes
@@ -59,7 +59,7 @@ The cursor remains hidden by default. This keeps the fake cursor rendering, whil
 When a container component (dialog, selector, etc.) contains an `Input` or `Editor` child, the container must implement `Focusable` and propagate the focus state to the child. Otherwise, the hardware cursor won't be positioned correctly for IME input.
 
 ```typescript
-import { Container, type Focusable, Input } from "@earendil-works/pi-tui";
+import { Container, type Focusable, Input } from "@earendil-works/forge-tui";
 
 class SearchDialog extends Container implements Focusable {
   private searchInput: Input;
@@ -89,7 +89,7 @@ Without this propagation, typing with an IME (Chinese, Japanese, Korean, etc.) w
 **In extensions** via `ctx.ui.custom()`:
 
 ```typescript
-pi.on("session_start", async (_event, ctx) => {
+forge.on("session_start", async (_event, ctx) => {
   const result = await ctx.ui.custom<string | null>((tui, theme, keybindings, done) =>
     new MyComponent({
       theme,
@@ -201,10 +201,10 @@ See [overlay-qa-tests.ts](../examples/extensions/overlay-qa-tests.ts) for compre
 
 ## Built-in Components
 
-Import from `@earendil-works/pi-tui`:
+Import from `@earendil-works/forge-tui`:
 
 ```typescript
-import { Text, Box, Container, Spacer, Markdown } from "@earendil-works/pi-tui";
+import { Text, Box, Container, Spacer, Markdown } from "@earendil-works/forge-tui";
 ```
 
 ### Text
@@ -286,7 +286,7 @@ const image = new Image(
 Use `matchesKey()` for key detection:
 
 ```typescript
-import { matchesKey, Key } from "@earendil-works/pi-tui";
+import { matchesKey, Key } from "@earendil-works/forge-tui";
 
 handleInput(data: string) {
   if (matchesKey(data, Key.up)) {
@@ -312,7 +312,7 @@ handleInput(data: string) {
 **Critical:** Each line from `render()` must not exceed the `width` parameter.
 
 ```typescript
-import { visibleWidth, truncateToWidth } from "@earendil-works/pi-tui";
+import { visibleWidth, truncateToWidth } from "@earendil-works/forge-tui";
 
 render(width: number): string[] {
   // Truncate long lines
@@ -333,7 +333,7 @@ Example: Interactive selector
 import {
   matchesKey, Key,
   truncateToWidth, visibleWidth
-} from "@earendil-works/pi-tui";
+} from "@earendil-works/forge-tui";
 
 class MySelector {
   private items: string[];
@@ -385,7 +385,7 @@ class MySelector {
 Usage in an extension:
 
 ```typescript
-pi.registerCommand("pick", {
+forge.registerCommand("pick", {
   description: "Pick an item",
   handler: async (_args, ctx) => {
     const items = ["Option A", "Option B", "Option C"];
@@ -449,8 +449,8 @@ renderResult(result, options, theme, context) {
 **For Markdown**, use `getMarkdownTheme()`:
 
 ```typescript
-import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
-import { Markdown } from "@earendil-works/pi-tui";
+import { getMarkdownTheme } from "@earendil-works/forge-coding-agent";
+import { Markdown } from "@earendil-works/forge-tui";
 
 renderResult(result, options, theme, context) {
   const mdTheme = getMarkdownTheme();
@@ -611,14 +611,14 @@ These patterns cover the most common UI needs in extensions. **Copy these patter
 
 ### Pattern 1: Selection Dialog (SelectList)
 
-For letting users pick from a list of options. Use `SelectList` from `@earendil-works/pi-tui` with `DynamicBorder` for framing.
+For letting users pick from a list of options. Use `SelectList` from `@earendil-works/forge-tui` with `DynamicBorder` for framing.
 
 ```typescript
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { DynamicBorder } from "@earendil-works/pi-coding-agent";
-import { Container, type SelectItem, SelectList, Text } from "@earendil-works/pi-tui";
+import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
+import { DynamicBorder } from "@earendil-works/forge-coding-agent";
+import { Container, type SelectItem, SelectList, Text } from "@earendil-works/forge-tui";
 
-pi.registerCommand("pick", {
+forge.registerCommand("pick", {
   handler: async (_args, ctx) => {
     const items: SelectItem[] = [
       { value: "opt1", label: "Option 1", description: "First option" },
@@ -674,9 +674,9 @@ pi.registerCommand("pick", {
 For operations that take time and should be cancellable. `BorderedLoader` shows a spinner and handles escape to cancel.
 
 ```typescript
-import { BorderedLoader } from "@earendil-works/pi-coding-agent";
+import { BorderedLoader } from "@earendil-works/forge-coding-agent";
 
-pi.registerCommand("fetch", {
+forge.registerCommand("fetch", {
   handler: async (_args, ctx) => {
     const result = await ctx.ui.custom<string | null>((tui, theme, _kb, done) => {
       const loader = new BorderedLoader(tui, theme, "Fetching data...");
@@ -703,13 +703,13 @@ pi.registerCommand("fetch", {
 
 ### Pattern 3: Settings/Toggles (SettingsList)
 
-For toggling multiple settings. Use `SettingsList` from `@earendil-works/pi-tui` with `getSettingsListTheme()`.
+For toggling multiple settings. Use `SettingsList` from `@earendil-works/forge-tui` with `getSettingsListTheme()`.
 
 ```typescript
-import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
-import { Container, type SettingItem, SettingsList, Text } from "@earendil-works/pi-tui";
+import { getSettingsListTheme } from "@earendil-works/forge-coding-agent";
+import { Container, type SettingItem, SettingsList, Text } from "@earendil-works/forge-tui";
 
-pi.registerCommand("settings", {
+forge.registerCommand("settings", {
   handler: async (_args, ctx) => {
     const items: SettingItem[] = [
       { id: "verbose", label: "Verbose mode", currentValue: "off", values: ["on", "off"] },
@@ -781,7 +781,7 @@ ctx.ui.setWorkingIndicator({
 // Hide the indicator entirely
 ctx.ui.setWorkingIndicator({ frames: [] });
 
-// Restore pi's default spinner
+// Restore forge's default spinner
 ctx.ui.setWorkingIndicator();
 ```
 
@@ -846,8 +846,8 @@ Token stats available via `ctx.sessionManager.getBranch()` and `ctx.model`.
 Replace the main input editor with a custom implementation. Useful for modal editing (vim), different keybindings (emacs), or specialized input handling.
 
 ```typescript
-import { CustomEditor, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
+import { CustomEditor, type ExtensionAPI } from "@earendil-works/forge-coding-agent";
+import { matchesKey, truncateToWidth } from "@earendil-works/forge-tui";
 
 type Mode = "normal" | "insert";
 
@@ -898,8 +898,8 @@ class VimEditor extends CustomEditor {
   }
 }
 
-export default function (pi: ExtensionAPI) {
-  pi.on("session_start", (_event, ctx) => {
+export default function (forge: ExtensionAPI) {
+  forge.on("session_start", (_event, ctx) => {
     // Factory receives the TUI, theme, and keybindings from the app
     ctx.ui.setEditorComponent((tui, theme, keybindings) =>
       new VimEditor(tui, theme, keybindings)

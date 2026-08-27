@@ -74,7 +74,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && inputs.publish) }}
     needs: generate
     runs-on: ubuntu-latest
-    environment: pi-model-upload
+    environment: forge-model-upload
     concurrency:
       group: publish-model-catalog-r2
       cancel-in-progress: true
@@ -141,6 +141,6 @@ jobs:
         run: |
           node scripts/publish-model-catalog.mjs \
             --input .artifacts/model-catalog \
-            --bucket pi-artifacts \
+            --bucket forge-artifacts \
             --endpoint "$R2_ENDPOINT" \
             --source-commit "$(git rev-parse HEAD)"

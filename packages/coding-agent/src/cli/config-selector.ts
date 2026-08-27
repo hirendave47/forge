@@ -1,5 +1,5 @@
 /**
- * TUI config selector for `pi config` command
+ * TUI config selector for `forge config` command
  */
 
 import { ProcessTerminal, type TUI, TuiMainScreen } from "@earendil-works/forge-tui";

@@ -141,7 +141,7 @@ export interface Settings {
 	markdown?: MarkdownSettings;
 	warnings?: WarningSettings;
 	sessionDir?: string; // Custom session storage directory (same format as --session-dir CLI flag)
-	httpProxy?: string; // Proxy URL applied as HTTP_PROXY and HTTPS_PROXY for Pi-managed HTTP clients
+	httpProxy?: string; // Proxy URL applied as HTTP_PROXY and HTTPS_PROXY for Forge-managed HTTP clients
 	httpIdleTimeoutMs?: number; // HTTP header/body idle timeout in milliseconds; 0 disables it
 	websocketConnectTimeoutMs?: number; // WebSocket connect/open handshake timeout in milliseconds; 0 disables it
 	tuiMode?: TuiMode; // default: "regular"
@@ -224,7 +224,7 @@ export class FileSettingsStorage implements SettingsStorage {
 		const resolvedAgentDir = resolvePath(agentDir);
 		this.globalSettingsPath = join(resolvedAgentDir, "settings.json");
 		const primaryProjectPath = join(resolvedCwd, CONFIG_DIR_NAME, "settings.json");
-		const legacyProjectPath = join(resolvedCwd, ".pi", "settings.json");
+		const legacyProjectPath = join(resolvedCwd, ".forge", "settings.json");
 		this.projectSettingsPath =
 			existsSync(primaryProjectPath) || !existsSync(legacyProjectPath) ? primaryProjectPath : legacyProjectPath;
 	}

@@ -134,7 +134,7 @@ function runSubagent(prompt: string, cwd: string): Promise<{ success: boolean }>
 		});
 
 		child.on("error", (err) => {
-			console.error(chalk.red(`  Failed to spawn pi: ${err.message}`));
+			console.error(chalk.red(`  Failed to spawn forge: ${err.message}`));
 			resolve({ success: false });
 		});
 	});
@@ -163,7 +163,7 @@ async function main() {
 
 	mkdirSync(outputDir, { recursive: true });
 	const forgeSessions = join(homedir(), ".forge/agent/sessions");
-	const piSessions = join(homedir(), ".pi/agent/sessions");
+	const piSessions = join(homedir(), ".forge/agent/sessions");
 	const sessionsBase = existsSync(forgeSessions) ? forgeSessions : piSessions;
 	const sessionDirName = cwdToSessionDir(cwd);
 	const sessionDir = join(sessionsBase, sessionDirName);
@@ -251,7 +251,7 @@ async function main() {
 
 	// Find AGENTS.md files to compare against
 	const forgeGlobalAgentsMd = join(homedir(), ".forge/agent/AGENTS.md");
-	const piGlobalAgentsMd = join(homedir(), ".pi/agent/AGENTS.md");
+	const piGlobalAgentsMd = join(homedir(), ".forge/agent/AGENTS.md");
 	const globalAgentsMd = existsSync(forgeGlobalAgentsMd) ? forgeGlobalAgentsMd : piGlobalAgentsMd;
 	const localAgentsMd = join(cwd, "AGENTS.md");
 	const agentsMdFiles = [globalAgentsMd, localAgentsMd].filter(existsSync);

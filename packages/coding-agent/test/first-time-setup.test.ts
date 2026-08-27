@@ -13,7 +13,7 @@ describe("shouldRunFirstTimeSetup", () => {
 	let settingsPath: string;
 
 	beforeEach(() => {
-		tempDir = mkdtempSync(join(tmpdir(), "pi-first-time-setup-"));
+		tempDir = mkdtempSync(join(tmpdir(), "forge-first-time-setup-"));
 		settingsPath = join(tempDir, "settings.json");
 		process.env.FORGE_EXPERIMENTAL = "1";
 		delete process.env[ENV_AGENT_DIR];

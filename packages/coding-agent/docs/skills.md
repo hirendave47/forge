@@ -4,7 +4,7 @@
 
 Skills are self-contained capability packages that the agent loads on-demand. A skill provides specialized workflows, setup instructions, helper scripts, and reference documentation for specific tasks.
 
-Pi implements the [Agent Skills standard](https://agentskills.io/specification), warning about most violations but remaining lenient. Forge allows skill names to differ from their parent directory even though the standard disallows it; that rule is suboptimal for shared skill directories used across multiple agent harnesses.
+Forge implements the [Agent Skills standard](https://agentskills.io/specification), warning about most violations but remaining lenient. Forge allows skill names to differ from their parent directory even though the standard disallows it; that rule is suboptimal for shared skill directories used across multiple agent harnesses.
 
 ## Table of Contents
 
@@ -21,20 +21,20 @@ Pi implements the [Agent Skills standard](https://agentskills.io/specification),
 
 > **Security:** Skills can instruct the model to perform any action and may include executable code the model invokes. Review skill content before use.
 
-Pi loads skills from:
+Forge loads skills from:
 
 - Global:
-  - `~/.pi/agent/skills/`
+  - `~/.forge/agent/skills/`
   - `~/.agents/skills/`
 - Project (only after the project is trusted):
-  - `.pi/skills/`
+  - `.forge/skills/`
   - `.agents/skills/` in `cwd` and ancestor directories (up to git repo root, or filesystem root when not in a repo)
-- Packages: `skills/` directories or `pi.skills` entries in `package.json`
+- Packages: `skills/` directories or `forge.skills` entries in `package.json`
 - Settings: `skills` array with files or directories
 - CLI: `--skill <path>` (repeatable, additive even with `--no-skills`)
 
 Discovery rules:
-- In `~/.pi/agent/skills/` and `.pi/skills/`, direct root `.md` files are discovered as individual skills when they have valid skill frontmatter with a non-empty `description`
+- In `~/.forge/agent/skills/` and `.forge/skills/`, direct root `.md` files are discovered as individual skills when they have valid skill frontmatter with a non-empty `description`
 - In all skill locations, directories containing `SKILL.md` are discovered recursively
 - In `~/.agents/skills/` and project `.agents/skills/`, root `.md` files are ignored, but nested `.md` files in grouping folders are discovered when they declare skill frontmatter
 - Root Markdown files other than `SKILL.md` that do not look like skills are ignored silently
@@ -54,7 +54,7 @@ To use skills from Claude Code or OpenAI Codex, add their directories to setting
 }
 ```
 
-For project-level Claude Code skills, add to `.pi/settings.json`:
+For project-level Claude Code skills, add to `.forge/settings.json`:
 
 ```json
 {
@@ -155,7 +155,7 @@ Per the [Agent Skills specification](https://agentskills.io/specification#frontm
 - Lowercase letters, numbers, hyphens only
 - No leading/trailing hyphens
 - No consecutive hyphens
-Pi does not require the name to match the parent directory. The Agent Skills standard does, but that requirement is suboptimal for shared skill directories used by multiple tools.
+Forge does not require the name to match the parent directory. The Agent Skills standard does, but that requirement is suboptimal for shared skill directories used by multiple tools.
 
 Valid: `pdf-processing`, `data-analysis`, `code-review`
 Invalid: `PDF-Processing`, `-pdf`, `pdf--processing`
@@ -176,7 +176,7 @@ description: Helps with PDFs.
 
 ## Validation
 
-Pi validates skills against the Agent Skills standard. Most issues produce warnings but still load the skill:
+Forge validates skills against the Agent Skills standard. Most issues produce warnings but still load the skill:
 
 - Name exceeds 64 characters or contains invalid characters
 - Name starts/ends with hyphen or has consecutive hyphens
@@ -229,4 +229,4 @@ cd /path/to/brave-search && npm install
 ## Skill Repositories
 
 - [Anthropic Skills](https://github.com/anthropics/skills) - Document processing (docx, pdf, pptx, xlsx), web development
-- [Pi Skills](https://github.com/badlogic/pi-skills) - Web search, browser automation, Google APIs, transcription
+- [Forge Skills](https://github.com/hirendave47/forge-skills) - Web search, browser automation, Google APIs, transcription

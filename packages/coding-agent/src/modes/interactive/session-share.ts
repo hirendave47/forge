@@ -26,7 +26,7 @@ export function exportSessionForShare(filePath: string, session: AgentSession): 
 	exportSessionToJsonl(session.sessionManager, filePath, (parentId, timestamp) => [
 		{
 			type: "custom",
-			customType: "pi.share",
+			customType: "forge.share",
 			id: crypto.randomUUID().slice(0, 8),
 			parentId,
 			timestamp,
@@ -111,7 +111,7 @@ async function tryShareViaRadius(tmpFile: string, context: SessionShareContext):
 		const body = fs.readFileSync(tmpFile);
 		const url = new URL("/v1/artifacts", DEFAULT_RADIUS_GATEWAY);
 		url.searchParams.set("visibility", "organization");
-		url.searchParams.set("title", "Pi session");
+		url.searchParams.set("title", "Forge session");
 		const response = await fetch(url, {
 			method: "POST",
 			headers: {

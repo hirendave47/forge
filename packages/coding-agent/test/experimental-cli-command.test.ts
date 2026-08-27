@@ -17,7 +17,7 @@ describe("experimental CLI commands", () => {
 		).toMatchObject({
 			ok: true,
 			command: {
-				command: "pi",
+				command: "forge",
 				options: {
 					provider: "anthropic",
 					model: "claude-sonnet",
@@ -42,7 +42,7 @@ describe("experimental CLI commands", () => {
 		expect(experimentalCli.parse(["--system-prompt", "--listen", "unix:///tmp/pi.sock"])).toMatchObject({
 			ok: true,
 			command: {
-				command: "pi",
+				command: "forge",
 				options: { systemPrompt: "--listen", messages: ["unix:///tmp/pi.sock"] },
 			},
 		});
@@ -52,19 +52,19 @@ describe("experimental CLI commands", () => {
 		const result = experimentalCli.parse(["--model", "claude-sonnet", "--listen=unix:///tmp/second.sock"]);
 		expect(result).toMatchObject({
 			ok: true,
-			command: { command: "pi", options: { model: "claude-sonnet" } },
+			command: { command: "forge", options: { model: "claude-sonnet" } },
 		});
-		if (!result.ok || result.command.command !== "pi") return;
+		if (!result.ok || result.command.command !== "forge") return;
 		expect(result.command.listen).toBeUndefined();
 		expect(result.command.options.unknownFlags.get("listen")).toBe("unix:///tmp/second.sock");
 	});
 
 	test("parses a client transport address", () => {
-		expect(experimentalCli.parse(["client", "--connect", "unix:///tmp/pi.sock"])).toEqual({
+		expect(experimentalCli.parse(["client", "--connect", "unix:///tmp/forge.sock"])).toEqual({
 			ok: true,
 			command: {
 				command: "client",
-				connect: { transport: "unix", path: "/tmp/pi.sock" },
+				connect: { transport: "unix", path: "/tmp/forge.sock" },
 			},
 		});
 	});
@@ -75,7 +75,7 @@ describe("experimental CLI commands", () => {
 	] as const)("parses authentication source %j", (argv, auth) => {
 		expect(experimentalCli.parse(argv)).toMatchObject({
 			ok: true,
-			command: { command: "pi", auth },
+			command: { command: "forge", auth },
 		});
 	});
 
@@ -83,27 +83,27 @@ describe("experimental CLI commands", () => {
 		"permits omitted authentication for later environment/default resolution",
 		(argv) => {
 			const result = experimentalCli.parse(argv);
-			expect(result).toMatchObject({ ok: true, command: { command: argv[0] ?? "pi" } });
+			expect(result).toMatchObject({ ok: true, command: { command: argv[0] ?? "forge" } });
 			if (result.ok) expect(result.command.auth).toBeUndefined();
 		},
 	);
 
 	test("passes unknown options, file arguments, and the positional separator to the existing parser", () => {
-		const result = experimentalCli.parse(["--unknown", "@prompt.md", "--", "--listen", "unix:///tmp/pi.sock"]);
+		const result = experimentalCli.parse(["--unknown", "@prompt.md", "--", "--listen", "unix:///tmp/forge.sock"]);
 		expect(result).toMatchObject({
 			ok: true,
 			command: {
-				command: "pi",
-				options: { fileArgs: ["prompt.md"], messages: ["--listen", "unix:///tmp/pi.sock"] },
+				command: "forge",
+				options: { fileArgs: ["prompt.md"], messages: ["--listen", "unix:///tmp/forge.sock"] },
 			},
 		});
-		if (!result.ok || result.command.command !== "pi") return;
+		if (!result.ok || result.command.command !== "forge") return;
 		expect(result.command.options.unknownFlags).toEqual(new Map([["unknown", true]]));
 	});
 
 	test.each([
 		[
-			["--listen", "unix:///tmp/pi.sock", "--listen", "unix:///tmp/pi-admin.sock"],
+			["--listen", "unix:///tmp/forge.sock", "--listen", "unix:///tmp/forge-admin.sock"],
 			"--listen may only be specified once",
 		],
 		[
@@ -159,7 +159,7 @@ describe("experimental CLI commands", () => {
 	test("treats command names after the first argument as existing CLI arguments", () => {
 		expect(experimentalCli.parse(["--cwd", "/workspace", "server"])).toMatchObject({
 			ok: true,
-			command: { command: "pi", options: { messages: ["server"] } },
+			command: { command: "forge", options: { messages: ["server"] } },
 		});
 	});
 });

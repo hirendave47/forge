@@ -17,7 +17,7 @@ describe("SettingsManager", () => {
 			rmSync(testDir, { recursive: true });
 		}
 		mkdirSync(agentDir, { recursive: true });
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
 	});
 
 	afterEach(() => {
@@ -221,7 +221,7 @@ describe("SettingsManager", () => {
 	describe("error tracking", () => {
 		it("should collect and clear load errors via drainErrors", () => {
 			const globalSettingsPath = join(agentDir, "settings.json");
-			const projectSettingsPath = join(projectDir, ".pi", "settings.json");
+			const projectSettingsPath = join(projectDir, ".forge", "settings.json");
 			writeFileSync(globalSettingsPath, "{ invalid global json");
 			writeFileSync(projectSettingsPath, "{ invalid project json");
 
@@ -240,7 +240,7 @@ describe("SettingsManager", () => {
 	describe("project trust", () => {
 		it("should skip project settings when project is not trusted", () => {
 			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ theme: "global" }));
-			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ theme: "project" }));
+			writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ theme: "project" }));
 
 			const manager = SettingsManager.create(projectDir, agentDir, { projectTrusted: false });
 
@@ -251,7 +251,7 @@ describe("SettingsManager", () => {
 
 		it("should reload project settings after trust changes to true", () => {
 			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ theme: "global" }));
-			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ theme: "project" }));
+			writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ theme: "project" }));
 			const manager = SettingsManager.create(projectDir, agentDir, { projectTrusted: false });
 
 			manager.setProjectTrusted(true);
@@ -261,7 +261,7 @@ describe("SettingsManager", () => {
 		});
 
 		it("should fail project settings writes when project is not trusted", async () => {
-			const projectSettingsPath = join(projectDir, ".pi", "settings.json");
+			const projectSettingsPath = join(projectDir, ".forge", "settings.json");
 			writeFileSync(projectSettingsPath, JSON.stringify({ packages: ["npm:existing"] }));
 			const manager = SettingsManager.create(projectDir, agentDir, { projectTrusted: false });
 
@@ -276,7 +276,7 @@ describe("SettingsManager", () => {
 
 		it("should read default project trust from global settings only", () => {
 			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
-			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ defaultProjectTrust: "never" }));
+			writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ defaultProjectTrust: "never" }));
 
 			const manager = SettingsManager.create(projectDir, agentDir);
 
@@ -293,13 +293,13 @@ describe("SettingsManager", () => {
 	});
 
 	describe("project settings directory creation", () => {
-		it("should not create .pi folder when only reading project settings", () => {
-			// Create agent dir with global settings, but NO .pi folder in project
+		it("should not create .forge folder when only reading project settings", () => {
+			// Create agent dir with global settings, but NO .forge folder in project
 			const settingsPath = join(agentDir, "settings.json");
 			writeFileSync(settingsPath, JSON.stringify({ theme: "dark" }));
 
-			// Delete the .pi folder that beforeEach created
-			rmSync(join(projectDir, ".pi"), { recursive: true });
+			// Delete the .forge folder that beforeEach created
+			rmSync(join(projectDir, ".forge"), { recursive: true });
 
 			// Create SettingsManager (reads both global and project settings)
 			const manager = SettingsManager.create(projectDir, agentDir);
@@ -317,8 +317,8 @@ describe("SettingsManager", () => {
 			writeFileSync(settingsPath, JSON.stringify({ theme: "dark" }));
 
 			// Delete any config folder that beforeEach created
-			if (existsSync(join(projectDir, ".pi"))) {
-				rmSync(join(projectDir, ".pi"), { recursive: true });
+			if (existsSync(join(projectDir, ".forge"))) {
+				rmSync(join(projectDir, ".forge"), { recursive: true });
 			}
 			if (existsSync(join(projectDir, CONFIG_DIR_NAME))) {
 				rmSync(join(projectDir, CONFIG_DIR_NAME), { recursive: true });
@@ -349,7 +349,7 @@ describe("SettingsManager", () => {
 
 		it("should use merged global and project settings", () => {
 			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ httpIdleTimeoutMs: 300000 }));
-			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ httpIdleTimeoutMs: 0 }));
+			writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ httpIdleTimeoutMs: 0 }));
 
 			const manager = SettingsManager.create(projectDir, agentDir);
 
@@ -542,7 +542,7 @@ describe("SettingsManager", () => {
 
 			expect(SettingsManager.create(projectDir, agentDir).getDefaultTools()).toEqual(["read", "bash"]);
 
-			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ defaultTools: ["grep"] }));
+			writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ defaultTools: ["grep"] }));
 
 			expect(SettingsManager.create(projectDir, agentDir).getDefaultTools()).toEqual(["grep"]);
 		});
@@ -568,7 +568,7 @@ describe("SettingsManager", () => {
 
 		it("should return project sessionDir, overriding global", () => {
 			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ sessionDir: "/global/sessions" }));
-			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ sessionDir: "./sessions" }));
+			writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ sessionDir: "./sessions" }));
 			const manager = SettingsManager.create(projectDir, agentDir);
 			expect(manager.getSessionDir()).toBe("./sessions");
 		});

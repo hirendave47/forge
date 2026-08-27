@@ -21,12 +21,12 @@ describe("regression #3686: session name changes emit an event", () => {
 		expect(harness.eventsOfType("session_info_changed").map((event) => event.name)).toEqual(["hello world"]);
 	});
 
-	it("emits session_info_changed when an extension calls pi.setSessionName", async () => {
+	it("emits session_info_changed when an extension calls forge.setSessionName", async () => {
 		let api: ExtensionAPI | undefined;
 		const harness = await createHarness({
 			extensionFactories: [
-				(pi) => {
-					api = pi;
+				(forge) => {
+					api = forge;
 				},
 			],
 		});
@@ -43,9 +43,9 @@ describe("regression #3686: session name changes emit an event", () => {
 		const events: Array<{ name: string | undefined }> = [];
 		const harness = await createHarness({
 			extensionFactories: [
-				(pi) => {
-					api = pi;
-					pi.on("session_info_changed", (event) => {
+				(forge) => {
+					api = forge;
+					forge.on("session_info_changed", (event) => {
 						events.push({ name: event.name });
 					});
 				},

@@ -1,13 +1,13 @@
 # Forge Documentation
 
-Pi is a minimal terminal coding harness. It is designed to stay small at the core while being extended through TypeScript extensions, skills, prompt templates, themes, and forge packages.
+Forge is a minimal terminal coding harness. It is designed to stay small at the core while being extended through TypeScript extensions, skills, prompt templates, themes, and forge packages.
 
 ## Quick start
 
 Install Forge with npm:
 
 ```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+npm install -g --ignore-scripts @earendil-works/forge-coding-agent
 ```
 
 `--ignore-scripts` disables dependency lifecycle scripts during install. Forge does not require install scripts for normal npm installs.
@@ -15,31 +15,31 @@ npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 On Linux or macOS, you can also use the installer:
 
 ```bash
-curl -fsSL https://pi.dev/install.sh | sh
+curl -fsSL https://forge.dev/install.sh | sh
 ```
 
 To uninstall forge itself, use npm for curl and npm installs:
 
 ```bash
-npm uninstall -g @earendil-works/pi-coding-agent
+npm uninstall -g @earendil-works/forge-coding-agent
 ```
 
-For pnpm, Yarn, or Bun installs, use the matching global remove command: `pnpm remove -g @earendil-works/pi-coding-agent`, `yarn global remove @earendil-works/pi-coding-agent`, or `bun uninstall -g @earendil-works/pi-coding-agent`.
+For pnpm, Yarn, or Bun installs, use the matching global remove command: `pnpm remove -g @earendil-works/forge-coding-agent`, `yarn global remove @earendil-works/forge-coding-agent`, or `bun uninstall -g @earendil-works/forge-coding-agent`.
 
 Then run it in a project directory:
 
 ```bash
-pi
+forge
 ```
 
-Authenticate with `/login` for subscription providers, or set an API key such as `ANTHROPIC_API_KEY` before starting pi.
+Authenticate with `/login` for subscription providers, or set an API key such as `ANTHROPIC_API_KEY` before starting forge.
 
 For the full first-run flow, see [Quickstart](quickstart.md).
 
 ## Start here
 
 - [Quickstart](quickstart.md) - install, authenticate, and run a first session.
-- [Using Pi](usage.md) - interactive mode, slash commands, context files, and CLI reference.
+- [Using Forge](usage.md) - interactive mode, slash commands, context files, and CLI reference.
 - [Providers](providers.md) - subscription and API-key setup for built-in providers.
 - [llama.cpp](llama-cpp.md) - run a local router and manage models with `/llama`.
 - [Security](security.md) - project trust, sandbox boundaries, and vulnerability reporting.
@@ -55,7 +55,7 @@ For the full first-run flow, see [Quickstart](quickstart.md).
 - [Skills](skills.md) - Agent Skills for reusable on-demand capabilities.
 - [Prompt templates](prompt-templates.md) - reusable prompts that expand from slash commands.
 - [Themes](themes.md) - built-in and custom terminal themes.
-- [Pi packages](packages.md) - bundle and share extensions, skills, prompts, and themes.
+- [Forge packages](packages.md) - bundle and share extensions, skills, prompts, and themes.
 - [Custom models](models.md) - add model entries for supported provider APIs.
 - [Custom providers](custom-provider.md) - implement custom APIs and OAuth flows.
 

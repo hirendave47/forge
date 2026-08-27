@@ -60,7 +60,7 @@ Skill content here.`,
 		});
 
 		it("should ignore extra markdown files in auto-discovered skill dirs", async () => {
-			const skillDir = join(agentDir, "skills", "pi-skills", "browser-tools");
+			const skillDir = join(agentDir, "skills", "forge-skills", "browser-tools");
 			mkdirSync(skillDir, { recursive: true });
 			writeFileSync(
 				join(skillDir, "SKILL.md"),
@@ -100,7 +100,7 @@ Prompt content.`,
 
 		it("should prefer project resources over user on name collisions", async () => {
 			const userPromptsDir = join(agentDir, "prompts");
-			const projectPromptsDir = join(cwd, ".pi", "prompts");
+			const projectPromptsDir = join(cwd, ".forge", "prompts");
 			mkdirSync(userPromptsDir, { recursive: true });
 			mkdirSync(projectPromptsDir, { recursive: true });
 			const userPromptPath = join(userPromptsDir, "commit.md");
@@ -109,7 +109,7 @@ Prompt content.`,
 			writeFileSync(projectPromptPath, "Project prompt");
 
 			const userSkillDir = join(agentDir, "skills", "collision-skill");
-			const projectSkillDir = join(cwd, ".pi", "skills", "collision-skill");
+			const projectSkillDir = join(cwd, ".forge", "skills", "collision-skill");
 			mkdirSync(userSkillDir, { recursive: true });
 			mkdirSync(projectSkillDir, { recursive: true });
 			const userSkillPath = join(userSkillDir, "SKILL.md");
@@ -136,9 +136,9 @@ Project skill`,
 			) as { name: string; vars?: Record<string, string> };
 			baseTheme.name = "collision-theme";
 			const userThemePath = join(agentDir, "themes", "collision.json");
-			const projectThemePath = join(cwd, ".pi", "themes", "collision.json");
+			const projectThemePath = join(cwd, ".forge", "themes", "collision.json");
 			mkdirSync(join(agentDir, "themes"), { recursive: true });
-			mkdirSync(join(cwd, ".pi", "themes"), { recursive: true });
+			mkdirSync(join(cwd, ".forge", "themes"), { recursive: true });
 			writeFileSync(userThemePath, JSON.stringify(baseTheme, null, 2));
 			if (baseTheme.vars) {
 				baseTheme.vars.accent = "#ff00ff";
@@ -163,8 +163,8 @@ Project skill`,
 			mkdirSync(sharedExtDir, { recursive: true });
 			writeFileSync(
 				join(sharedExtDir, "shared.ts"),
-				`export default function(pi) {
-	pi.registerCommand("shared", {
+				`export default function(forge) {
+	forge.registerCommand("shared", {
 		description: "shared command",
 		handler: async () => {},
 	});
@@ -172,9 +172,9 @@ Project skill`,
 			);
 
 			mkdirSync(agentDir, { recursive: true });
-			mkdirSync(join(cwd, ".pi"), { recursive: true });
+			mkdirSync(join(cwd, ".forge"), { recursive: true });
 			symlinkSync(sharedExtDir, join(agentDir, "extensions"), "dir");
-			symlinkSync(sharedExtDir, join(cwd, ".pi", "extensions"), "dir");
+			symlinkSync(sharedExtDir, join(cwd, ".forge", "extensions"), "dir");
 
 			const loader = new DefaultResourceLoader({ cwd, agentDir });
 			await loader.reload();
@@ -185,12 +185,12 @@ Project skill`,
 
 			// mergePaths processes project paths before user paths, so the project
 			// alias is the canonical survivor.
-			expect(extensionsResult.extensions[0].path).toBe(join(cwd, ".pi", "extensions", "shared.ts"));
+			expect(extensionsResult.extensions[0].path).toBe(join(cwd, ".forge", "extensions", "shared.ts"));
 		});
 
 		it("should load user extensions before trust and reuse them after trust resolves", async () => {
 			const userExtDir = join(agentDir, "extensions");
-			const projectExtDir = join(cwd, ".pi", "extensions");
+			const projectExtDir = join(cwd, ".forge", "extensions");
 			mkdirSync(userExtDir, { recursive: true });
 			mkdirSync(projectExtDir, { recursive: true });
 			const loadCountKey = `__piTrustPreloadCount_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -199,9 +199,9 @@ Project skill`,
 			writeFileSync(
 				join(userExtDir, "user.ts"),
 				`globalThis[${JSON.stringify(loadCountKey)}] = (globalThis[${JSON.stringify(loadCountKey)}] ?? 0) + 1;
-export default function(pi) {
-	pi.on("project_trust", () => ({ trusted: "yes" }));
-	pi.registerCommand("user-trust", {
+export default function(forge) {
+	forge.on("project_trust", () => ({ trusted: "yes" }));
+	forge.registerCommand("user-trust", {
 		description: "user trust",
 		handler: async () => {},
 	});
@@ -209,8 +209,8 @@ export default function(pi) {
 			);
 			writeFileSync(
 				join(projectExtDir, "project.ts"),
-				`export default function(pi) {
-	pi.registerCommand("project-trusted", {
+				`export default function(forge) {
+	forge.registerCommand("project-trusted", {
 		description: "project trusted",
 		handler: async () => {},
 	});
@@ -229,7 +229,7 @@ export default function(pi) {
 
 			const extensionsResult = loader.getExtensions();
 			expect(extensionsResult.extensions.map((extension) => extension.path)).toEqual([
-				join(cwd, ".pi", "extensions", "project.ts"),
+				join(cwd, ".forge", "extensions", "project.ts"),
 				join(userExtDir, "user.ts"),
 			]);
 			expect(globalState[loadCountKey]).toBe(1);
@@ -237,18 +237,18 @@ export default function(pi) {
 
 		it("should keep both extensions loaded when command names collide", async () => {
 			const userExtDir = join(agentDir, "extensions");
-			const projectExtDir = join(cwd, ".pi", "extensions");
+			const projectExtDir = join(cwd, ".forge", "extensions");
 			mkdirSync(userExtDir, { recursive: true });
 			mkdirSync(projectExtDir, { recursive: true });
 
 			writeFileSync(
 				join(projectExtDir, "project.ts"),
-				`export default function(pi) {
-	pi.registerCommand("deploy", {
+				`export default function(forge) {
+	forge.registerCommand("deploy", {
 		description: "project deploy",
 		handler: async () => {},
 	});
-	pi.registerCommand("project-only", {
+	forge.registerCommand("project-only", {
 		description: "project only",
 		handler: async () => {},
 	});
@@ -257,12 +257,12 @@ export default function(pi) {
 
 			writeFileSync(
 				join(userExtDir, "user.ts"),
-				`export default function(pi) {
-	pi.registerCommand("deploy", {
+				`export default function(forge) {
+	forge.registerCommand("deploy", {
 		description: "user deploy",
 		handler: async () => {},
 	});
-	pi.registerCommand("user-only", {
+	forge.registerCommand("user-only", {
 		description: "user only",
 		handler: async () => {},
 	});
@@ -404,8 +404,8 @@ Content`,
 			expect(agentsFiles).toEqual([]);
 		});
 
-		it("should discover SYSTEM.md from cwd/.pi", async () => {
-			const piDir = join(cwd, ".pi");
+		it("should discover SYSTEM.md from cwd/.forge", async () => {
+			const piDir = join(cwd, ".forge");
 			mkdirSync(piDir, { recursive: true });
 			writeFileSync(join(piDir, "SYSTEM.md"), "You are a helpful assistant.");
 
@@ -416,7 +416,7 @@ Content`,
 		});
 
 		it("should skip project resources that require trust when project is not trusted", async () => {
-			const piDir = join(cwd, ".pi");
+			const piDir = join(cwd, ".forge");
 			const extensionsDir = join(piDir, "extensions");
 			const skillDir = join(piDir, "skills", "project-skill");
 			const promptsDir = join(piDir, "prompts");
@@ -462,7 +462,7 @@ Project skill content`,
 		});
 
 		it("should discover APPEND_SYSTEM.md", async () => {
-			const piDir = join(cwd, ".pi");
+			const piDir = join(cwd, ".forge");
 			mkdirSync(piDir, { recursive: true });
 			writeFileSync(join(piDir, "APPEND_SYSTEM.md"), "Additional instructions.");
 
@@ -475,7 +475,7 @@ Project skill content`,
 
 	describe("system prompt sources", () => {
 		it("exposes discovered project SYSTEM.md as the system prompt source", async () => {
-			const piDir = join(cwd, ".pi");
+			const piDir = join(cwd, ".forge");
 			const systemPromptPath = join(piDir, "SYSTEM.md");
 			mkdirSync(piDir, { recursive: true });
 			writeFileSync(systemPromptPath, "Project system prompt.");
@@ -518,7 +518,7 @@ Project skill content`,
 		});
 
 		it("exposes discovered APPEND_SYSTEM.md as an append system prompt source", async () => {
-			const piDir = join(cwd, ".pi");
+			const piDir = join(cwd, ".forge");
 			const appendSystemPromptPath = join(piDir, "APPEND_SYSTEM.md");
 			mkdirSync(piDir, { recursive: true });
 			writeFileSync(appendSystemPromptPath, "Project append prompt.");
@@ -855,8 +855,8 @@ Content`,
 				`
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 import { Type } from "typebox";
-export default function(pi: ExtensionAPI) {
-  pi.registerTool({
+export default function(forge: ExtensionAPI) {
+  forge.registerTool({
     name: "duplicate-tool",
     description: "First",
     parameters: Type.Object({}),
@@ -870,8 +870,8 @@ export default function(pi: ExtensionAPI) {
 				`
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 import { Type } from "typebox";
-export default function(pi: ExtensionAPI) {
-  pi.registerTool({
+export default function(forge: ExtensionAPI) {
+  forge.registerTool({
     name: "duplicate-tool",
     description: "Second",
     parameters: Type.Object({}),
@@ -897,14 +897,14 @@ export default function(pi: ExtensionAPI) {
 				`
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 import { Type } from "typebox";
-export default function(pi: ExtensionAPI) {
-  pi.registerTool({
+export default function(forge: ExtensionAPI) {
+  forge.registerTool({
     name: "duplicate-tool",
     description: "global tool",
     parameters: Type.Object({}),
     execute: async () => ({ result: "global" }),
   });
-  pi.registerCommand("deploy", {
+  forge.registerCommand("deploy", {
     description: "global command",
     handler: async () => {},
   });
@@ -916,14 +916,14 @@ export default function(pi: ExtensionAPI) {
 				`
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 import { Type } from "typebox";
-export default function(pi: ExtensionAPI) {
-  pi.registerTool({
+export default function(forge: ExtensionAPI) {
+  forge.registerTool({
     name: "duplicate-tool",
     description: "explicit tool",
     parameters: Type.Object({}),
     execute: async () => ({ result: "explicit" }),
   });
-  pi.registerCommand("deploy", {
+  forge.registerCommand("deploy", {
     description: "explicit command",
     handler: async () => {},
   });

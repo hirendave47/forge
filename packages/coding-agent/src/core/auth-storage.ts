@@ -1,6 +1,6 @@
 /**
  * CredentialStore implementation backed by auth.json.
- * Provider auth orchestration belongs to ModelRuntime and pi-ai Models.
+ * Provider auth orchestration belongs to ModelRuntime and forge-ai Models.
  */
 
 import type { AuthOperationOptions, Credential, CredentialInfo, CredentialStore } from "@earendil-works/forge-ai";

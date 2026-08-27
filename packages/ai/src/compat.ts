@@ -1,5 +1,5 @@
 /**
- * Temporary compatibility entrypoint preserving the old global pi-ai API
+ * Temporary compatibility entrypoint preserving the old global forge-ai API
  * surface: api-dispatch `stream()`/`complete()` with env API key injection,
  * the api-registry, generated catalog reads (`getModel`/`getModels`/
  * `getProviders`), per-API lazy stream wrappers, and image generation.
@@ -31,7 +31,7 @@ export * from "./providers/images/register-builtins.ts";
 import { anthropicMessagesApi } from "./api/anthropic-messages.lazy.ts";
 import { azureOpenAIResponsesApi } from "./api/azure-openai-responses.lazy.ts";
 import { bedrockConverseStreamApi } from "./api/bedrock-converse-stream.lazy.ts";
-import { piMessagesApi } from "./api/forge-messages.lazy.ts";
+import { forgeMessagesApi } from "./api/forge-messages.lazy.ts";
 import { googleGenerativeAIApi } from "./api/google-generative-ai.lazy.ts";
 import { googleVertexApi } from "./api/google-vertex.lazy.ts";
 import { mistralConversationsApi } from "./api/mistral-conversations.lazy.ts";
@@ -185,7 +185,7 @@ const BUILTIN_APIS: [Api, ProviderStreams][] = [
 	["google-vertex", googleVertexApi()],
 	["mistral-conversations", mistralConversationsApi()],
 	["bedrock-converse-stream", bedrockConverseStreamApi()],
-	["pi-messages", piMessagesApi()],
+	["forge-messages", forgeMessagesApi()],
 ];
 
 const builtinApiProviderInstances = new Map<Api, ReturnType<typeof getApiProvider>>();

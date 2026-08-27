@@ -115,7 +115,7 @@ function parseArgs(): Args {
 	const args = process.argv.slice(2);
 	let days = 7;
 	const forgeSessions = join(homedir(), ".forge", "agent", "sessions");
-	const piSessions = join(homedir(), ".pi", "agent", "sessions");
+	const piSessions = join(homedir(), ".forge", "agent", "sessions");
 	let sessionsBase = existsSync(forgeSessions) ? forgeSessions : existsSync(piSessions) ? piSessions : forgeSessions;
 
 	for (let i = 0; i < args.length; i++) {

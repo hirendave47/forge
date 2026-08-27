@@ -50,6 +50,9 @@ for (const pkg of workspacePackages) {
 		for (const [dependencyName, currentSpecifier] of Object.entries(dependencies)) {
 			// Registry aliases such as `npm:@earendil-works/forge-ai@0.1.2` are never workspace-linked,
 			// so lockstep bumping them would point at a version that is not published yet.
+			if (currentSpecifier.startsWith("npm:")) {
+				continue;
+			}
 			const version = versionMap.get(dependencyName);
 			const newSpecifier = version ? `^${version}` : null;
 			if (!newSpecifier || currentSpecifier === newSpecifier) {

@@ -52,7 +52,7 @@ describe("package commands", () => {
 		writeFileSync(join(managedRoot, "current-version"), `${VERSION}\n`);
 		writeFileSync(
 			join(managedRoot, "managed-install.json"),
-			`${JSON.stringify({ kind: "pi-managed-install", schemaVersion: 1, layout: "releases-v1" })}\n`,
+			`${JSON.stringify({ kind: "forge-managed-install", schemaVersion: 1, layout: "releases-v1" })}\n`,
 		);
 
 		const binDir = join(tempDir, "managed-bin");
@@ -68,7 +68,7 @@ fs.writeFileSync(${JSON.stringify(npmRecordPath)}, JSON.stringify(args));
 if (${npmExitCode} !== 0) process.exit(${npmExitCode});
 const binDir = path.join(process.cwd(), "node_modules", ".bin");
 fs.mkdirSync(binDir, { recursive: true });
-for (const b of ["${APP_NAME}", "pi", "forge"]) {
+for (const b of ["${APP_NAME}", "forge"]) {
 	const p = path.join(binDir, process.platform === "win32" ? b + ".cmd" : b);
 	fs.writeFileSync(
 		p,
@@ -101,7 +101,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			"fetch",
 			vi.fn(async (input: string | URL | Request) => {
 				const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-				if (url === "https://pi.dev/api/latest-version") {
+				if (url === "https://forge.dev/api/latest-version") {
 					return Response.json({ packageName: PACKAGE_NAME, version: targetVersion });
 				}
 				const releaseUrl = `https://example.test/api/installer/releases/${targetVersion}`;
@@ -137,7 +137,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 	beforeEach(() => {
 		allowNetwork();
-		tempDir = join(tmpdir(), `pi-package-commands-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		tempDir = join(tmpdir(), `forge-package-commands-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		agentDir = join(tempDir, "agent");
 		projectDir = join(tempDir, "project");
 		packageDir = join(tempDir, "local-package");
@@ -217,8 +217,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("skips untrusted project package settings", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
-		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
+		writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		try {
@@ -233,8 +233,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("uses remembered project trust for list", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
-		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
+		writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		new ProjectTrustStore(agentDir).set(projectDir, true);
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
@@ -252,8 +252,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("overrides remembered trust for list with --no-approve", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
-		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
+		writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		new ProjectTrustStore(agentDir).set(projectDir, true);
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
@@ -270,8 +270,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("approves project trust for list with --approve", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
-		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
+		writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		try {
@@ -288,9 +288,9 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("uses default project trust for list", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
 		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
-		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
+		writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		try {
@@ -307,16 +307,16 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("uses project_trust extensions for package commands", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
-		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
+		writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		try {
 			await expect(
 				main(["list"], {
 					extensionFactories: [
-						(pi) => {
-							pi.on("project_trust", () => ({ trusted: "yes" }));
+						(forge) => {
+							forge.on("project_trust", () => ({ trusted: "yes" }));
 						},
 					],
 				}),
@@ -333,7 +333,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("does not prompt or ask extensions for project trust during update", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
 		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
 		const fakeNpmPath = join(tempDir, "fake-project-npm.cjs");
 		const recordPath = join(tempDir, "project-update.json");
@@ -342,7 +342,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			`const fs=require("node:fs");fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(process.argv.slice(2)));`,
 		);
 		writeFileSync(
-			join(projectDir, ".pi", "settings.json"),
+			join(projectDir, ".forge", "settings.json"),
 			JSON.stringify({ packages: ["npm:fake-package"], npmCommand: [originalExecPath, fakeNpmPath] }),
 		);
 		let projectTrustCalled = false;
@@ -352,8 +352,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			await expect(
 				main(["update", "--extensions"], {
 					extensionFactories: [
-						(pi) => {
-							pi.on("project_trust", () => {
+						(forge) => {
+							forge.on("project_trust", () => {
 								projectTrustCalled = true;
 								return { trusted: "yes" };
 							});
@@ -371,7 +371,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("uses saved project trust during update", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
 		const fakeNpmPath = join(tempDir, "fake-trusted-project-npm.cjs");
 		const recordPath = join(tempDir, "trusted-project-update.json");
 		writeFileSync(
@@ -379,7 +379,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			`const fs=require("node:fs");fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(process.argv.slice(2)));`,
 		);
 		writeFileSync(
-			join(projectDir, ".pi", "settings.json"),
+			join(projectDir, ".forge", "settings.json"),
 			JSON.stringify({ packages: ["npm:fake-package"], npmCommand: [originalExecPath, fakeNpmPath] }),
 		);
 		new ProjectTrustStore(agentDir).set(projectDir, true);
@@ -396,9 +396,9 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("lets trust.json override default project trust", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
 		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
-		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
+		writeFileSync(join(projectDir, ".forge", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		new ProjectTrustStore(agentDir).set(projectDir, false);
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
@@ -415,8 +415,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("blocks local package changes when project is untrusted", async () => {
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
-		writeFileSync(join(projectDir, ".pi", "settings.json"), "{}");
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
+		writeFileSync(join(projectDir, ".forge", "settings.json"), "{}");
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
 		try {
@@ -450,7 +450,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stdout).toContain("Usage:");
-			expect(stdout).toMatch(/(pi|forge) install <source> \[-l\]/);
+			expect(stdout).toMatch(/forge install <source> \[-l\]/);
 			expect(errorSpy).not.toHaveBeenCalled();
 			expect(process.exitCode).toBeUndefined();
 		} finally {
@@ -498,9 +498,9 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 	it("cycles project package overrides in config local mode", async () => {
 		const storage = new InMemorySettingsStorage();
-		storage.withLock("global", () => JSON.stringify({ packages: ["npm:pi-tools"] }));
+		storage.withLock("global", () => JSON.stringify({ packages: ["npm:forge-tools"] }));
 		const settingsManager = SettingsManager.fromStorage(storage, { projectTrusted: true });
-		const resolvedPaths = extensionPaths(join(tempDir, "pkg"), "npm:pi-tools", "user", ["bar.ts"]);
+		const resolvedPaths = extensionPaths(join(tempDir, "pkg"), "npm:forge-tools", "user", ["bar.ts"]);
 		const selector = new ConfigSelectorComponent(
 			{ global: resolvedPaths, project: resolvedPaths },
 			settingsManager,
@@ -515,12 +515,12 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 		selector.getResourceList().handleInput(" ");
 		expect(settingsManager.getProjectSettings().packages).toEqual([
-			{ source: "npm:pi-tools", autoload: false, extensions: ["-extensions/bar.ts"] },
+			{ source: "npm:forge-tools", autoload: false, extensions: ["-extensions/bar.ts"] },
 		]);
 
 		selector.getResourceList().handleInput(" ");
 		expect(settingsManager.getProjectSettings().packages).toEqual([
-			{ source: "npm:pi-tools", autoload: false, extensions: ["+extensions/bar.ts"] },
+			{ source: "npm:forge-tools", autoload: false, extensions: ["+extensions/bar.ts"] },
 		]);
 
 		selector.getResourceList().handleInput(" ");
@@ -535,9 +535,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stderr).toContain('Unknown option --unknown for "install".');
-			expect(stderr).toMatch(
-				/Use "(pi|forge) --help" or "(pi|forge) install <source> \[-l\] \[--approve\|--no-approve\]"\./,
-			);
+			expect(stderr).toMatch(/Use "forge --help" or "forge install <source> \[-l\] \[--approve\|--no-approve\]"\./);
 			expect(process.exitCode).toBe(1);
 		} finally {
 			errorSpy.mockRestore();
@@ -552,7 +550,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stderr).toContain("Missing install source.");
-			expect(stderr).toMatch(/Usage: (pi|forge) install <source> \[-l\]/);
+			expect(stderr).toMatch(/Usage: forge install <source> \[-l\]/);
 			expect(stderr).not.toContain("at ");
 			expect(process.exitCode).toBe(1);
 		} finally {
@@ -573,7 +571,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 			expect(fetchMock).toHaveBeenCalledOnce();
 			const output = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(output).toMatch(/(pi|forge) is already up to date/);
+			expect(output).toMatch(/forge is already up to date/);
 			expect(output).toContain(`v${VERSION}`);
 			expect(errorSpy).not.toHaveBeenCalled();
 			expect(process.exitCode).toBeUndefined();
@@ -633,7 +631,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			expect.arrayContaining(["ci", "--ignore-scripts"]),
 		);
 		const output = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-		expect(output).toMatch(/Updated (pi|forge) from/);
+		expect(output).toMatch(/Updated forge from/);
 		expect(output).toContain(VERSION);
 		expect(output).toContain(targetVersion);
 		expect(errorSpy).not.toHaveBeenCalled();
@@ -656,7 +654,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 		expect(readFileSync(join(managedRoot, "current-version"), "utf8")).toBe(`${VERSION}\n`);
 		expect(existsSync(npmRecordPath)).toBe(false);
-		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toMatch(/Updated (pi|forge) from/);
+		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toMatch(/Updated forge from/);
 		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
 			"Another managed Forge update is already running.",
 		);
@@ -675,7 +673,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		expect(fetchMock).not.toHaveBeenCalled();
 		expect(existsSync(npmRecordPath)).toBe(false);
 		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toMatch(
-			/Managed (pi|forge) installations do not support --force/,
+			/Managed forge installations do not support --force/,
 		);
 		expect(process.exitCode).toBe(1);
 	});
@@ -692,7 +690,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		expect(readFileSync(join(managedRoot, "current-version"), "utf8")).toBe(`${VERSION}\n`);
 		expect(existsSync(join(managedRoot, "releases", targetVersion))).toBe(false);
 		expect(readdirSync(join(managedRoot, "staging"))).toEqual([]);
-		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toMatch(/Updated (pi|forge) from/);
+		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toMatch(/Updated forge from/);
 		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain("exited with code 23");
 		expect(process.exitCode).toBe(1);
 	});
@@ -700,18 +698,18 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	it("keeps npm self-updates non-managed when the managed environment is inherited", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
 		const projectPrefix = join(tempDir, "project-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@earendil-works", "pi-coding-agent");
+		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@earendil-works", "forge-coding-agent");
 		const inheritedManagedRoot = join(tempDir, "inherited-managed-install");
 		mkdirSync(join(inheritedManagedRoot, "releases"), { recursive: true });
 		writeFileSync(
 			join(inheritedManagedRoot, "managed-install.json"),
-			JSON.stringify({ kind: "pi-managed-install", schemaVersion: 1, layout: "releases-v1" }),
+			JSON.stringify({ kind: "forge-managed-install", schemaVersion: 1, layout: "releases-v1" }),
 		);
 		vi.stubEnv("FORGE_MANAGED_INSTALL_ROOT", inheritedManagedRoot);
 		const fakeNpmPath = join(tempDir, "fake-npm.cjs");
 		const recordPath = join(tempDir, "self-update.json");
 		mkdirSync(selfPackageDir, { recursive: true });
-		mkdirSync(join(projectDir, ".pi"), { recursive: true });
+		mkdirSync(join(projectDir, ".forge"), { recursive: true });
 		writeFileSync(
 			fakeNpmPath,
 			`const fs=require("node:fs"),path=require("node:path"),args=process.argv.slice(2),prefix=args[args.indexOf("--prefix")+1];
@@ -724,7 +722,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 			JSON.stringify({ npmCommand: [originalExecPath, fakeNpmPath, "--prefix", globalPrefix] }, null, 2),
 		);
 		writeFileSync(
-			join(projectDir, ".pi", "settings.json"),
+			join(projectDir, ".forge", "settings.json"),
 			JSON.stringify({ npmCommand: [originalExecPath, fakeNpmPath, "--prefix", projectPrefix] }, null, 2),
 		);
 		process.env.FORGE_PACKAGE_DIR = selfPackageDir;
@@ -750,7 +748,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 			expect(recordedArgs).toContain(`${PACKAGE_NAME}@${VERSION}`);
 			expect(recordedArgs).not.toContain(PACKAGE_NAME);
 			expect(recordedArgs).not.toContain(projectPrefix);
-			expect(stdout).toMatch(/Updated (pi|forge) from/);
+			expect(stdout).toMatch(/Updated forge from/);
 			expect(stdout).toContain(VERSION);
 		} finally {
 			logSpy.mockRestore();
@@ -760,7 +758,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 
 	it("uses the current package name when the update check omits packageName", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@mariozechner", "pi-coding-agent");
+		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@earendil-works", "forge-coding-agent");
 		const fakeNpmPath = join(tempDir, "fake-npm.cjs");
 		const recordPath = join(tempDir, "self-update.json");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -797,7 +795,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 			const recordedArgs = JSON.parse(readFileSync(recordPath, "utf-8")) as string[];
 			expect(recordedArgs).toContain(`${PACKAGE_NAME}@${targetVersion}`);
 			expect(recordedArgs).not.toContain(PACKAGE_NAME);
-			expect(stdout).toMatch(/Updated (pi|forge) from/);
+			expect(stdout).toMatch(/Updated forge from/);
 			expect(stdout).toContain(VERSION);
 			expect(stdout).toContain(targetVersion);
 		} finally {
@@ -808,7 +806,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 
 	it("installs the active package name from the update check during self-update", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@mariozechner", "pi-coding-agent");
+		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@earendil-works", "forge-coding-agent");
 		const fakeNpmPath = join(tempDir, "fake-npm.cjs");
 		const recordPath = join(tempDir, "self-update.json");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -859,7 +857,7 @@ else {
 
 	it("prints a pnpm metadata hint when self-update fails", async () => {
 		const globalRoot = join(tempDir, "pnpm", "global", "v11");
-		const selfPackageDir = join(globalRoot, "node_modules", "@earendil-works", "pi-coding-agent");
+		const selfPackageDir = join(globalRoot, "node_modules", "@earendil-works", "forge-coding-agent");
 		const fakeBinDir = join(tempDir, "bin");
 		const fakePnpmPath = join(fakeBinDir, process.platform === "win32" ? "pnpm.cmd" : "pnpm");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -891,10 +889,10 @@ else {
 			expect(process.exitCode).toBe(1);
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).not.toMatch(/Updated (pi|forge)/);
+			expect(stdout).not.toMatch(/Updated forge/);
 			expect(stderr).toContain("exited with code 23");
 			expect(stderr).toContain("If pnpm reports missing package versions");
-			expect(stderr).toMatch(/Run `pnpm store prune` and retry `(pi|forge) update --self`\./);
+			expect(stderr).toMatch(/Run `pnpm store prune` and retry `forge update --self`\./);
 		} finally {
 			logSpy.mockRestore();
 			errorSpy.mockRestore();
@@ -903,7 +901,7 @@ else {
 
 	it("fails self-update when renamed npm package installation fails", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@mariozechner", "pi-coding-agent");
+		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@earendil-works", "forge-coding-agent");
 		const fakeNpmPath = join(tempDir, "fake-npm-fail.cjs");
 		const recordPath = join(tempDir, "self-update-fail.json");
 		mkdirSync(selfPackageDir, { recursive: true });
@@ -944,7 +942,7 @@ if(args.includes("install")) process.exit(23);
 			expect(process.exitCode).toBe(1);
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).not.toMatch(/Updated (pi|forge)/);
+			expect(stdout).not.toMatch(/Updated forge/);
 			expect(stderr).toContain("exited with code 23");
 			const recordedCalls = JSON.parse(readFileSync(recordPath, "utf-8")) as string[][];
 			expect(recordedCalls).toEqual([
@@ -959,22 +957,22 @@ if(args.includes("install")) process.exit(23);
 
 	it("suggests the configured source when update input omits the npm prefix", async () => {
 		const settingsPath = join(agentDir, "settings.json");
-		writeFileSync(settingsPath, JSON.stringify({ packages: ["npm:pi-formatter"] }, null, 2));
+		writeFileSync(settingsPath, JSON.stringify({ packages: ["npm:forge-formatter"] }, null, 2));
 
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		try {
-			await expect(main(["update", "pi-formatter"])).resolves.toBeUndefined();
+			await expect(main(["update", "forge-formatter"])).resolves.toBeUndefined();
 
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stderr).toContain("Did you mean npm:pi-formatter?");
-			expect(stdout).not.toContain("Updated pi-formatter");
+			expect(stderr).toContain("Did you mean npm:forge-formatter?");
+			expect(stdout).not.toContain("Updated forge-formatter");
 			expect(process.exitCode).toBe(1);
 
 			const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as { packages?: string[] };
-			expect(settings.packages).toContain("npm:pi-formatter");
+			expect(settings.packages).toContain("npm:forge-formatter");
 		} finally {
 			errorSpy.mockRestore();
 			logSpy.mockRestore();

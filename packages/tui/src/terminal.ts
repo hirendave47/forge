@@ -370,7 +370,7 @@ export class ProcessTerminal implements Terminal {
 			if (arch !== "x64" && arch !== "arm64") return;
 
 			// Dynamic require so non-Windows and bundled/browser paths never load the
-			// native helper. Installed packages resolve it from pi-tui; standalone
+			// native helper. Installed packages resolve it from forge-tui; standalone
 			// binaries resolve the copy next to the executable.
 			const nativePath = path.join("native", "win32", "prebuilds", `win32-${arch}`, "win32-console-mode.node");
 			for (const modulePath of getNativeModuleCandidates(nativePath)) {

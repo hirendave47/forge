@@ -19,7 +19,7 @@ describe("shouldRunFirstTimeSetup in forked distributions", () => {
 	let settingsPath: string;
 
 	beforeEach(() => {
-		tempDir = mkdtempSync(join(tmpdir(), "pi-first-time-setup-fork-"));
+		tempDir = mkdtempSync(join(tmpdir(), "forge-first-time-setup-fork-"));
 		settingsPath = join(tempDir, "settings.json");
 		process.env.FORGE_EXPERIMENTAL = "1";
 	});

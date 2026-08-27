@@ -13,9 +13,6 @@ export type {
 	ForgeMessagesEvent,
 	ForgeMessagesOptions,
 	ForgeMessagesRewriteImpact,
-	PiMessagesEvent,
-	PiMessagesOptions,
-	PiMessagesRewriteImpact,
 } from "./api/forge-messages.ts";
 export type { GoogleOptions } from "./api/google-generative-ai.ts";
 export type { GoogleApiThinkingLevel, ResolvedGoogleThinkingLevel } from "./api/google-shared.ts";

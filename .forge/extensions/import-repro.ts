@@ -9,8 +9,8 @@
  * Usage:
  *   /ir b4d100022aefb12f25dd2d8485e0a82a
  *   /ir https://gist.github.com/mitsuhiko/b4d100022aefb12f25dd2d8485e0a82a
- *   /ir https://pi.dev/session/#b4d100022aefb12f25dd2d8485e0a82a
- *   /ir https://github.com/earendil-works/pi/issues/123
+ *   /ir https://forge.dev/session/#b4d100022aefb12f25dd2d8485e0a82a
+ *   /ir https://github.com/hirendave47/forge/issues/123
  *
  *   forge "/ir <gist-id>"
  */
@@ -22,7 +22,7 @@ import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/forg
 
 const GIST_ID_RE = /^[0-9a-fA-F]{20,}$/;
 const GIST_URL_RE = /^https:\/\/gist\.github\.com\/(?:[^/]+\/)?([0-9a-fA-F]{20,})(?:[/#?].*)?$/;
-const SHARE_URL_RE = /^https:\/\/pi\.dev\/session\/#([0-9a-fA-F]{20,})(?:[/#?].*)?$/;
+const SHARE_URL_RE = /^https:\/\/forge\.dev\/session\/#([0-9a-fA-F]{20,})(?:[/#?].*)?$/;
 const ISSUE_URL_RE = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)(?:[/#?].*)?$/;
 const GIST_URL_IN_TEXT_RE = /https:\/\/gist\.github\.com\/(?:[^/\s]+\/)?([0-9a-fA-F]{20,})\b/g;
 const SESSION_DATA_RE = /<script id="session-data" type="application\/json">([^<]+)<\/script>/;
@@ -74,7 +74,7 @@ function parseRef(
 
 	if (GIST_ID_RE.test(ref)) return { type: "gist", id: ref };
 
-	throw new Error(`expected a gist ID, gist URL, pi.dev share URL, issue URL, .html file, or .jsonl file: ${ref}`);
+	throw new Error(`expected a gist ID, gist URL, forge.dev share URL, issue URL, .html file, or .jsonl file: ${ref}`);
 }
 
 function parseSessionJsonl(raw: string): { header: SessionHeader; jsonl: string } {
@@ -171,7 +171,7 @@ function getCwdRewriteVariants(sourceCwd: string): string[] {
 
 function getCiWorkdirName(sourceCwd: string): string | undefined {
 	const name = getPathTailName(sourceCwd);
-	return /^pi-ci-[0-9a-f]{32}$/i.test(name) ? name : undefined;
+	return /^forge-ci-[0-9a-f]{32}$/i.test(name) ? name : undefined;
 }
 
 function detectSessionPlatform(cwd: string): SessionPlatform {
@@ -280,13 +280,13 @@ async function fetchGistSession(gistId: string): Promise<{ header: SessionHeader
 	throw new Error(`gist ${gistId} has no .jsonl or .html session file`);
 }
 
-export default function (pi: ExtensionAPI) {
-	pi.registerCommand("ir", {
+export default function (forge: ExtensionAPI) {
+	forge.registerCommand("ir", {
 		description: "Import a CI issue-analysis session from a gist ID, share URL, or issue URL and switch to it",
 		handler: async (args: string, ctx: ExtensionCommandContext) => {
 			const ref = args.trim();
 			if (!ref) {
-				ctx.ui.notify("Usage: /ir <gist-id | gist-url | pi.dev/session URL | issue URL>", "error");
+				ctx.ui.notify("Usage: /ir <gist-id | gist-url | forge.dev/session URL | issue URL>", "error");
 				return;
 			}
 

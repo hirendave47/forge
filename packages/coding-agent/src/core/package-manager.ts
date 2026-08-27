@@ -360,7 +360,7 @@ function collectFiles(
 	return files;
 }
 
-type SkillDiscoveryMode = "pi" | "agents";
+type SkillDiscoveryMode = "forge" | "agents";
 
 function collectSkillEntries(
 	dir: string,
@@ -423,7 +423,7 @@ function collectSkillEntries(
 				isFile &&
 				entry.name.endsWith(".md") &&
 				!ig.ignores(relPath) &&
-				((mode === "pi" && dir === root) || (mode === "agents" && dir !== root));
+				((mode === "forge" && dir === root) || (mode === "agents" && dir !== root));
 			if (shouldIncludeMarkdownFile) {
 				entries.push(fullPath);
 				continue;
@@ -644,7 +644,7 @@ function collectAutoExtensionEntries(dir: string): string[] {
  */
 function collectResourceFiles(dir: string, resourceType: ResourceType): string[] {
 	if (resourceType === "skills") {
-		return collectSkillEntries(dir, "pi");
+		return collectSkillEntries(dir, "forge");
 	}
 	if (resourceType === "extensions") {
 		return collectAutoExtensionEntries(dir);
@@ -929,7 +929,7 @@ export class DefaultPackageManager implements PackageManager {
 
 		const globalBaseDir = this.agentDir;
 		const primaryProjectBaseDir = join(this.cwd, CONFIG_DIR_NAME);
-		const legacyProjectBaseDir = join(this.cwd, ".pi");
+		const legacyProjectBaseDir = join(this.cwd, ".forge");
 		const projectBaseDir =
 			existsSync(primaryProjectBaseDir) || !existsSync(legacyProjectBaseDir)
 				? primaryProjectBaseDir
@@ -1914,7 +1914,7 @@ export class DefaultPackageManager implements PackageManager {
 	}
 
 	private getGitUpdateMarkerPath(targetDir: string): string {
-		return join(dirname(targetDir), `.${basename(targetDir)}.pi-update-incomplete`);
+		return join(dirname(targetDir), `.${basename(targetDir)}.forge-update-incomplete`);
 	}
 
 	private async cleanAndInstallGitDependencies(targetDir: string, markerPath: string): Promise<void> {
@@ -2012,7 +2012,7 @@ export class DefaultPackageManager implements PackageManager {
 		this.ensureGitIgnore(installRoot);
 		const packageJsonPath = join(installRoot, "package.json");
 		if (!existsSync(packageJsonPath)) {
-			const pkgJson = { name: "pi-extensions", private: true };
+			const pkgJson = { name: "forge-extensions", private: true };
 			writeFileSync(packageJsonPath, JSON.stringify(pkgJson, null, 2), "utf-8");
 		}
 	}
@@ -2034,7 +2034,7 @@ export class DefaultPackageManager implements PackageManager {
 		if (scope === "project") {
 			this.assertProjectTrustedForScope(scope);
 			const primary = join(this.cwd, CONFIG_DIR_NAME, "npm");
-			const legacy = join(this.cwd, ".pi", "npm");
+			const legacy = join(this.cwd, ".forge", "npm");
 			return existsSync(primary) || !existsSync(legacy) ? primary : legacy;
 		}
 		return join(this.agentDir, "npm");
@@ -2077,7 +2077,7 @@ export class DefaultPackageManager implements PackageManager {
 		if (scope === "project") {
 			this.assertProjectTrustedForScope(scope);
 			const primary = join(this.cwd, CONFIG_DIR_NAME, "npm", "node_modules", source.name);
-			const legacy = join(this.cwd, ".pi", "npm", "node_modules", source.name);
+			const legacy = join(this.cwd, ".forge", "npm", "node_modules", source.name);
 			return existsSync(primary) || !existsSync(legacy) ? primary : legacy;
 		}
 		return join(this.agentDir, "npm", "node_modules", source.name);
@@ -2118,7 +2118,7 @@ export class DefaultPackageManager implements PackageManager {
 		if (scope === "project") {
 			this.assertProjectTrustedForScope(scope);
 			const primary = join(this.cwd, CONFIG_DIR_NAME, "git");
-			const legacy = join(this.cwd, ".pi", "git");
+			const legacy = join(this.cwd, ".forge", "git");
 			return existsSync(primary) || !existsSync(legacy) ? primary : legacy;
 		}
 		return join(this.agentDir, "git");
@@ -2146,7 +2146,7 @@ export class DefaultPackageManager implements PackageManager {
 		if (scope === "project") {
 			this.assertProjectTrustedForScope(scope);
 			const primary = join(this.cwd, CONFIG_DIR_NAME);
-			const legacy = join(this.cwd, ".pi");
+			const legacy = join(this.cwd, ".forge");
 			return existsSync(primary) || !existsSync(legacy) ? primary : legacy;
 		}
 		if (scope === "user") {
@@ -2428,7 +2428,7 @@ export class DefaultPackageManager implements PackageManager {
 		};
 
 		if (projectTrusted) {
-			// Project extensions from .pi/
+			// Project extensions from .forge/
 			addResources(
 				"extensions",
 				collectAutoExtensionEntries(projectDirs.extensions),
@@ -2437,10 +2437,10 @@ export class DefaultPackageManager implements PackageManager {
 				projectBaseDir,
 			);
 
-			// Project skills from .pi/
+			// Project skills from .forge/
 			addResources(
 				"skills",
-				collectAutoSkillEntries(projectDirs.skills, "pi"),
+				collectAutoSkillEntries(projectDirs.skills, "forge"),
 				projectMetadata,
 				projectOverrides.skills,
 				projectBaseDir,
@@ -2480,7 +2480,7 @@ export class DefaultPackageManager implements PackageManager {
 			);
 		}
 
-		// User extensions from ~/.pi/agent/
+		// User extensions from ~/.forge/agent/
 		addResources(
 			"extensions",
 			collectAutoExtensionEntries(userDirs.extensions),
@@ -2489,10 +2489,10 @@ export class DefaultPackageManager implements PackageManager {
 			globalBaseDir,
 		);
 
-		// User skills from ~/.pi/agent/
+		// User skills from ~/.forge/agent/
 		addResources(
 			"skills",
-			collectAutoSkillEntries(userDirs.skills, "pi"),
+			collectAutoSkillEntries(userDirs.skills, "forge"),
 			userMetadata,
 			userOverrides.skills,
 			globalBaseDir,

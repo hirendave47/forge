@@ -450,15 +450,15 @@ export function loadSkills(options: LoadSkillsOptions): LoadSkillsResult {
 
 	if (includeDefaults) {
 		addSkills(loadSkillsFromDirInternal(join(resolvedAgentDir, "skills"), "user", true));
-		if (CONFIG_DIR_NAME !== ".pi") {
-			addSkills(loadSkillsFromDirInternal(resolve(resolvedCwd, ".pi", "skills"), "project", true));
+		if (CONFIG_DIR_NAME !== ".forge") {
+			addSkills(loadSkillsFromDirInternal(resolve(resolvedCwd, ".forge", "skills"), "project", true));
 		}
 		addSkills(loadSkillsFromDirInternal(resolve(resolvedCwd, CONFIG_DIR_NAME, "skills"), "project", true));
 	}
 
 	const userSkillsDir = join(resolvedAgentDir, "skills");
 	const projectSkillsDir = resolve(resolvedCwd, CONFIG_DIR_NAME, "skills");
-	const legacyProjectSkillsDir = resolve(resolvedCwd, ".pi", "skills");
+	const legacyProjectSkillsDir = resolve(resolvedCwd, ".forge", "skills");
 
 	const isUnderPath = (target: string, root: string): boolean => {
 		const normalizedRoot = resolve(root);
@@ -473,7 +473,7 @@ export function loadSkills(options: LoadSkillsOptions): LoadSkillsResult {
 		if (!includeDefaults) {
 			if (isUnderPath(resolvedPath, userSkillsDir)) return "user";
 			if (isUnderPath(resolvedPath, projectSkillsDir)) return "project";
-			if (CONFIG_DIR_NAME !== ".pi" && isUnderPath(resolvedPath, legacyProjectSkillsDir)) return "project";
+			if (CONFIG_DIR_NAME !== ".forge" && isUnderPath(resolvedPath, legacyProjectSkillsDir)) return "project";
 		}
 		return "path";
 	};

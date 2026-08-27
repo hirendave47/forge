@@ -8,8 +8,8 @@
 		"paths": {
 			"@earendil-works/forge-telemetry": ["../telemetry/dist/index.d.ts"],
 			"@earendil-works/forge-telemetry/*": ["../telemetry/dist/*.d.ts"],
-			"@earendil-works/pi-telemetry": ["../telemetry/dist/index.d.ts"],
-			"@earendil-works/pi-telemetry/*": ["../telemetry/dist/*.d.ts"]
+			"@earendil-works/forge-telemetry": ["../telemetry/dist/index.d.ts"],
+			"@earendil-works/forge-telemetry/*": ["../telemetry/dist/*.d.ts"]
 		}
 	},
 	"include": ["src/**/*.ts"],

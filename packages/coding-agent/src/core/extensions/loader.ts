@@ -7,13 +7,13 @@ import * as fs from "node:fs";
 import { createRequire } from "node:module";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as _bundledPiAgentCore from "@earendil-works/forge-agent-core";
+import * as _bundledForgeAgentCore from "@earendil-works/forge-agent-core";
 import type { Provider } from "@earendil-works/forge-ai";
-import * as _bundledPiAiCompat from "@earendil-works/forge-ai/compat";
-import * as _bundledPiAiOauth from "@earendil-works/forge-ai/oauth";
-import * as _bundledPiAiProviders from "@earendil-works/forge-ai/providers/all";
+import * as _bundledForgeAiCompat from "@earendil-works/forge-ai/compat";
+import * as _bundledForgeAiOauth from "@earendil-works/forge-ai/oauth";
+import * as _bundledForgeAiProviders from "@earendil-works/forge-ai/providers/all";
 import type { KeyId } from "@earendil-works/forge-tui";
-import * as _bundledPiTui from "@earendil-works/forge-tui";
+import * as _bundledForgeTui from "@earendil-works/forge-tui";
 import { createJiti } from "jiti/static";
 // Static imports of packages that extensions may use.
 // These MUST be static so Bun bundles them into the compiled binary.
@@ -24,7 +24,7 @@ import * as _bundledTypeboxValue from "typebox/value";
 import { CONFIG_DIR_NAME, getAgentDir, isBunBinary } from "../../config.ts";
 // NOTE: This import works because loader.ts exports are NOT re-exported from index.ts,
 // avoiding a circular dependency. Extensions can import from @earendil-works/forge-coding-agent.
-import * as _bundledPiCodingAgent from "../../index.ts";
+import * as _bundledForgeCodingAgent from "../../index.ts";
 import { resolvePath } from "../../utils/paths.ts";
 import { createEventBus, type EventBus } from "../event-bus.ts";
 import type { ExecOptions } from "../exec.ts";
@@ -54,30 +54,16 @@ const VIRTUAL_MODULES: Record<string, unknown> = {
 	"@sinclair/typebox": _bundledTypebox,
 	"@sinclair/typebox/compile": _bundledTypeboxCompile,
 	"@sinclair/typebox/value": _bundledTypeboxValue,
-	"@earendil-works/forge-agent-core": _bundledPiAgentCore,
-	"@earendil-works/forge-tui": _bundledPiTui,
-	// Extensions resolve the pi-ai root to the compat entrypoint (a strict
+	"@earendil-works/forge-agent-core": _bundledForgeAgentCore,
+	"@earendil-works/forge-tui": _bundledForgeTui,
+	// Extensions resolve the forge-ai root to the compat entrypoint (a strict
 	// superset of the core entrypoint): existing extensions using the old
 	// global API keep working at runtime until compat is removed.
-	"@earendil-works/forge-ai": _bundledPiAiCompat,
-	"@earendil-works/forge-ai/compat": _bundledPiAiCompat,
-	"@earendil-works/forge-ai/oauth": _bundledPiAiOauth,
-	"@earendil-works/forge-ai/providers/all": _bundledPiAiProviders,
-	"@earendil-works/forge-coding-agent": _bundledPiCodingAgent,
-	"@earendil-works/pi-agent-core": _bundledPiAgentCore,
-	"@earendil-works/pi-tui": _bundledPiTui,
-	"@earendil-works/pi-ai": _bundledPiAiCompat,
-	"@earendil-works/pi-ai/compat": _bundledPiAiCompat,
-	"@earendil-works/pi-ai/oauth": _bundledPiAiOauth,
-	"@earendil-works/pi-ai/providers/all": _bundledPiAiProviders,
-	"@earendil-works/pi-coding-agent": _bundledPiCodingAgent,
-	"@mariozechner/pi-agent-core": _bundledPiAgentCore,
-	"@mariozechner/pi-tui": _bundledPiTui,
-	"@mariozechner/pi-ai": _bundledPiAiCompat,
-	"@mariozechner/pi-ai/compat": _bundledPiAiCompat,
-	"@mariozechner/pi-ai/oauth": _bundledPiAiOauth,
-	"@mariozechner/pi-ai/providers/all": _bundledPiAiProviders,
-	"@mariozechner/pi-coding-agent": _bundledPiCodingAgent,
+	"@earendil-works/forge-ai": _bundledForgeAiCompat,
+	"@earendil-works/forge-ai/compat": _bundledForgeAiCompat,
+	"@earendil-works/forge-ai/oauth": _bundledForgeAiOauth,
+	"@earendil-works/forge-ai/providers/all": _bundledForgeAiProviders,
+	"@earendil-works/forge-coding-agent": _bundledForgeCodingAgent,
 };
 
 const require = createRequire(import.meta.url);
@@ -114,41 +100,27 @@ function getAliases(): Record<string, string> {
 		return fileURLToPath(import.meta.resolve(specifier));
 	};
 
-	const piCodingAgentEntry = packageIndex;
-	const piAgentCoreEntry = resolveWorkspaceOrImport("agent/dist/index.js", "@earendil-works/forge-agent-core");
-	const piTuiEntry = resolveWorkspaceOrImport("tui/dist/index.js", "@earendil-works/forge-tui");
-	// Extensions resolve the pi-ai root to the compat entrypoint (a strict
+	const forgeCodingAgentEntry = packageIndex;
+	const forgeAgentCoreEntry = resolveWorkspaceOrImport("agent/dist/index.js", "@earendil-works/forge-agent-core");
+	const forgeTuiEntry = resolveWorkspaceOrImport("tui/dist/index.js", "@earendil-works/forge-tui");
+	// Extensions resolve the forge-ai root to the compat entrypoint (a strict
 	// superset of the core entrypoint): existing extensions using the old
 	// global API keep working at runtime until compat is removed.
-	const piAiCompatEntry = resolveWorkspaceOrImport("ai/dist/compat.js", "@earendil-works/forge-ai/compat");
-	const piAiOauthEntry = resolveWorkspaceOrImport("ai/dist/oauth.js", "@earendil-works/forge-ai/oauth");
-	const piAiProvidersEntry = resolveWorkspaceOrImport(
+	const forgeAiCompatEntry = resolveWorkspaceOrImport("ai/dist/compat.js", "@earendil-works/forge-ai/compat");
+	const forgeAiOauthEntry = resolveWorkspaceOrImport("ai/dist/oauth.js", "@earendil-works/forge-ai/oauth");
+	const forgeAiProvidersEntry = resolveWorkspaceOrImport(
 		"ai/dist/providers/all.js",
 		"@earendil-works/forge-ai/providers/all",
 	);
 
 	_aliases = {
-		"@earendil-works/forge-coding-agent": piCodingAgentEntry,
-		"@earendil-works/forge-agent-core": piAgentCoreEntry,
-		"@earendil-works/forge-tui": piTuiEntry,
-		"@earendil-works/forge-ai/providers/all": piAiProvidersEntry,
-		"@earendil-works/forge-ai/compat": piAiCompatEntry,
-		"@earendil-works/forge-ai/oauth": piAiOauthEntry,
-		"@earendil-works/forge-ai": piAiCompatEntry,
-		"@earendil-works/pi-coding-agent": piCodingAgentEntry,
-		"@earendil-works/pi-agent-core": piAgentCoreEntry,
-		"@earendil-works/pi-tui": piTuiEntry,
-		"@earendil-works/pi-ai/providers/all": piAiProvidersEntry,
-		"@earendil-works/pi-ai/compat": piAiCompatEntry,
-		"@earendil-works/pi-ai/oauth": piAiOauthEntry,
-		"@earendil-works/pi-ai": piAiCompatEntry,
-		"@mariozechner/pi-coding-agent": piCodingAgentEntry,
-		"@mariozechner/pi-agent-core": piAgentCoreEntry,
-		"@mariozechner/pi-tui": piTuiEntry,
-		"@mariozechner/pi-ai/providers/all": piAiProvidersEntry,
-		"@mariozechner/pi-ai/compat": piAiCompatEntry,
-		"@mariozechner/pi-ai/oauth": piAiOauthEntry,
-		"@mariozechner/pi-ai": piAiCompatEntry,
+		"@earendil-works/forge-coding-agent": forgeCodingAgentEntry,
+		"@earendil-works/forge-agent-core": forgeAgentCoreEntry,
+		"@earendil-works/forge-tui": forgeTuiEntry,
+		"@earendil-works/forge-ai/providers/all": forgeAiProvidersEntry,
+		"@earendil-works/forge-ai/compat": forgeAiCompatEntry,
+		"@earendil-works/forge-ai/oauth": forgeAiOauthEntry,
+		"@earendil-works/forge-ai": forgeAiCompatEntry,
 		typebox: typeboxEntry,
 		"typebox/compile": typeboxCompileEntry,
 		"typebox/value": typeboxValueEntry,
@@ -685,13 +657,13 @@ function isExtensionFile(name: string): boolean {
  * Resolve extension entry points from a directory.
  *
  * Checks for:
- * 1. package.json with "pi.extensions" field -> returns declared paths
+ * 1. package.json with "forge.extensions" field -> returns declared paths
  * 2. index.ts or index.js -> returns the index file
  *
  * Returns resolved paths or null if no entry points found.
  */
 function resolveExtensionEntries(dir: string): string[] | null {
-	// Check for package.json with "pi" field first
+	// Check for package.json with "forge" field first
 	const packageJsonPath = path.join(dir, "package.json");
 	if (fs.existsSync(packageJsonPath)) {
 		const manifest = readForgeManifest(packageJsonPath);
@@ -728,7 +700,7 @@ function resolveExtensionEntries(dir: string): string[] | null {
  * Discovery rules:
  * 1. Direct files: `extensions/*.ts` or `*.js` → load
  * 2. Subdirectory with index: `extensions/* /index.ts` or `index.js` → load
- * 3. Subdirectory with package.json: `extensions/* /package.json` with "pi" field → load what it declares
+ * 3. Subdirectory with package.json: `extensions/* /package.json` with "forge" field → load what it declares
  *
  * No recursion beyond one level. Complex packages must use package.json manifest.
  */

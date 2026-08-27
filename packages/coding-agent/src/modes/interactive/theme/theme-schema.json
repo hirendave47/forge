@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"title": "Pi Coding Agent Theme",
+	"title": "Forge Coding Agent Theme",
 	"description": "Theme schema for Forge coding agent",
 	"type": "object",
 	"required": [

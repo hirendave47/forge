@@ -45,8 +45,8 @@ test("rejects invalid Unix transport options", () => {
 
 describe.runIf(process.platform !== "win32")("Unix-domain sockets", () => {
 	test("PiClient exchanges fragmented framed messages over a real Unix socket", async () => {
-		const directory = await mkdtemp(join(tmpdir(), "pi-client-"));
-		const socketPath = join(directory, "pi.sock");
+		const directory = await mkdtemp(join(tmpdir(), "forge-client-"));
+		const socketPath = join(directory, "forge.sock");
 		const sockets = new Set<Socket>();
 		const server = createServer((socket) => {
 			sockets.add(socket);
@@ -92,8 +92,8 @@ describe.runIf(process.platform !== "win32")("Unix-domain sockets", () => {
 	});
 
 	test("bounds pending writes, preserves order, and reports remote end once", async () => {
-		const directory = await mkdtemp(join(tmpdir(), "pi-client-"));
-		const socketPath = join(directory, "pi.sock");
+		const directory = await mkdtemp(join(tmpdir(), "forge-client-"));
+		const socketPath = join(directory, "forge.sock");
 		const sockets = new Set<Socket>();
 		const first = new Uint8Array(2 * 1024 * 1024).fill(1);
 		const second = new Uint8Array(2 * 1024 * 1024).fill(2);
@@ -165,8 +165,8 @@ describe.runIf(process.platform !== "win32")("Unix-domain sockets", () => {
 	});
 
 	test("PiClient rejects a truncated final frame from a real Unix socket", async () => {
-		const directory = await mkdtemp(join(tmpdir(), "pi-client-"));
-		const socketPath = join(directory, "pi.sock");
+		const directory = await mkdtemp(join(tmpdir(), "forge-client-"));
+		const socketPath = join(directory, "forge.sock");
 		const sockets = new Set<Socket>();
 		const server = createServer((socket) => {
 			sockets.add(socket);
@@ -206,7 +206,7 @@ describe.runIf(process.platform !== "win32")("Unix-domain sockets", () => {
 	});
 
 	test("rejects connection errors", async () => {
-		const directory = await mkdtemp(join(tmpdir(), "pi-client-"));
+		const directory = await mkdtemp(join(tmpdir(), "forge-client-"));
 		const missingPath = join(directory, "missing.sock");
 		try {
 			await expect(

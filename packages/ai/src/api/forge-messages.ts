@@ -1,12 +1,12 @@
 /**
- * pi-messages API implementation.
+ * forge-messages API implementation.
  *
- * Streams pi's own message protocol directly to a backend: the request is a
+ * Streams forge's own message protocol directly to a backend: the request is a
  * single POST of `{ model, context, options }` to `<baseUrl>/messages`, the
  * response is an SSE stream of serialized assistant-message events plus a
  * terminal `done`/`error` event. This is the wire protocol spoken by the
  * Radius gateway, but any backend implementing it can be used, e.g. via a
- * models.json custom provider with `"api": "pi-messages"`.
+ * models.json custom provider with `"api": "forge-messages"`.
  */
 
 import type {
@@ -35,10 +35,8 @@ export interface ForgeMessagesOptions extends StreamOptions {
 	debug?: boolean;
 }
 
-export type PiMessagesOptions = ForgeMessagesOptions;
-
-type PiMessagesUsage = AssistantMessage["usage"];
-type PiMessagesStopReason = AssistantMessage["stopReason"];
+type ForgeMessagesUsage = AssistantMessage["usage"];
+type ForgeMessagesStopReason = AssistantMessage["stopReason"];
 
 /** Impact summary of a server-side message rewrite (e.g. a gateway policy). */
 export type ForgeMessagesRewriteImpact = {
@@ -50,9 +48,7 @@ export type ForgeMessagesRewriteImpact = {
 	systemPromptChanged: boolean;
 };
 
-export type PiMessagesRewriteImpact = ForgeMessagesRewriteImpact;
-
-/** Serialized assistant-message event as sent by a forge-messages / pi-messages backend. */
+/** Serialized assistant-message event as sent by a forge-messages backend. */
 export type ForgeMessagesEvent =
 	| { type: "start" }
 	| { type: "text_start"; contentIndex: number }
@@ -72,23 +68,21 @@ export type ForgeMessagesEvent =
 	| { type: "toolcall_end"; contentIndex: number; toolCall: ToolCall }
 	| {
 			type: "done";
-			reason: Extract<PiMessagesStopReason, "stop" | "length" | "toolUse">;
-			usage: PiMessagesUsage;
+			reason: Extract<ForgeMessagesStopReason, "stop" | "length" | "toolUse">;
+			usage: ForgeMessagesUsage;
 			responseId?: string;
 			rewrite?: ForgeMessagesRewriteImpact;
 	  }
 	| {
 			type: "error";
-			reason: Extract<PiMessagesStopReason, "aborted" | "error">;
-			usage: PiMessagesUsage;
+			reason: Extract<ForgeMessagesStopReason, "aborted" | "error">;
+			usage: ForgeMessagesUsage;
 			errorMessage?: string;
 			responseId?: string;
 			rewrite?: ForgeMessagesRewriteImpact;
 	  };
 
-export type PiMessagesEvent = ForgeMessagesEvent;
-
-type PiMessagesErrorBody = {
+type ForgeMessagesErrorBody = {
 	error?: {
 		message?: unknown;
 		code?: unknown;
@@ -97,21 +91,21 @@ type PiMessagesErrorBody = {
 	};
 };
 
-export class PiMessagesResponseError extends Error {
+export class ForgeMessagesResponseError extends Error {
 	code?: string;
 	readonly diagnosticDetails: Record<string, unknown>;
 
 	constructor(message: string, code: string | undefined, diagnosticDetails: Record<string, unknown>) {
 		super(message);
-		this.name = "PiMessagesResponseError";
+		this.name = "ForgeMessagesResponseError";
 		this.code = code;
 		this.diagnosticDetails = diagnosticDetails;
 	}
 }
 
-function parsePiMessagesErrorBody(body: string): PiMessagesErrorBody | undefined {
+function parseForgeMessagesErrorBody(body: string): ForgeMessagesErrorBody | undefined {
 	try {
-		const parsed = JSON.parse(body) as PiMessagesErrorBody | null;
+		const parsed = JSON.parse(body) as ForgeMessagesErrorBody | null;
 		const error = parsed?.error;
 		return parsed && typeof error === "object" && error !== null && !Array.isArray(error) ? parsed : undefined;
 	} catch {
@@ -124,10 +118,10 @@ function truncateDiagnosticString(value: string): string {
 	return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
 }
 
-function formatPiMessagesResponseError(
+function formatForgeMessagesResponseError(
 	response: Response,
 	body: string,
-	errorBody: PiMessagesErrorBody | undefined,
+	errorBody: ForgeMessagesErrorBody | undefined,
 ): string {
 	const message = typeof errorBody?.error?.message === "string" ? errorBody.error.message : undefined;
 	const code = typeof errorBody?.error?.code === "string" ? errorBody.error.code : undefined;
@@ -136,15 +130,15 @@ function formatPiMessagesResponseError(
 	return `${response.status} ${response.statusText}: ${suffix}${codeSuffix}`;
 }
 
-function createPiMessagesResponseError(
-	model: Model<"pi-messages">,
+function createForgeMessagesResponseError(
+	model: Model<"forge-messages">,
 	url: URL,
 	response: Response,
 	body: string,
-): PiMessagesResponseError {
-	const errorBody = parsePiMessagesErrorBody(body);
+): ForgeMessagesResponseError {
+	const errorBody = parseForgeMessagesErrorBody(body);
 	const code = typeof errorBody?.error?.code === "string" ? errorBody.error.code : undefined;
-	return new PiMessagesResponseError(formatPiMessagesResponseError(response, body, errorBody), code, {
+	return new ForgeMessagesResponseError(formatForgeMessagesResponseError(response, body, errorBody), code, {
 		version: 1,
 		provider: model.provider,
 		model: model.id,
@@ -157,7 +151,7 @@ function createPiMessagesResponseError(
 	});
 }
 
-function createEmptyUsage(): PiMessagesUsage {
+function createEmptyUsage(): ForgeMessagesUsage {
 	return {
 		input: 0,
 		output: 0,
@@ -168,7 +162,7 @@ function createEmptyUsage(): PiMessagesUsage {
 	};
 }
 
-function appendRewriteDiagnostic(message: AssistantMessage, rewrite: PiMessagesRewriteImpact | undefined): void {
+function appendRewriteDiagnostic(message: AssistantMessage, rewrite: ForgeMessagesRewriteImpact | undefined): void {
 	if (!rewrite) {
 		return;
 	}
@@ -179,7 +173,7 @@ function appendRewriteDiagnostic(message: AssistantMessage, rewrite: PiMessagesR
 	});
 }
 
-function createEventConverter(model: Model<"pi-messages">) {
+function createEventConverter(model: Model<"forge-messages">) {
 	const partial: AssistantMessage = {
 		role: "assistant",
 		content: [],
@@ -192,7 +186,7 @@ function createEventConverter(model: Model<"pi-messages">) {
 	};
 	const toolJson = new Map<number, string>();
 
-	return (event: PiMessagesEvent): AssistantMessageEvent => {
+	return (event: ForgeMessagesEvent): AssistantMessageEvent => {
 		switch (event.type) {
 			case "done":
 				Object.assign(partial, {
@@ -269,7 +263,7 @@ function createEventConverter(model: Model<"pi-messages">) {
 	};
 }
 
-async function* readPiMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncGenerator<PiMessagesEvent> {
+async function* readForgeMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncGenerator<ForgeMessagesEvent> {
 	const decoder = new TextDecoder();
 	const reader = stream.getReader();
 	let buffer = "";
@@ -282,7 +276,7 @@ async function* readPiMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncG
 
 			let split = buffer.indexOf("\n\n");
 			while (split !== -1) {
-				const event = parsePiMessagesEvent(buffer.slice(0, split));
+				const event = parseForgeMessagesEvent(buffer.slice(0, split));
 				if (event) {
 					yield event;
 				}
@@ -296,7 +290,7 @@ async function* readPiMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncG
 		}
 
 		if (buffer.trim()) {
-			const event = parsePiMessagesEvent(buffer);
+			const event = parseForgeMessagesEvent(buffer);
 			if (event) {
 				yield event;
 			}
@@ -306,17 +300,17 @@ async function* readPiMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncG
 	}
 }
 
-function parsePiMessagesEvent(raw: string): PiMessagesEvent | undefined {
+function parseForgeMessagesEvent(raw: string): ForgeMessagesEvent | undefined {
 	const data = raw
 		.split("\n")
 		.find((line) => line.startsWith("data:"))
 		?.slice(5)
 		.trim();
 
-	return data && data !== "[DONE]" ? (JSON.parse(data) as PiMessagesEvent) : undefined;
+	return data && data !== "[DONE]" ? (JSON.parse(data) as ForgeMessagesEvent) : undefined;
 }
 
-function createErrorEvent(model: Model<"pi-messages">, error: unknown, aborted: boolean): AssistantMessageEvent {
+function createErrorEvent(model: Model<"forge-messages">, error: unknown, aborted: boolean): AssistantMessageEvent {
 	const reason = aborted ? "aborted" : "error";
 	const assistantMessage: AssistantMessage = {
 		role: "assistant",
@@ -330,7 +324,7 @@ function createErrorEvent(model: Model<"pi-messages">, error: unknown, aborted: 
 		timestamp: Date.now(),
 	};
 
-	if (!aborted && error instanceof PiMessagesResponseError) {
+	if (!aborted && error instanceof ForgeMessagesResponseError) {
 		appendAssistantMessageDiagnostic(
 			assistantMessage,
 			createAssistantMessageDiagnostic("pi_messages_response_failure", error, error.diagnosticDetails),
@@ -349,10 +343,10 @@ function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEn
 	return val === "long" ? "long" : undefined;
 }
 
-export const stream: StreamFunction<"pi-messages", PiMessagesOptions> = (
-	model: Model<"pi-messages">,
+export const stream: StreamFunction<"forge-messages", ForgeMessagesOptions> = (
+	model: Model<"forge-messages">,
 	context: Context,
-	options?: PiMessagesOptions,
+	options?: ForgeMessagesOptions,
 ): AssistantMessageEventStream => {
 	const eventStream = new AssistantMessageEventStream();
 	const convertEvent = createEventConverter(model);
@@ -402,13 +396,13 @@ export const stream: StreamFunction<"pi-messages", PiMessagesOptions> = (
 
 			if (!response.ok) {
 				const body = await response.text();
-				throw createPiMessagesResponseError(model, url, response, body);
+				throw createForgeMessagesResponseError(model, url, response, body);
 			}
 			if (!response.body) {
 				throw new Error(`${model.provider} response has no body`);
 			}
 
-			for await (const piEvent of readPiMessagesEvents(response.body)) {
+			for await (const piEvent of readForgeMessagesEvents(response.body)) {
 				const event = convertEvent(piEvent);
 				eventStream.push(event);
 				if (event.type === "done" || event.type === "error") {
@@ -425,12 +419,12 @@ export const stream: StreamFunction<"pi-messages", PiMessagesOptions> = (
 	return eventStream;
 };
 
-export const streamSimple: StreamFunction<"pi-messages", SimpleStreamOptions> = (
-	model: Model<"pi-messages">,
+export const streamSimple: StreamFunction<"forge-messages", SimpleStreamOptions> = (
+	model: Model<"forge-messages">,
 	context: Context,
 	options?: SimpleStreamOptions,
 ): AssistantMessageEventStream => {
-	const extra = options as PiMessagesOptions | undefined;
+	const extra = options as ForgeMessagesOptions | undefined;
 	return stream(model, context, {
 		...options,
 		reasoning: options?.reasoning,

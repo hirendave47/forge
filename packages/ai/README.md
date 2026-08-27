@@ -1,4 +1,4 @@
-# @earendil-works/pi-ai
+# @earendil-works/forge-ai
 
 Unified LLM API with provider collections, automatic auth resolution, token and cost tracking, and simple context persistence and hand-off to other models mid-session.
 
@@ -92,18 +92,18 @@ Unified LLM API with provider collections, automatic auth resolution, token and 
 ## Installation
 
 ```bash
-npm install @earendil-works/pi-ai
+npm install @earendil-works/forge-ai
 ```
 
-TypeBox exports are re-exported from `@earendil-works/pi-ai`: `Type`, `Static`, and `TSchema`.
+TypeBox exports are re-exported from `@earendil-works/forge-ai`: `Type`, `Static`, and `TSchema`.
 
 ## Quick Start
 
 You build a `Models` collection of providers and stream through it. The quickest start registers every built-in provider; apps that care about bundle size register individual providers instead (see [Provider Factories](#provider-factories) and [Bundling and Tree Shaking](#bundling-and-tree-shaking)).
 
 ```typescript
-import { Type, type Context, type Tool } from '@earendil-works/pi-ai';
-import { builtinModels } from '@earendil-works/pi-ai/providers/all';
+import { Type, type Context, type Tool } from '@earendil-works/forge-ai';
+import { builtinModels } from '@earendil-works/forge-ai/providers/all';
 
 // A Models collection with every built-in provider registered
 const models = builtinModels();
@@ -238,10 +238,10 @@ Providers internally share **API implementations** (the wire protocols): Anthrop
 For apps that only need specific providers, there is one factory per built-in provider, each a subpath import that pulls only that provider's catalog:
 
 ```typescript
-import { anthropicProvider } from '@earendil-works/pi-ai/providers/anthropic';
-import { openaiProvider } from '@earendil-works/pi-ai/providers/openai';
-import { openrouterProvider } from '@earendil-works/pi-ai/providers/openrouter';
-import { amazonBedrockProvider } from '@earendil-works/pi-ai/providers/amazon-bedrock';
+import { anthropicProvider } from '@earendil-works/forge-ai/providers/anthropic';
+import { openaiProvider } from '@earendil-works/forge-ai/providers/openai';
+import { openrouterProvider } from '@earendil-works/forge-ai/providers/openrouter';
+import { amazonBedrockProvider } from '@earendil-works/forge-ai/providers/amazon-bedrock';
 // ...one module per provider in the Supported Providers list
 
 const models = createModels();
@@ -256,7 +256,7 @@ Provider factories import their model catalog and a lazy API wrapper. They do no
 For apps that want everything (as in Quick Start):
 
 ```typescript
-import { builtinModels } from '@earendil-works/pi-ai/providers/all';
+import { builtinModels } from '@earendil-works/forge-ai/providers/all';
 
 const models = builtinModels(); // a Models collection with every built-in provider registered
 ```
@@ -287,7 +287,7 @@ for (const m of anthropicModels) {
 Dynamically listed models are typed `Model<Api>`. Narrow with the `hasApi()` guard when you need API-specific option typing:
 
 ```typescript
-import { hasApi } from '@earendil-works/pi-ai';
+import { hasApi } from '@earendil-works/forge-ai';
 
 const m = models.getModel('anthropic', 'claude-sonnet-4-5');
 if (m && hasApi(m, 'anthropic-messages')) {
@@ -301,7 +301,7 @@ if (m && hasApi(m, 'anthropic-messages')) {
 For tooling that wants the generated built-in catalog with full literal typing (provider and model IDs auto-complete), independent of any collection:
 
 ```typescript
-import { getBuiltinModel, getBuiltinModels, getBuiltinProviders } from '@earendil-works/pi-ai/providers/all';
+import { getBuiltinModel, getBuiltinModels, getBuiltinProviders } from '@earendil-works/forge-ai/providers/all';
 
 const model = getBuiltinModel('openai', 'gpt-4o-mini'); // typed Model<'openai-responses'>
 const providers = getBuiltinProviders();
@@ -381,10 +381,10 @@ Header names are merged case-insensitively. Explicit headers override auth/model
 
 ### Credential Store
 
-Stored credentials (API keys entered interactively, OAuth tokens) live in a `CredentialStore` — one type-tagged credential per provider. pi-ai ships an in-memory default; apps inject persistent storage:
+Stored credentials (API keys entered interactively, OAuth tokens) live in a `CredentialStore` — one type-tagged credential per provider. forge-ai ships an in-memory default; apps inject persistent storage:
 
 ```typescript
-import { createModels, type CredentialStore } from '@earendil-works/pi-ai';
+import { createModels, type CredentialStore } from '@earendil-works/forge-ai';
 
 const models = createModels({ credentials: myFileBackedStore });
 // builtinModels() takes the same options:
@@ -393,7 +393,7 @@ const models = createModels({ credentials: myFileBackedStore });
 
 The contract is small: `read(providerId)`, `list()` for non-secret `{ providerId, type }` metadata, `modify(providerId, fn)` (the only write path — a serialized read-modify-write), and `delete(providerId)`. Each operation accepts optional cancellation options. Enumeration must not resolve secrets or execute configured key commands. OAuth token refresh runs inside `modify`, so concurrent requests and processes cannot double-refresh a rotated token. A stored credential *owns* its provider: environment variables are only consulted when nothing is stored, and a failed refresh never silently falls back to an env key.
 
-API-key credentials use the same discriminator as pi's `auth.json` and can carry provider-scoped env/config values:
+API-key credentials use the same discriminator as forge's `auth.json` and can carry provider-scoped env/config values:
 
 ```typescript
 const credential = {
@@ -462,7 +462,7 @@ Tools enable LLMs to interact with external systems. This library uses TypeBox s
 ### Defining Tools
 
 ```typescript
-import { Type, type Tool, StringEnum } from '@earendil-works/pi-ai';
+import { Type, type Tool, StringEnum } from '@earendil-works/forge-ai';
 
 // Define tool parameters with TypeBox
 const weatherTool: Tool = {
@@ -620,7 +620,7 @@ for await (const event of s) {
 When implementing your own tool execution loop, use `validateToolCall` to validate arguments before passing them to your tools:
 
 ```typescript
-import { validateToolCall, type Tool } from '@earendil-works/pi-ai';
+import { validateToolCall, type Tool } from '@earendil-works/forge-ai';
 
 const tools: Tool[] = [weatherTool, calculatorTool];
 const s = models.stream(model, { messages, tools });
@@ -713,7 +713,7 @@ Image generation uses a separate API surface from text/chat generation, mirrorin
 ### Basic Image Generation
 
 ```typescript
-import { builtinImagesModels } from '@earendil-works/pi-ai/providers/all';
+import { builtinImagesModels } from '@earendil-works/forge-ai/providers/all';
 
 // Every built-in image-generation provider; accepts the same options as createModels()
 const imagesModels = builtinImagesModels();
@@ -735,12 +735,12 @@ for (const block of result.output) {
 }
 ```
 
-Like the chat side, you can build the collection from parts: `createImagesModels({ credentials?, authContext? })`, the `openrouterImagesProvider()` factory from `@earendil-works/pi-ai/providers/openrouter-images`, and `createImagesProvider({ id, auth, models, refreshModels?, api })` for custom image providers (with `imagesModels.refresh(provider?)` for dynamic lists). Failures never reject — they return an `AssistantImages` with `stopReason: "error"`. The collection's provider-scoped `getAuth(providerId)` works exactly like the chat-side one.
+Like the chat side, you can build the collection from parts: `createImagesModels({ credentials?, authContext? })`, the `openrouterImagesProvider()` factory from `@earendil-works/forge-ai/providers/openrouter-images`, and `createImagesProvider({ id, auth, models, refreshModels?, api })` for custom image providers (with `imagesModels.refresh(provider?)` for dynamic lists). Failures never reject — they return an `AssistantImages` with `stopReason: "error"`. The collection's provider-scoped `getAuth(providerId)` works exactly like the chat-side one.
 
 The old global API (`getImageModel()` / `getImageModels()` / `getImageProviders()` / `generateImages()`) remains available on the [compat entrypoint](#migrating-from-the-old-global-api):
 
 ```typescript
-import { getImageModel, generateImages } from '@earendil-works/pi-ai/compat';
+import { getImageModel, generateImages } from '@earendil-works/forge-ai/compat';
 
 const model = getImageModel('openrouter', 'google/gemini-2.5-flash-image');
 const result = await generateImages(model, {
@@ -825,7 +825,7 @@ for (const block of response.content) {
 `models.stream()`/`complete()` accept the owning API's full option set. Use `hasApi()` to narrow a dynamically looked-up model to its API for full option typing:
 
 ```typescript
-import { hasApi } from '@earendil-works/pi-ai';
+import { hasApi } from '@earendil-works/forge-ai';
 
 // OpenAI Reasoning (o1, o3, gpt-5)
 const openaiModel = models.getModel('openai', 'gpt-5-mini')!;
@@ -998,8 +998,8 @@ The callback is supported by `stream`, `complete`, `streamSimple`, and `complete
 `createProvider()` builds a provider from parts: identity, auth, a model list, and an API implementation. Use it for local inference servers, proxies, or any OpenAI/Anthropic-compatible endpoint:
 
 ```typescript
-import { createModels, createProvider, envApiKeyAuth, type Model } from '@earendil-works/pi-ai';
-import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy';
+import { createModels, createProvider, envApiKeyAuth, type Model } from '@earendil-works/forge-ai';
+import { openAICompletionsApi } from '@earendil-works/forge-ai/api/openai-completions.lazy';
 
 const ollamaModel: Model<'openai-completions'> = {
   id: 'llama-3.1-8b',
@@ -1044,8 +1044,8 @@ const proxy = createProvider({
 Mixed-API providers pass a map keyed by `model.api`; each model dispatches to its API's implementation:
 
 ```typescript
-import { anthropicMessagesApi } from '@earendil-works/pi-ai/api/anthropic-messages.lazy';
-import { openAIResponsesApi } from '@earendil-works/pi-ai/api/openai-responses.lazy';
+import { anthropicMessagesApi } from '@earendil-works/forge-ai/api/anthropic-messages.lazy';
+import { openAIResponsesApi } from '@earendil-works/forge-ai/api/openai-responses.lazy';
 
 const gateway = createProvider({
   id: 'my-gateway',
@@ -1138,7 +1138,7 @@ const ollamaReasoningModel: Model<'openai-completions'> = {
 The API implementations are importable on their own. Each module exports exactly `stream` and `streamSimple` with that API's full option typing. Direct calls bypass provider auth — pass `apiKey` explicitly:
 
 ```typescript
-import { stream } from '@earendil-works/pi-ai/api/anthropic-messages';
+import { stream } from '@earendil-works/forge-ai/api/anthropic-messages';
 
 const s = stream(claudeModel, context, {
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -1161,7 +1161,7 @@ Built-in API implementations live under `./api/<api-id>`:
 | `mistral-conversations` | `MistralOptions` |
 | `bedrock-converse-stream` | `BedrockOptions` |
 
-Importing an implementation module loads its SDK. The `./api/<id>.lazy` wrappers (used by the provider factories) defer that load to the first request when the runtime or bundler supports dynamic import chunking. Legacy raw API subpaths from older releases (`./anthropic`, `./google`, `./mistral`, `./openai-completions`, ...) were removed; use `@earendil-works/pi-ai/api/<api-id>`.
+Importing an implementation module loads its SDK. The `./api/<id>.lazy` wrappers (used by the provider factories) defer that load to the first request when the runtime or bundler supports dynamic import chunking. Legacy raw API subpaths from older releases (`./anthropic`, `./google`, `./mistral`, `./openai-completions`, ...) were removed; use `@earendil-works/forge-ai/api/<api-id>`.
 
 ### OpenAI Compatibility Settings
 
@@ -1183,8 +1183,8 @@ interface OpenAICompletionsCompat {
   requiresThinkingAsText?: boolean;  // Whether thinking blocks must be converted to text (default: false)
   requiresReasoningContentOnAssistantMessages?: boolean; // Whether all replayed assistant messages must include empty reasoning_content when reasoning is enabled (default: auto-detected for DeepSeek)
   thinkingFormat?: 'openai' | 'openrouter' | 'deepseek' | 'together' | 'baseten' | 'zai' | 'qwen' | 'chat-template' | 'qwen-chat-template' | 'string-thinking' | 'ant-ling'; // Format for reasoning param: 'openai' uses reasoning_effort, 'openrouter' uses reasoning: { effort }, 'deepseek' uses thinking: { type } plus reasoning_effort when supported, 'together' uses reasoning: { enabled } plus reasoning_effort when supported, 'baseten' uses configurable chat_template_args plus reasoning_effort when supported, 'zai' uses thinking: { type }, 'qwen' uses enable_thinking, 'chat-template' uses configurable chat_template_kwargs, 'qwen-chat-template' uses chat_template_kwargs.enable_thinking and preserve_thinking, 'string-thinking' uses top-level thinking, 'ant-ling' uses reasoning: { effort } only for mapped efforts (default: openai)
-  chatTemplateKwargs?: Record<string, string | number | boolean | null | { '$var': 'thinking.enabled' | 'thinking.effort' | 'thinking.budget'; omitWhenOff?: boolean }>; // chat_template_kwargs values; use $var for pi-controlled thinking values
-  chatTemplateArgs?: Record<string, string | number | boolean | null | { '$var': 'thinking.enabled' | 'thinking.effort' | 'thinking.budget'; omitWhenOff?: boolean }>; // chat_template_args values for thinkingFormat: 'baseten'; use $var for pi-controlled thinking values
+  chatTemplateKwargs?: Record<string, string | number | boolean | null | { '$var': 'thinking.enabled' | 'thinking.effort' | 'thinking.budget'; omitWhenOff?: boolean }>; // chat_template_kwargs values; use $var for forge-controlled thinking values
+  chatTemplateArgs?: Record<string, string | number | boolean | null | { '$var': 'thinking.enabled' | 'thinking.effort' | 'thinking.budget'; omitWhenOff?: boolean }>; // chat_template_args values for thinkingFormat: 'baseten'; use $var for forge-controlled thinking values
   thinkingTokenBudgetField?: 'thinking_token_budget' | 'thinking_budget' | 'thinking_budget_tokens'; // Top-level field that caps reasoning tokens from thinkingBudgets (vLLM / Qwen / llama.cpp). Off by default.
   supportsThinkingTokenBudget?: boolean; // Alias for thinkingTokenBudgetField: 'thinking_token_budget' (vLLM). Prefer thinkingTokenBudgetField. Default: false.
   cacheControlFormat?: 'anthropic';  // Anthropic-style cache_control on system prompt, last tool, and last user/assistant text content
@@ -1219,7 +1219,7 @@ import {
   fauxText,
   fauxThinking,
   fauxToolCall,
-} from '@earendil-works/pi-ai';
+} from '@earendil-works/forge-ai';
 
 const faux = fauxProvider({
   tokensPerSecond: 50 // optional
@@ -1306,10 +1306,10 @@ When messages from one provider are sent to a different provider, the library au
 - **Tool calls and regular text** are preserved unchanged
 
 ```typescript
-import { createModels, type Context } from '@earendil-works/pi-ai';
-import { anthropicProvider } from '@earendil-works/pi-ai/providers/anthropic';
-import { openaiProvider } from '@earendil-works/pi-ai/providers/openai';
-import { googleProvider } from '@earendil-works/pi-ai/providers/google';
+import { createModels, type Context } from '@earendil-works/forge-ai';
+import { anthropicProvider } from '@earendil-works/forge-ai/providers/anthropic';
+import { openaiProvider } from '@earendil-works/forge-ai/providers/openai';
+import { googleProvider } from '@earendil-works/forge-ai/providers/google';
 
 const models = createModels();
 models.setProvider(anthropicProvider());
@@ -1376,8 +1376,8 @@ Models are plain serializable data too — no functions or implementations attac
 The library supports browser environments. The core entrypoint and provider factories are side-effect free and bundle cleanly. Environment variables are not available in browsers, so pass API keys explicitly — or inject a `CredentialStore` (e.g. localStorage-backed) and let provider auth resolve from stored credentials:
 
 ```typescript
-import { createModels } from '@earendil-works/pi-ai';
-import { anthropicProvider } from '@earendil-works/pi-ai/providers/anthropic';
+import { createModels } from '@earendil-works/forge-ai';
+import { anthropicProvider } from '@earendil-works/forge-ai/providers/anthropic';
 
 const models = createModels();
 models.setProvider(anthropicProvider());
@@ -1403,8 +1403,8 @@ Browser compatibility notes:
 For small bundles, import only the providers you need:
 
 ```typescript
-import { createModels } from '@earendil-works/pi-ai';
-import { openaiProvider } from '@earendil-works/pi-ai/providers/openai';
+import { createModels } from '@earendil-works/forge-ai';
+import { openaiProvider } from '@earendil-works/forge-ai/providers/openai';
 
 const models = createModels();
 models.setProvider(openaiProvider());
@@ -1412,14 +1412,14 @@ models.setProvider(openaiProvider());
 
 Rules:
 
-- `@earendil-works/pi-ai` is the core entrypoint and does not import built-in catalogs, provider factories, or SDK implementations.
-- `@earendil-works/pi-ai/providers/<provider>` imports that provider's catalog and lazy API wrapper only.
-- `@earendil-works/pi-ai/providers/all` imports every built-in provider factory and all catalogs. Use it only when you want the full built-in set.
+- `@earendil-works/forge-ai` is the core entrypoint and does not import built-in catalogs, provider factories, or SDK implementations.
+- `@earendil-works/forge-ai/providers/<provider>` imports that provider's catalog and lazy API wrapper only.
+- `@earendil-works/forge-ai/providers/all` imports every built-in provider factory and all catalogs. Use it only when you want the full built-in set.
 - With code splitting, provider SDKs stay in lazy chunks and load on first request.
 - Without code splitting, bundlers fold reachable lazy API implementations into the single bundle. A single-provider bundle then includes that provider's SDK; `providers/all` includes all statically visible SDKs. Bedrock is the exception: its AWS SDK implementation is loaded through a bundler-opaque Node-only import.
-- Importing `@earendil-works/pi-ai/api/<api-id>` directly loads that API implementation and its SDK immediately.
+- Importing `@earendil-works/forge-ai/api/<api-id>` directly loads that API implementation and its SDK immediately.
 
-Avoid `@earendil-works/pi-ai/compat` in new bundled apps; it preserves the old global API and imports the full built-in catalog surface.
+Avoid `@earendil-works/forge-ai/compat` in new bundled apps; it preserves the old global API and imports the full built-in catalog surface.
 
 For single-file Node ESM bundles, some SDK dependencies may still use dynamic CommonJS `require()` internally. If you see errors such as `Dynamic require of "child_process" is not supported`, add a Node `require` shim to the bundle. With esbuild:
 
@@ -1434,8 +1434,8 @@ This is only for Node bundles; it is not a browser or Cloudflare Workers workaro
 Bedrock is Node-only. Add it like any other provider:
 
 ```typescript
-import { createModels } from '@earendil-works/pi-ai';
-import { amazonBedrockProvider } from '@earendil-works/pi-ai/providers/amazon-bedrock';
+import { createModels } from '@earendil-works/forge-ai';
+import { amazonBedrockProvider } from '@earendil-works/forge-ai/providers/amazon-bedrock';
 
 const models = createModels();
 models.setProvider(amazonBedrockProvider());
@@ -1444,8 +1444,8 @@ models.setProvider(amazonBedrockProvider());
 In normal Node package usage and code-split bundles, Bedrock loads its AWS SDK implementation lazily. For a standalone single-file bundle that must include Bedrock support, register the implementation module explicitly:
 
 ```typescript
-import { setBedrockProviderModule } from '@earendil-works/pi-ai/api/bedrock-converse-stream.lazy';
-import { bedrockProviderModule } from '@earendil-works/pi-ai/bedrock-provider';
+import { setBedrockProviderModule } from '@earendil-works/forge-ai/api/bedrock-converse-stream.lazy';
+import { bedrockProviderModule } from '@earendil-works/forge-ai/bedrock-provider';
 
 setBedrockProviderModule(bedrockProviderModule);
 ```
@@ -1483,8 +1483,8 @@ Several providers support OAuth authentication instead of static API keys:
 Each of these providers carries an `OAuthAuth` on `provider.auth.oauth` with three operations: `login(interaction)` uses the provider-neutral `AuthInteraction.prompt()`/`notify()` protocol and returns a credential, `refresh(credential, signal)` refreshes expiring credentials when applicable, and `toAuth(credential)` derives request auth (GitHub Copilot's per-account base URL comes from here). Provider login interactions and refresh calls always carry a concrete abort signal. Refresh is automatic: `models.getAuth(providerId)` and request paths refresh expired tokens under a credential-store lock, so concurrent requests and processes cannot double-refresh. OpenRouter's OAuth flow instead returns a permanent API key, so its refresh operation is a no-op.
 
 ```typescript
-import { createModels } from '@earendil-works/pi-ai';
-import { anthropicProvider } from '@earendil-works/pi-ai/providers/anthropic';
+import { createModels } from '@earendil-works/forge-ai';
+import { anthropicProvider } from '@earendil-works/forge-ai/providers/anthropic';
 
 const models = createModels({ credentials: myStore }); // persistent CredentialStore
 models.setProvider(anthropicProvider());
@@ -1543,16 +1543,16 @@ Official docs: [Application Default Credentials](https://cloud.google.com/docs/a
 The quickest way to authenticate:
 
 ```bash
-npx @earendil-works/pi-ai login              # interactive provider selection
-npx @earendil-works/pi-ai login anthropic    # login to specific provider
-npx @earendil-works/pi-ai list               # list available providers
+npx @earendil-works/forge-ai login              # interactive provider selection
+npx @earendil-works/forge-ai login anthropic    # login to specific provider
+npx @earendil-works/forge-ai list               # list available providers
 ```
 
 Credentials are saved to `auth.json` in the current directory.
 
 ### Programmatic OAuth
 
-Built-in login and refresh flows are private provider implementations. Use provider-owned `OAuthAuth`, which composes with `CredentialStore` and gets locked auto-refresh through `Models`. The `@earendil-works/pi-ai/oauth` entry point retains only type declarations required by coding-agent extension OAuth compatibility.
+Built-in login and refresh flows are private provider implementations. Use provider-owned `OAuthAuth`, which composes with `CredentialStore` and gets locked auto-refresh through `Models`. The `@earendil-works/forge-ai/oauth` entry point retains only type declarations required by coding-agent extension OAuth compatibility.
 
 Provider notes:
 
@@ -1568,10 +1568,10 @@ Older versions exposed a global API: `stream()`/`complete()` dispatching on `mod
 
 ```typescript
 // Before
-import { getModel, complete } from '@earendil-works/pi-ai';
+import { getModel, complete } from '@earendil-works/forge-ai';
 
 // After (verbatim behavior, one import-path change)
-import { getModel, complete } from '@earendil-works/pi-ai/compat';
+import { getModel, complete } from '@earendil-works/forge-ai/compat';
 ```
 
 Compat is a strict superset of the root entrypoint, so a file can switch its import path wholesale. It will be removed in a future release; migrate to `createModels()` + provider factories:
@@ -1583,7 +1583,7 @@ Compat is a strict superset of the root entrypoint, so a file can switch its imp
 | `stream(model, ctx, opts)` (env-key injection) | `models.stream(model, ctx, opts)` (provider auth resolution) |
 | `registerApiProvider({ api, stream, streamSimple })` | `createProvider({ id, auth, models, api })` + `models.setProvider()` |
 | `getEnvApiKey('openai')` | `await models.getAuth(model.provider)` |
-| `streamAnthropic(model, ctx, opts)` | `stream` from `@earendil-works/pi-ai/api/anthropic-messages`, or a provider in a collection |
+| `streamAnthropic(model, ctx, opts)` | `stream` from `@earendil-works/forge-ai/api/anthropic-messages`, or a provider in a collection |
 | `registerFauxProvider()` | `fauxProvider()` + `models.setProvider()` |
 
 ## Development
@@ -1607,7 +1607,7 @@ Create a new API implementation file (for example `bedrock-converse-stream.ts`) 
 - Tool conversion if the provider supports tools
 - Response parsing to emit standardized events (`text`, `tool_call`, `thinking`, `usage`, `stop`)
 
-Add a lazy wrapper `src/api/<api-id>.lazy.ts` (`<name>Api()` via `lazyApi()`) so providers can reference the implementation without importing its SDK. Add any root-level `export type` re-exports in `src/index.ts` that should remain available from `@earendil-works/pi-ai`.
+Add a lazy wrapper `src/api/<api-id>.lazy.ts` (`<name>Api()` via `lazyApi()`) so providers can reference the implementation without importing its SDK. Add any root-level `export type` re-exports in `src/index.ts` that should remain available from `@earendil-works/forge-ai`.
 
 #### 3. Model Generation (`scripts/generate-models.ts`, `scripts/generate-image-models.ts`)
 

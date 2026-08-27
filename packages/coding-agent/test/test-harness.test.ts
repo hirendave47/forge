@@ -278,8 +278,8 @@ describe("test harness", () => {
 			extensionFactories: [
 				{
 					path: "<alpha>",
-					factory: (pi) => {
-						pi.registerCommand("shared-cmd", {
+					factory: (forge) => {
+						forge.registerCommand("shared-cmd", {
 							description: "Alpha command",
 							handler: async (args) => {
 								calls.push(`alpha:${args}`);
@@ -289,8 +289,8 @@ describe("test harness", () => {
 				},
 				{
 					path: "<beta>",
-					factory: (pi) => {
-						pi.registerCommand("shared-cmd", {
+					factory: (forge) => {
+						forge.registerCommand("shared-cmd", {
 							description: "Beta command",
 							handler: async (args) => {
 								calls.push(`beta:${args}`);

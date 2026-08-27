@@ -4,44 +4,44 @@ This page gets you from install to a useful first forge session.
 
 ## Install
 
-Pi is distributed as an npm package:
+Forge is distributed as an npm package:
 
 ```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+npm install -g --ignore-scripts @earendil-works/forge-coding-agent
 ```
 
 `--ignore-scripts` disables dependency lifecycle scripts during install. Forge does not require install scripts for normal npm installs.
 
 ### Uninstall
 
-Use the package manager that installed pi. The curl installer uses npm globally, so curl and npm installs are removed with npm:
+Use the package manager that installed forge. The curl installer uses npm globally, so curl and npm installs are removed with npm:
 
 ```bash
 # curl installer or npm install -g
-npm uninstall -g @earendil-works/pi-coding-agent
+npm uninstall -g @earendil-works/forge-coding-agent
 
 # pnpm
-pnpm remove -g @earendil-works/pi-coding-agent
+pnpm remove -g @earendil-works/forge-coding-agent
 
 # Yarn
-yarn global remove @earendil-works/pi-coding-agent
+yarn global remove @earendil-works/forge-coding-agent
 
 # Bun
-bun uninstall -g @earendil-works/pi-coding-agent
+bun uninstall -g @earendil-works/forge-coding-agent
 ```
 
-Uninstalling forge leaves settings, credentials, sessions, and installed forge packages in `~/.pi/agent/`.
+Uninstalling forge leaves settings, credentials, sessions, and installed forge packages in `~/.forge/agent/`.
 
 Then start forge in the project directory you want it to work on:
 
 ```bash
 cd /path/to/project
-pi
+forge
 ```
 
 ## Authenticate
 
-Pi can use subscription providers through `/login`, or API-key providers through environment variables or the auth file.
+Forge can use subscription providers through `/login`, or API-key providers through environment variables or the auth file.
 
 ### Option 1: subscription login
 
@@ -55,14 +55,14 @@ Then select a provider. Built-in subscription logins include Claude Pro/Max, Cha
 
 ### Option 2: API key
 
-Set an API key before launching pi:
+Set an API key before launching forge:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-pi
+forge
 ```
 
-You can also run `/login` and select an API-key provider to store the key in `~/.pi/agent/auth.json`.
+You can also run `/login` and select an API-key provider to store the key in `~/.forge/agent/auth.json`.
 
 See [Providers](providers.md) for all supported providers, environment variables, and cloud-provider setup.
 
@@ -85,7 +85,7 @@ Additional built-in read-only tools (`grep`, `find`, `ls`) are available through
 
 ## Give forge project instructions
 
-Pi loads context files at startup. Add an `AGENTS.md` file to tell it how to work in a project:
+Forge loads context files at startup. Add an `AGENTS.md` file to tell it how to work in a project:
 
 ```markdown
 # Project Instructions
@@ -95,14 +95,14 @@ Pi loads context files at startup. Add an `AGENTS.md` file to tell it how to wor
 - Keep responses concise.
 ```
 
-Pi loads:
+Forge loads:
 
-- `~/.pi/agent/AGENTS.md` for global instructions
+- `~/.forge/agent/AGENTS.md` for global instructions
 - `AGENTS.md` or `CLAUDE.md` from parent directories and the current directory
 
 If a directory contains `AGENTS.override.md`, Forge loads it instead of `AGENTS.md` or `CLAUDE.md` from that directory.
 
-Restart pi, or run `/reload`, after changing context files.
+Restart forge, or run `/reload`, after changing context files.
 
 ## Common things to try
 
@@ -111,8 +111,8 @@ Restart pi, or run `/reload`, after changing context files.
 Type `@` in the editor to fuzzy-search files, or pass files on the command line:
 
 ```bash
-pi @README.md "Summarize this"
-pi @src/app.ts @src/app.test.ts "Review these together"
+forge @README.md "Summarize this"
+forge @src/app.ts @src/app.test.ts "Review these together"
 ```
 
 Images or text can be pasted with Ctrl+V (Alt+V on Windows); images can also be dragged into supported terminals.
@@ -136,32 +136,32 @@ Use `/model` or Ctrl+L to choose a model. Use Shift+Tab to cycle thinking level.
 Sessions are saved automatically:
 
 ```bash
-pi -c                  # Continue most recent session
-pi -r                  # Browse previous sessions
-pi --name "my task"    # Set session display name at startup
-pi --session <path|id> # Open a specific session
+forge -c                  # Continue most recent session
+forge -r                  # Browse previous sessions
+forge --name "my task"    # Set session display name at startup
+forge --session <path|id> # Open a specific session
 ```
 
-Inside pi, use `/resume`, `/new`, `/tree`, `/fork`, and `/clone` to manage sessions.
+Inside forge, use `/resume`, `/new`, `/tree`, `/fork`, and `/clone` to manage sessions.
 
 ### Non-interactive mode
 
 For one-shot prompts:
 
 ```bash
-pi -p "Summarize this codebase"
+forge -p "Summarize this codebase"
 cat README.md | forge -p "Summarize this text"
-pi -p @screenshot.png "What's in this image?"
+forge -p @screenshot.png "What's in this image?"
 ```
 
 Use `--mode json` for JSON event output or `--mode rpc` for process integration.
 
 ## Next steps
 
-- [Using Pi](usage.md) - interactive mode, slash commands, sessions, context files, and CLI reference.
+- [Using Forge](usage.md) - interactive mode, slash commands, sessions, context files, and CLI reference.
 - [Providers](providers.md) - authentication and model setup.
 - [Settings](settings.md) - global and project configuration.
 - [Keybindings](keybindings.md) - shortcuts and customization.
-- [Pi Packages](packages.md) - install shared extensions, skills, prompts, and themes.
+- [Forge Packages](packages.md) - install shared extensions, skills, prompts, and themes.
 
 Platform notes: [Windows](windows.md), [Termux](termux.md), [tmux](tmux.md), [Terminal setup](terminal-setup.md), [Shell aliases](shell-aliases.md).

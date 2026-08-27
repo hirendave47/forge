@@ -287,7 +287,7 @@ describe("createGatewayBindingFetch", () => {
 	});
 
 	it("keeps SDK placeholder auth out of entries when paired with null auth headers", async () => {
-		// The full header contract from the module docs: the sentinel satisfies pi's request-auth
+		// The full header contract from the module docs: the sentinel satisfies forge's request-auth
 		// check, and the explicit nulls make the OpenAI SDK delete its own `Authorization: Bearer
 		// unused` placeholder before the request reaches the shim.
 		const { binding, runs } = fakeBinding(

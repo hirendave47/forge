@@ -283,7 +283,7 @@ async function main() {
 		publishedAt: new Date().toISOString(),
 		packages: publishedPackages,
 	};
-	const temporaryDirectory = mkdtempSync(join(tmpdir(), "pi-release-announcement-"));
+	const temporaryDirectory = mkdtempSync(join(tmpdir(), "forge-release-announcement-"));
 	try {
 		const releasePath = join(temporaryDirectory, "release.json");
 		const latestPath = join(temporaryDirectory, "latest.json");
@@ -350,7 +350,7 @@ async function main() {
 		console.log(
 			installerLatest.advanced
 				? `Published installer artifacts for Forge ${options.version} through s3://${options.bucket}/${INSTALLER_PREFIX}/latest.json`
-				: `Pi ${installerLatest.version} is already the latest installer release.`,
+				: `Forge ${installerLatest.version} is already the latest installer release.`,
 		);
 
 		const result = await advanceLatestRelease(
@@ -375,7 +375,7 @@ async function main() {
 		console.log(
 			result.advanced
 				? `Announced Forge ${options.version} through s3://${options.bucket}/${RELEASES_PREFIX}/latest.json`
-				: `Pi ${result.version} is already the latest announced release.`,
+				: `Forge ${result.version} is already the latest announced release.`,
 		);
 	} finally {
 		rmSync(temporaryDirectory, { force: true, recursive: true });

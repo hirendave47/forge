@@ -17,8 +17,8 @@ import { uuidv7 } from "@earendil-works/forge-ai";
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 import { convertToLlm, serializeConversation } from "@earendil-works/forge-coding-agent";
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_before_compact", async (event, ctx) => {
+export default function (forge: ExtensionAPI) {
+	forge.on("session_before_compact", async (event, ctx) => {
 		ctx.ui.notify("Custom compaction extension triggered", "info");
 
 		const { preparation, branchEntries: _, signal } = event;

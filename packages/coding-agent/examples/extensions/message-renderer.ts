@@ -10,9 +10,9 @@
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 import { Box, Text } from "@earendil-works/forge-tui";
 
-export default function (pi: ExtensionAPI) {
+export default function (forge: ExtensionAPI) {
 	// Register custom renderer for "status-update" messages
-	pi.registerMessageRenderer("status-update", (message, { expanded, outputPad }, theme) => {
+	forge.registerMessageRenderer("status-update", (message, { expanded, outputPad }, theme) => {
 		const details = message.details as { level: string; timestamp: number } | undefined;
 		const level = details?.level ?? "info";
 
@@ -35,7 +35,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Command to send status messages
-	pi.registerCommand("status", {
+	forge.registerCommand("status", {
 		description: "Send a status message (usage: /status [warn|error] message)",
 		handler: async (args, _ctx) => {
 			const parts = args.trim().split(/\s+/);
@@ -48,7 +48,7 @@ export default function (pi: ExtensionAPI) {
 				content = parts.slice(1).join(" ") || "Status update";
 			}
 
-			pi.sendMessage({
+			forge.sendMessage({
 				customType: "status-update",
 				content,
 				display: true,

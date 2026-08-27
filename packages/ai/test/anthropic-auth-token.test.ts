@@ -197,7 +197,7 @@ describe("Anthropic auth token env", () => {
 });
 
 describe("Anthropic-compatible user agents", () => {
-	it("uses pi's User-Agent by default for Anthropic Messages requests", async () => {
+	it("uses forge's User-Agent by default for Anthropic Messages requests", async () => {
 		await streamAnthropic(anthropicModel, context, { apiKey: "anthropic-key" }).result();
 
 		const headers = mockState.constructorOpts?.defaultHeaders as Record<string, string>;

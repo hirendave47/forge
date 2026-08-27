@@ -39,7 +39,7 @@ let tempDir: string;
 
 beforeEach(() => {
 	allowNetwork();
-	tempDir = join(tmpdir(), `pi-test-radius-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	tempDir = join(tmpdir(), `forge-test-radius-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 });
 
@@ -60,7 +60,7 @@ describe("Radius provider", () => {
 		});
 
 		const model = runtime.getModel(RADIUS_PROVIDER_ID, "auto");
-		expect(model).toMatchObject({ api: "pi-messages", baseUrl: "https://radius.example.com/v1" });
+		expect(model).toMatchObject({ api: "forge-messages", baseUrl: "https://radius.example.com/v1" });
 		expect(runtime.getProvider(RADIUS_PROVIDER_ID)?.name).toBe("Radius");
 		expect(runtime.hasConfiguredAuth(RADIUS_PROVIDER_ID)).toBe(true);
 	});
@@ -93,7 +93,7 @@ describe("Radius provider", () => {
 		expect((await modelsStore.read(RADIUS_PROVIDER_ID))?.models).toHaveLength(1);
 		const radiusRequest = vi
 			.mocked(fetch)
-			.mock.calls.find(([url]) => String(url) === "https://radius.pi.dev/v1/config");
+			.mock.calls.find(([url]) => String(url) === "https://radius.forge.dev/v1/config");
 		expect(radiusRequest?.[1]?.headers).toMatchObject({ authorization: "Bearer access-token" });
 	});
 
@@ -121,7 +121,7 @@ describe("Radius provider", () => {
 		});
 
 		expect(runtime.getModels(RADIUS_PROVIDER_ID)).toEqual([]);
-		expect(fetchSpy.mock.calls.some(([url]) => String(url).includes("radius.pi.dev/v1/config"))).toBe(false);
+		expect(fetchSpy.mock.calls.some(([url]) => String(url).includes("radius.forge.dev/v1/config"))).toBe(false);
 	});
 
 	it("supports custom Radius gateways from models.json", async () => {
@@ -150,7 +150,7 @@ describe("Radius provider", () => {
 		});
 
 		expect(runtime.getModel("radius-dev", "auto")).toMatchObject({
-			api: "pi-messages",
+			api: "forge-messages",
 			baseUrl: "http://localhost:8788/v1",
 		});
 		expect(runtime.getProvider("radius-dev")?.name).toBe("Radius (dev)");

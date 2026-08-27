@@ -13,7 +13,7 @@
  *   /working-indicator pulse     Use a custom animated indicator
  *   /working-indicator none      Hide the indicator entirely
  *   /working-indicator spinner   Restore an animated spinner
- *   /working-indicator reset     Restore pi's default spinner
+ *   /working-indicator reset     Restore forge's default spinner
  */
 
 import type { ExtensionAPI, ExtensionContext, WorkingIndicatorOptions } from "@earendil-works/forge-coding-agent";
@@ -79,11 +79,11 @@ function describeMode(mode: WorkingIndicatorMode): string {
 		case "spinner":
 			return "custom spinner";
 		case "default":
-			return "pi default spinner";
+			return "forge default spinner";
 	}
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (forge: ExtensionAPI) {
 	let mode: WorkingIndicatorMode = "spinner";
 
 	const applyIndicator = (ctx: ExtensionContext) => {
@@ -91,11 +91,11 @@ export default function (pi: ExtensionAPI) {
 		ctx.ui.setStatus("working-indicator", ctx.ui.theme.fg("dim", `Indicator: ${describeMode(mode)}`));
 	};
 
-	pi.on("session_start", async (_event, ctx) => {
+	forge.on("session_start", async (_event, ctx) => {
 		applyIndicator(ctx);
 	});
 
-	pi.registerCommand("working-indicator", {
+	forge.registerCommand("working-indicator", {
 		description: "Set the streaming working indicator: dot, pulse, none, spinner, or reset.",
 		handler: async (args, ctx) => {
 			const nextMode = args.trim().toLowerCase();

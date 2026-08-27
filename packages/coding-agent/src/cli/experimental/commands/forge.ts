@@ -11,20 +11,15 @@ import {
 import type { TransportAddress } from "../transport-address.ts";
 
 export interface ForgeCommand {
-	readonly command: "forge" | "pi";
+	readonly command: "forge";
 	readonly auth?: AuthInput;
 	readonly options: Args;
 	readonly listen?: readonly TransportAddress[];
 }
 
-export type PiCommand = ForgeCommand;
-
 export interface ForgeCommandContext {
 	runForge?(command: ForgeCommand): void | Promise<void>;
-	runPi?(command: ForgeCommand): void | Promise<void>;
 }
-
-export type PiCommandContext = ForgeCommandContext;
 
 const listenOption = transportOption("--listen");
 
@@ -42,13 +37,11 @@ export const forgeCommand = new Command<ForgeCommand, ForgeCommandContext>("forg
 		return {
 			ok: true,
 			command: {
-				command: "pi",
+				command: "forge",
 				options,
 				...(auth === undefined ? {} : { auth }),
 				...(listen.length === 0 ? {} : { listen }),
 			},
 		};
 	})
-	.action((command, context) => (context.runForge ? context.runForge(command) : context.runPi?.(command)));
-
-export const piCommand = forgeCommand;
+	.action((command, context) => context.runForge?.(command));

@@ -23,7 +23,7 @@ interface WorkspaceMetadata extends SessionMetadata {
 const tempDirs: string[] = [];
 
 function createTempDir(): string {
-	const directory = mkdtempSync(join(tmpdir(), "pi-agent-search-"));
+	const directory = mkdtempSync(join(tmpdir(), "forge-agent-search-"));
 	tempDirs.push(directory);
 	return directory;
 }

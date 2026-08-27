@@ -36,7 +36,7 @@ function encodeSessionDir(dir: string): string {
 }
 
 const forgeSessionsBase = path.join(process.env.HOME!, ".forge/agent/sessions");
-const piSessionsBase = path.join(process.env.HOME!, ".pi/agent/sessions");
+const piSessionsBase = path.join(process.env.HOME!, ".forge/agent/sessions");
 const sessionsBase = fs.existsSync(forgeSessionsBase) ? forgeSessionsBase : piSessionsBase;
 const encodedDir = encodeSessionDir(directory);
 const sessionsDir = path.join(sessionsBase, encodedDir);

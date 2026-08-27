@@ -12,8 +12,8 @@ import type { HarnessRun } from "vitest-evals/harness";
 
 export const FORGE_SESSION_SNAPSHOT_ARTIFACT = "piSessionJsonl";
 
-const evalSessionArtifactKey = Symbol("pi-evals-session-artifact");
-const evalSourceArtifactKey = Symbol("pi-evals-source-artifact");
+const evalSessionArtifactKey = Symbol("forge-evals-session-artifact");
+const evalSourceArtifactKey = Symbol("forge-evals-source-artifact");
 
 interface PiSessionAttachment extends TestAttachment {
 	name: "session.jsonl";
@@ -56,7 +56,7 @@ export async function recordEvalSessionArtifact(
 	const session = run.artifacts?.[FORGE_SESSION_SNAPSHOT_ARTIFACT];
 	if (session === undefined) return;
 	if (typeof runId !== "string" || typeof session !== "string") {
-		throw new TypeError("Pi eval session artifact metadata is invalid.");
+		throw new TypeError("Forge eval session artifact metadata is invalid.");
 	}
 	await recordArtifact(task, {
 		type: "@earendil-works/forge-evals:session",

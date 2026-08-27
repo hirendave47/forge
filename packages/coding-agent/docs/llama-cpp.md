@@ -1,6 +1,6 @@
 # llama.cpp
 
-Pi supports the [llama.cpp](https://github.com/ggml-org/llama.cpp) router server. The router discovers multiple GGUF models and loads or unloads them on demand.
+Forge supports the [llama.cpp](https://github.com/ggml-org/llama.cpp) router server. The router discovers multiple GGUF models and loads or unloads them on demand.
 
 Use a current llama.cpp build with router support. Follow the [build instructions](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md) or install a [prebuilt release](https://github.com/ggml-org/llama.cpp/releases) for your platform.
 
@@ -43,7 +43,7 @@ A single-file model can sit directly in the model directory. Put multimodal and 
 
 Restart the router after manually adding files. For per-model context sizes and other options, use [llama.cpp model presets](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#model-presets).
 
-## Configure Pi
+## Configure Forge
 
 Start Forge and configure the provider:
 
@@ -60,7 +60,7 @@ Environment variables can configure the same values without `/login`:
 ```bash
 export LLAMA_BASE_URL=http://127.0.0.1:8080
 export LLAMA_API_KEY=optional-secret
-pi
+forge
 ```
 
 If the server uses an API key, start `llama-server` with the matching `--api-key` value. Keep `--host 127.0.0.1` for local-only access.

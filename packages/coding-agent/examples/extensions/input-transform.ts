@@ -4,15 +4,15 @@
  * Start forge with this extension:
  *   forge -e ./examples/extensions/input-transform.ts
  *
- * Then type these inside pi:
+ * Then type these inside forge:
  *   ?quick What is TypeScript?  → "Respond briefly: What is TypeScript?"
  *   ping                        → "pong" (instant, no LLM)
  *   time                        → current time (instant, no LLM)
  */
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 
-export default function (pi: ExtensionAPI) {
-	pi.on("input", async (event, ctx) => {
+export default function (forge: ExtensionAPI) {
+	forge.on("input", async (event, ctx) => {
 		// Source-based logic: skip processing for extension-injected messages
 		if (event.source === "extension") {
 			return { action: "continue" };

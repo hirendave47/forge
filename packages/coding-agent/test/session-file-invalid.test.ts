@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 function createTempDir(): string {
-	const dir = realpathSync(mkdtempSync(join(tmpdir(), "pi-session-file-invalid-")));
+	const dir = realpathSync(mkdtempSync(join(tmpdir(), "forge-session-file-invalid-")));
 	tempDirs.push(dir);
 	return dir;
 }
@@ -57,7 +57,7 @@ describe("--session invalid file handling", () => {
 		const result = await runCli(["--session", sessionFile, "-p", "hi"], projectDir, agentDir);
 
 		expect(result.code).toBe(1);
-		expect(result.stderr).toMatch(/Error: Session file is not a valid (pi|forge) session:/);
+		expect(result.stderr).toMatch(/Error: Session file is not a valid forge session:/);
 		expect(result.stderr).not.toContain("SessionManager.open");
 		expect(result.stderr).not.toContain("at ");
 		expect(readFileSync(sessionFile, "utf8")).toBe(originalContent);

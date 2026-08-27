@@ -141,7 +141,7 @@ export const stream: StreamFunction<"bedrock-converse-stream", BedrockOptions> =
 
 		const blocks = output.content as Block[];
 
-		// A profile explicitly configured through pi's auth flow (the `profile`
+		// A profile explicitly configured through forge's auth flow (the `profile`
 		// option or scoped `AWS_PROFILE` on the stored credential's env) must win
 		// over ambient AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY. The SDK default
 		// chain already prefers a configured profile over env keys, but only when
@@ -470,7 +470,7 @@ function addCustomHeadersMiddleware(client: BedrockRuntimeClient, headers: Recor
 		}
 		return next(args);
 	};
-	client.middlewareStack.add(middleware, { step: "build", name: "pi-ai-custom-headers", priority: "low" });
+	client.middlewareStack.add(middleware, { step: "build", name: "forge-ai-custom-headers", priority: "low" });
 }
 
 function isSmithyHttpResponse(response: unknown): response is HttpResponse {
@@ -505,7 +505,7 @@ function addResponseHeadersMiddleware(
 		}
 		return result;
 	};
-	client.middlewareStack.add(middleware, { step: "deserialize", name: "pi-ai-response-headers" });
+	client.middlewareStack.add(middleware, { step: "deserialize", name: "forge-ai-response-headers" });
 }
 
 export const streamSimple: StreamFunction<"bedrock-converse-stream", SimpleStreamOptions> = (

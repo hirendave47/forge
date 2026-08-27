@@ -9,8 +9,8 @@
 
 import type { ExtensionAPI } from "@earendil-works/forge-coding-agent";
 
-export default function (pi: ExtensionAPI) {
-	pi.on("model_select", async (event, ctx) => {
+export default function (forge: ExtensionAPI) {
+	forge.on("model_select", async (event, ctx) => {
 		const { model, previousModel, source } = event;
 
 		// Format model identifiers

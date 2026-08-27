@@ -71,7 +71,7 @@ jobs:
           build_root="$(mktemp -d)"
           trap 'rm -rf "${build_root}"' EXIT
           tar -xzf "release-assets/pi-${VERSION}-source.tar.gz" -C "${build_root}"
-          "${build_root}/pi-${VERSION}/scripts/build-binaries.sh" \
+          "${build_root}/forge-${VERSION}/scripts/build-binaries.sh" \
             --offline-model-data \
             --out "${GITHUB_WORKSPACE}/packages/coding-agent/binaries"
 
@@ -85,18 +85,18 @@ jobs:
           VERSION="${VERSION#v}"  # Remove 'v' prefix
           node scripts/release-notes.mjs extract --version "${VERSION}" --tag "${RELEASE_TAG}" --out release-assets/RELEASE_NOTES.md
           node scripts/generate-coding-agent-install-lock.mjs --check
-          cp packages/coding-agent/install-lock/package.json release-assets/pi-coding-agent-install-package.json
-          cp packages/coding-agent/install-lock/package-lock.json release-assets/pi-coding-agent-install-package-lock.json
+          cp packages/coding-agent/install-lock/package.json release-assets/forge-coding-agent-install-package.json
+          cp packages/coding-agent/install-lock/package-lock.json release-assets/forge-coding-agent-install-package-lock.json
 
           cd packages/coding-agent/binaries
 
           binary_assets=(
-            pi-darwin-arm64.tar.gz
-            pi-darwin-x64.tar.gz
-            pi-linux-x64.tar.gz
-            pi-linux-arm64.tar.gz
-            pi-windows-x64.zip
-            pi-windows-arm64.zip
+            forge-darwin-arm64.tar.gz
+            forge-darwin-x64.tar.gz
+            forge-linux-x64.tar.gz
+            forge-linux-arm64.tar.gz
+            forge-windows-x64.zip
+            forge-windows-arm64.zip
           )
 
           for asset in "${binary_assets[@]}"; do
@@ -106,17 +106,17 @@ jobs:
           cp "${binary_assets[@]}" "${GITHUB_WORKSPACE}/release-assets/"
 
           cd "${GITHUB_WORKSPACE}/release-assets"
-          source_asset="pi-${VERSION}-source.tar.gz"
+          source_asset="forge-${VERSION}-source.tar.gz"
           release_assets=(
             "${source_asset}"
-            pi-darwin-arm64.tar.gz
-            pi-darwin-x64.tar.gz
-            pi-linux-x64.tar.gz
-            pi-linux-arm64.tar.gz
-            pi-windows-x64.zip
-            pi-windows-arm64.zip
-            pi-coding-agent-install-package.json
-            pi-coding-agent-install-package-lock.json
+            forge-darwin-arm64.tar.gz
+            forge-darwin-x64.tar.gz
+            forge-linux-x64.tar.gz
+            forge-linux-arm64.tar.gz
+            forge-windows-x64.zip
+            forge-windows-arm64.zip
+            forge-coding-agent-install-package.json
+            forge-coding-agent-install-package-lock.json
           )
           sha256sum "${release_assets[@]}" > SHA256SUMS
 
@@ -161,7 +161,7 @@ jobs:
               platform="${runtime_platform}"
               archive="release-assets/pi-${platform}.tar.gz"
               root="extracted/pi"
-              binary="${root}/pi"
+              binary="${root}/forge"
               ;;
             win32-arm64)
               platform="windows-arm64"
@@ -224,17 +224,17 @@ jobs:
           cd release-assets
 
           VERSION="${RELEASE_TAG#v}"
-          source_asset="pi-${VERSION}-source.tar.gz"
+          source_asset="forge-${VERSION}-source.tar.gz"
           expected_assets=(
             "${source_asset}"
-            pi-darwin-arm64.tar.gz
-            pi-darwin-x64.tar.gz
-            pi-linux-x64.tar.gz
-            pi-linux-arm64.tar.gz
-            pi-windows-x64.zip
-            pi-windows-arm64.zip
-            pi-coding-agent-install-package.json
-            pi-coding-agent-install-package-lock.json
+            forge-darwin-arm64.tar.gz
+            forge-darwin-x64.tar.gz
+            forge-linux-x64.tar.gz
+            forge-linux-arm64.tar.gz
+            forge-windows-x64.zip
+            forge-windows-arm64.zip
+            forge-coding-agent-install-package.json
+            forge-coding-agent-install-package-lock.json
             SHA256SUMS
             RELEASE_NOTES.md
           )
@@ -254,17 +254,17 @@ jobs:
           cd release-assets
 
           VERSION="${RELEASE_TAG#v}"
-          source_asset="pi-${VERSION}-source.tar.gz"
+          source_asset="forge-${VERSION}-source.tar.gz"
           release_assets=(
             "${source_asset}"
-            pi-darwin-arm64.tar.gz
-            pi-darwin-x64.tar.gz
-            pi-linux-x64.tar.gz
-            pi-linux-arm64.tar.gz
-            pi-windows-x64.zip
-            pi-windows-arm64.zip
-            pi-coding-agent-install-package.json
-            pi-coding-agent-install-package-lock.json
+            forge-darwin-arm64.tar.gz
+            forge-darwin-x64.tar.gz
+            forge-linux-x64.tar.gz
+            forge-linux-arm64.tar.gz
+            forge-windows-x64.zip
+            forge-windows-arm64.zip
+            forge-coding-agent-install-package.json
+            forge-coding-agent-install-package-lock.json
             SHA256SUMS
           )
 
@@ -346,7 +346,7 @@ jobs:
   announce-pi-dev-release:
     runs-on: ubuntu-latest
     needs: publish-npm
-    environment: pi-model-upload
+    environment: forge-model-upload
     concurrency:
       group: announce-pi-dev-release
       cancel-in-progress: false
@@ -375,11 +375,11 @@ jobs:
       - name: Verify AWS CLI
         run: aws --version
 
-      - name: Announce verified release on pi.dev
+      - name: Announce verified release on forge.dev
         run: |
           node scripts/publish-release-announcement.mjs \
             --version "${RELEASE_TAG#v}" \
-            --bucket pi-artifacts \
+            --bucket forge-artifacts \
             --endpoint "$R2_ENDPOINT" \
             --installer-package-json packages/coding-agent/install-lock/package.json \
             --installer-package-lock packages/coding-agent/install-lock/package-lock.json

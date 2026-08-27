@@ -2,7 +2,7 @@ import { compare, valid } from "semver";
 import { getForgeUserAgent } from "./forge-user-agent.ts";
 import { fetchWithRetry } from "./management-http.ts";
 
-const LATEST_VERSION_URL = "https://pi.dev/api/latest-version";
+const LATEST_VERSION_URL = "https://forge.dev/api/latest-version";
 const DEFAULT_VERSION_CHECK_TIMEOUT_MS = 10000;
 
 export interface LatestPiRelease {

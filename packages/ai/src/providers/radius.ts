@@ -17,7 +17,7 @@ export interface RadiusProviderOptions {
 }
 
 /** Radius gateway provider with a persisted, dynamically refreshed catalog. */
-export function radiusProvider(options: RadiusProviderOptions = {}): Provider<"pi-messages"> {
+export function radiusProvider(options: RadiusProviderOptions = {}): Provider<"forge-messages"> {
 	const id = options.id ?? "radius";
 	const name = options.name ?? "Radius";
 	const gateway = normalizeRadiusGatewayUrl(options.gateway ?? DEFAULT_RADIUS_GATEWAY);
