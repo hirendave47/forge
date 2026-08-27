@@ -82,6 +82,18 @@ describe("TaskStore", () => {
 			expect(() => store.createTask(baseInput)).toThrow();
 		});
 
+		it("should persist elevated privilege flag in task store", () => {
+			const task = store.createTask({
+				...baseInput,
+				name: "root-sysadmin-task",
+				elevated: true,
+			});
+			expect(task.elevated).toBe(true);
+
+			const fetched = store.getTask(task.id);
+			expect(fetched?.elevated).toBe(true);
+		});
+
 		it("should create task with schedule", () => {
 			const task = store.createTask({
 				...baseInput,

@@ -26,6 +26,7 @@ import {
 	type TaskEvent,
 	type TaskRun,
 	type TaskState,
+	type TaskStepLog,
 } from "../runtime/task-model.ts";
 import { CREATE_TABLES_SQL, SCHEMA_VERSION } from "./schema.ts";
 
@@ -51,6 +52,7 @@ interface TaskRow {
 	tools_deny: string | null;
 	skills: string | null;
 	model_tier: string | null;
+	elevated: number;
 	notifications: string | null;
 	created_at: string;
 	updated_at: string;
@@ -63,6 +65,12 @@ interface RunRow {
 	id: string;
 	task_id: string;
 	session_id: string | null;
+	trigger_type: string | null;
+	host_user: string | null;
+	host_name: string | null;
+	elevated: number;
+	model_used: string | null;
+	transcript_path: string | null;
 	started_at: string;
 	finished_at: string | null;
 	status: string;
@@ -75,6 +83,20 @@ interface RunRow {
 	duration_ms: number | null;
 	cpu_percent: number | null;
 	memory_mb: number | null;
+}
+
+interface StepLogRow {
+	id: number;
+	task_id: string;
+	run_id: string;
+	step_index: number;
+	tool_name: string;
+	tool_args: string | null;
+	tool_result: string | null;
+	is_error: number;
+	duration_ms: number | null;
+	policy_decision: string | null;
+	timestamp: string;
 }
 
 interface EventRow {
@@ -139,6 +161,17 @@ export class TaskStore {
 			// Table doesn't exist yet — create schema
 		}
 		this.db.exec(CREATE_TABLES_SQL);
+		try {
+			this.db.exec("ALTER TABLE tasks ADD COLUMN elevated INTEGER DEFAULT 0");
+		} catch {}
+		try {
+			this.db.exec("ALTER TABLE task_runs ADD COLUMN trigger_type TEXT DEFAULT 'schedule'");
+			this.db.exec("ALTER TABLE task_runs ADD COLUMN host_user TEXT");
+			this.db.exec("ALTER TABLE task_runs ADD COLUMN host_name TEXT");
+			this.db.exec("ALTER TABLE task_runs ADD COLUMN elevated INTEGER DEFAULT 0");
+			this.db.exec("ALTER TABLE task_runs ADD COLUMN model_used TEXT");
+			this.db.exec("ALTER TABLE task_runs ADD COLUMN transcript_path TEXT");
+		} catch {}
 	}
 
 	// ================================================================
@@ -160,13 +193,13 @@ export class TaskStore {
 				enabled, overlap_policy, timeout_seconds,
 				retry_max, retry_delay_seconds, retry_strategy,
 				policy_mode, tools_allow, tools_deny, skills,
-				model_tier, notifications, created_at, updated_at
+				model_tier, elevated, notifications, created_at, updated_at
 			) VALUES (
 				?, ?, ?, ?, ?, ?,
 				?, ?, ?,
 				?, ?, ?,
 				?, ?, ?, ?,
-				?, ?, ?, ?
+				?, ?, ?, ?, ?
 			)
 		`);
 
@@ -188,6 +221,7 @@ export class TaskStore {
 			input.toolsDeny ? JSON.stringify(input.toolsDeny) : null,
 			input.skills ? JSON.stringify(input.skills) : null,
 			input.modelTier ?? null,
+			input.elevated ? 1 : 0,
 			input.notifications ? JSON.stringify(input.notifications) : null,
 			now,
 			now,
@@ -244,16 +278,42 @@ export class TaskStore {
 	// Task Runs
 	// ================================================================
 
-	createRun(taskId: string, status: TaskState = "CREATED"): TaskRun {
+	createRun(
+		taskId: string,
+		status: TaskState = "CREATED",
+		metadata?: {
+			triggerType?: "schedule" | "manual" | "retry" | "test" | "oneshot";
+			hostUser?: string;
+			hostName?: string;
+			elevated?: boolean;
+			modelUsed?: string;
+			transcriptPath?: string;
+			sessionId?: string;
+		},
+	): TaskRun {
 		const id = generateRunId();
 		const now = new Date().toISOString();
 
 		this.db
 			.prepare(
-				`INSERT INTO task_runs (id, task_id, started_at, status)
-			 VALUES (?, ?, ?, ?)`,
+				`INSERT INTO task_runs (
+					id, task_id, session_id, started_at, status,
+					trigger_type, host_user, host_name, elevated, model_used, transcript_path
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			)
-			.run(id, taskId, now, status);
+			.run(
+				id,
+				taskId,
+				metadata?.sessionId ?? null,
+				now,
+				status,
+				metadata?.triggerType ?? "schedule",
+				metadata?.hostUser ?? null,
+				metadata?.hostName ?? null,
+				metadata?.elevated ? 1 : 0,
+				metadata?.modelUsed ?? null,
+				metadata?.transcriptPath ?? null,
+			);
 
 		return this.getRun(id)!;
 	}
@@ -339,6 +399,47 @@ export class TaskStore {
 			)
 			.get(taskId) as unknown as RunRow | undefined;
 		return row ? rowToRun(row) : undefined;
+	}
+
+	// ================================================================
+	// Task Step Logs (§8 full audit trail)
+	// ================================================================
+
+	recordStepLog(step: TaskStepLog): void {
+		const now = step.timestamp || new Date().toISOString();
+		this.db
+			.prepare(
+				`INSERT INTO task_step_logs (
+					task_id, run_id, step_index, tool_name,
+					tool_args, tool_result, is_error, duration_ms, policy_decision, timestamp
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			)
+			.run(
+				step.taskId,
+				step.runId,
+				step.stepIndex,
+				step.toolName,
+				step.toolArgs ? (typeof step.toolArgs === "string" ? step.toolArgs : JSON.stringify(step.toolArgs)) : null,
+				step.toolResult ?? null,
+				step.isError ? 1 : 0,
+				step.durationMs ?? null,
+				step.policyDecision ? JSON.stringify(step.policyDecision) : null,
+				now,
+			);
+	}
+
+	listStepLogs(runId: string): TaskStepLog[] {
+		const rows = this.db
+			.prepare("SELECT * FROM task_step_logs WHERE run_id = ? ORDER BY step_index ASC")
+			.all(runId) as unknown as StepLogRow[];
+		return rows.map(rowToStepLog);
+	}
+
+	listTaskStepLogs(taskId: string, limit = 100): TaskStepLog[] {
+		const rows = this.db
+			.prepare("SELECT * FROM task_step_logs WHERE task_id = ? ORDER BY id DESC LIMIT ?")
+			.all(taskId, limit) as unknown as StepLogRow[];
+		return rows.map(rowToStepLog);
 	}
 
 	// ================================================================
@@ -556,6 +657,7 @@ function rowToTask(row: TaskRow): Task {
 		toolsDeny: row.tools_deny ? JSON.parse(row.tools_deny) : undefined,
 		skills: row.skills ? JSON.parse(row.skills) : undefined,
 		modelTier: (row.model_tier as Task["modelTier"]) ?? undefined,
+		elevated: row.elevated === 1,
 		notifications: row.notifications ? JSON.parse(row.notifications) : undefined,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
@@ -570,6 +672,12 @@ function rowToRun(row: RunRow): TaskRun {
 		id: row.id,
 		taskId: row.task_id,
 		sessionId: row.session_id ?? undefined,
+		triggerType: (row.trigger_type as TaskRun["triggerType"]) ?? "schedule",
+		hostUser: row.host_user ?? undefined,
+		hostName: row.host_name ?? undefined,
+		elevated: row.elevated === 1,
+		modelUsed: row.model_used ?? undefined,
+		transcriptPath: row.transcript_path ?? undefined,
 		startedAt: row.started_at,
 		finishedAt: row.finished_at ?? undefined,
 		status: row.status as TaskState,
@@ -582,6 +690,22 @@ function rowToRun(row: RunRow): TaskRun {
 		durationMs: row.duration_ms ?? undefined,
 		cpuPercent: row.cpu_percent ?? undefined,
 		memoryMb: row.memory_mb ?? undefined,
+	};
+}
+
+function rowToStepLog(row: StepLogRow): TaskStepLog {
+	return {
+		id: row.id,
+		taskId: row.task_id,
+		runId: row.run_id,
+		stepIndex: row.step_index,
+		toolName: row.tool_name,
+		toolArgs: row.tool_args ? JSON.parse(row.tool_args) : undefined,
+		toolResult: row.tool_result ?? undefined,
+		isError: row.is_error === 1,
+		durationMs: row.duration_ms ?? undefined,
+		policyDecision: row.policy_decision ? JSON.parse(row.policy_decision) : undefined,
+		timestamp: row.timestamp,
 	};
 }
 

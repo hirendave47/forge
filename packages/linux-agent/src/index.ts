@@ -15,6 +15,7 @@
  */
 
 // CLI
+export { handleAuditCommand } from "./cli/audit-command.ts";
 export { handleRunCommand } from "./cli/run-command.ts";
 export { calculateTimeline, explainSchedule, formatTimelineTable, handleExplain } from "./cli/schedule-explainer.ts";
 export { handleTaskCommand } from "./cli/task-command.ts";
@@ -88,6 +89,7 @@ export { SCHEMA_VERSION } from "./store/schema.ts";
 export { getDefaultTaskDbPath, TaskStore } from "./store/task-store.ts";
 // Systemd & Crash Recovery (§28, §29)
 export * from "./systemd/installer.ts";
+export * from "./systemd/sudoers.ts";
 // Templates
 export * from "./templates/index.ts";
 // Verification Engine (§24)

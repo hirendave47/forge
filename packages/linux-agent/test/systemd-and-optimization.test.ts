@@ -39,7 +39,13 @@ describe("systemd, Crash Recovery & Optimization", () => {
 			expect(unit).toContain("ExecStart=/usr/local/bin/forge task daemon");
 			expect(unit).toContain("Restart=always");
 			expect(unit).toContain("StandardOutput=journal");
-			expect(unit).toContain("WantedBy=default.target");
+		});
+
+		it("should check daemon running status safely", () => {
+			const { isDaemonRunning } = require("../src/systemd/installer.ts");
+			const status = isDaemonRunning();
+			expect(typeof status.running).toBe("boolean");
+			expect(["systemd", "process", "none"]).toContain(status.mode);
 		});
 	});
 

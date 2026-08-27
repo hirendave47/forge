@@ -22,6 +22,7 @@ import {
 } from "../../runtime/task-model.ts";
 import { computeNextCronRun, computeNextRun } from "../../scheduler/cron.ts";
 import { getDefaultTaskDbPath, TaskStore } from "../../store/task-store.ts";
+import { isDaemonRunning, startDaemonService } from "../../systemd/installer.ts";
 import { buildEnrichedGoal, generateTaskQuestions, suggestProfileAndSchedule } from "./ai-questioner.ts";
 import { type HostInfo, inspectHost } from "./host-inspector.ts";
 import { PromptEngine, type PromptEngineOptions, type SelectOption } from "./prompt-engine.ts";
@@ -32,6 +33,8 @@ export interface TaskWizardOptions extends PromptEngineOptions {
 	smart?: boolean;
 	inspectHostContext?: boolean;
 	modelRuntime?: any;
+	autoStartDaemon?: boolean;
+	elevated?: boolean;
 }
 
 export async function runTaskWizard(options: TaskWizardOptions = {}): Promise<CreateTaskInput | null> {
@@ -222,12 +225,12 @@ export async function runTaskWizard(options: TaskWizardOptions = {}): Promise<Cr
 			{
 				label: "Interval",
 				value: "interval",
-				description: "Repeat every N seconds, minutes, or hours (e.g. 30s, 5m, 1h)",
+				description: "Repeat every N seconds, minutes, or hours with sub-minute precision (e.g. 30s, 5m, 1h)",
 			},
 			{
 				label: "Cron Expression",
 				value: "cron",
-				description: "Standard 5-part UTC cron (e.g. */15 * * * *)",
+				description: "Standard 5-part UTC cron (minute-level resolution, e.g. */15 * * * *)",
 			},
 			{
 				label: "One-Time (Once)",
@@ -343,12 +346,14 @@ export async function runTaskWizard(options: TaskWizardOptions = {}): Promise<Cr
 		let retries = 0;
 		let retryDelay = 30;
 		let retryStrategy: "fixed" | "exponential" = "fixed";
+		let elevated = options.elevated ?? (profile === "sysadmin" || profile === "sre" || profile === "security");
 		let modelTier: ModelTier | undefined;
 		let toolsAllow: string[] | undefined;
 		let notifyEmail: string[] | undefined;
 		let notifyWebhook: string | undefined;
 
 		if (configureAdvanced) {
+			elevated = await prompt.promptConfirm("Does this task require root / elevated privileges (sudo)?", elevated);
 			timeoutSeconds = await prompt.promptNumber("Execution timeout in seconds", {
 				defaultVal: 120,
 				min: 10,
@@ -421,6 +426,7 @@ export async function runTaskWizard(options: TaskWizardOptions = {}): Promise<Cr
 					: undefined,
 			policyMode,
 			modelTier,
+			elevated,
 			toolsAllow,
 			notifications:
 				notifyEmail || notifyWebhook
@@ -444,6 +450,7 @@ export async function runTaskWizard(options: TaskWizardOptions = {}): Promise<Cr
 		prompt.writeLine(`  ${chalk.bold("Profile:")}      ${input.profile ?? "default"}`);
 		prompt.writeLine(`  ${chalk.bold("Schedule:")}     ${formatSchedule(input.schedule)}`);
 		prompt.writeLine(`  ${chalk.bold("Policy:")}       ${input.policyMode}`);
+		prompt.writeLine(`  ${chalk.bold("Privilege:")}    ${input.elevated ? "elevated (sudo)" : "standard"}`);
 		prompt.writeLine(`  ${chalk.bold("Timeout:")}      ${input.timeoutSeconds}s`);
 		if (input.retryPolicy) {
 			prompt.writeLine(
@@ -487,8 +494,90 @@ export async function runTaskWizard(options: TaskWizardOptions = {}): Promise<Cr
 				prompt.writeLine();
 				prompt.writeLine(chalk.green(`✓ Task created successfully: ${created.id}`));
 				prompt.writeLine(chalk.dim(`  Name: ${created.name}`));
+				if (created.elevated) {
+					prompt.writeLine(chalk.dim("  Privilege: elevated (sudo)"));
+					const { checkPrivilegeLevel } = await import("../../systemd/sudoers.ts");
+					const priv = checkPrivilegeLevel();
+					if (priv.level === "unprivileged") {
+						prompt.writeLine(
+							chalk.yellow(
+								"  ⚠️  Warning: Current user lacks passwordless sudo. This task may fail in background.",
+							),
+						);
+						prompt.writeLine(
+							chalk.dim(
+								'      To configure sudo: "forge task sudoers show" (or "sudo forge task sudoers install")',
+							),
+						);
+					}
+				}
 				if (created.schedule) {
 					prompt.writeLine(chalk.dim(`  Schedule: ${formatSchedule(created.schedule)}`));
+					// Check if scheduler daemon is running
+					const daemonStatus = isDaemonRunning();
+					if (!daemonStatus.running) {
+						if (options.autoStartDaemon === true) {
+							const startResult = startDaemonService();
+							if (startResult.started) {
+								prompt.writeLine(
+									chalk.green(
+										`✓ Background scheduler started (${startResult.mode === "systemd" ? "forge-taskd.service" : `PID ${startResult.pid}`})`,
+									),
+								);
+							}
+						} else if (options.autoStartDaemon === false) {
+							prompt.writeLine();
+							prompt.writeLine(
+								chalk.yellow("⚠️  Background scheduler daemon (forge-taskd) is not currently running."),
+							);
+							prompt.writeLine(chalk.dim('  To start it: "forge task service start" (or "forge task daemon")'));
+						} else {
+							prompt.writeLine();
+							prompt.writeLine(
+								chalk.yellow("⚠️  Background scheduler daemon (forge-taskd) is not currently running."),
+							);
+							const startNow = await prompt.promptConfirm(
+								"Would you like to start the background scheduler service now?",
+								true,
+							);
+							if (startNow) {
+								const startResult = startDaemonService();
+								if (startResult.started) {
+									prompt.writeLine(
+										chalk.green(
+											`✓ Background scheduler started (${startResult.mode === "systemd" ? "forge-taskd.service" : `PID ${startResult.pid}`})`,
+										),
+									);
+									prompt.writeLine(
+										chalk.dim("  Your task is now active and will execute automatically on schedule!"),
+									);
+								} else {
+									prompt.writeLine(
+										chalk.yellow(
+											`Could not auto-start background service: ${startResult.error ?? "Unknown error"}`,
+										),
+									);
+									prompt.writeLine(
+										chalk.dim(
+											'You can start it manually with: "forge task service start" (or "forge task daemon")',
+										),
+									);
+								}
+							} else {
+								prompt.writeLine(
+									chalk.dim(
+										'Remember to start the daemon when ready: "forge task service start" (or "forge task daemon")',
+									),
+								);
+							}
+						}
+					} else {
+						prompt.writeLine(
+							chalk.green(
+								`  Scheduler daemon is active (${daemonStatus.details}). Task will run automatically.`,
+							),
+						);
+					}
 				}
 				prompt.writeLine(chalk.dim("  To view status: ") + chalk.bold(`forge task status ${created.name}`));
 				prompt.writeLine(chalk.dim("  To run now:     ") + chalk.bold(`forge task run ${created.name}`));
@@ -509,6 +598,7 @@ export async function runTaskWizard(options: TaskWizardOptions = {}): Promise<Cr
 				goal: input.goal,
 				profile: input.profile,
 				enabled: true,
+				elevated: input.elevated,
 				schedule: input.schedule
 					? input.schedule.type === "interval"
 						? { type: "interval", seconds: input.schedule.seconds }

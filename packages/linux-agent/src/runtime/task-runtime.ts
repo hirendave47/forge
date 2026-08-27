@@ -290,16 +290,37 @@ export class TaskRuntime {
 	 * ACQUIRE LEASE → LOAD CHECKPOINT → RUN PROCESSORS → START AgentSession
 	 * → LLM + TOOLS → VERIFY → NOTIFY → COMMIT CHECKPOINT → RELEASE LEASE
 	 */
-	async executeTask(taskId: string): Promise<ExecutionResult> {
+	async executeTask(
+		taskId: string,
+		options?: { triggerType?: "schedule" | "manual" | "retry" | "test" | "oneshot" },
+	): Promise<ExecutionResult> {
 		const startTime = Date.now();
 		const task = this.store.getTask(taskId);
 		if (!task) {
 			throw new Error(`Task not found: ${taskId}`);
 		}
 
+		const hostUser =
+			process.env.USER ||
+			process.env.LOGNAME ||
+			(typeof process.getuid === "function" && process.getuid() === 0 ? "root" : "forge");
+		const hostName = hostname();
+		const isElevated = Boolean(task.elevated || (typeof process.getuid === "function" && process.getuid() === 0));
+
 		// Create run
-		const run = this.store.createRun(taskId, "CREATED");
-		this.store.recordEvent(taskId, run.id, "run_started");
+		const run = this.store.createRun(taskId, "CREATED", {
+			triggerType: options?.triggerType ?? "schedule",
+			hostUser,
+			hostName,
+			elevated: isElevated,
+			modelUsed: task.modelTier,
+		});
+		this.store.recordEvent(taskId, run.id, "run_started", {
+			triggerType: options?.triggerType ?? "schedule",
+			hostUser,
+			hostName,
+			elevated: isElevated,
+		});
 		this.emitProgress("lease", `Run ${run.id.slice(0, 8)} created for task "${task.name}"`);
 
 		// Check overlap policy
@@ -396,18 +417,70 @@ export class TaskRuntime {
 			this.store.recordEvent(taskId, run.id, "agent_started");
 
 			let toolCalls = 0;
+			let stepIndex = 0;
 			let inputTokens = 0;
 			let outputTokens = 0;
+			const activeToolStarts = new Map<
+				string,
+				{ toolName: string; args: any; startTime: number; stepIndex: number }
+			>();
 
-			const unsubscribe = session.subscribe((event) => {
+			const unsubscribe = session.subscribe((event: any) => {
 				if (event.type === "tool_execution_start") {
 					toolCalls++;
+					stepIndex++;
+					const curStep = stepIndex;
+					const key = event.toolCallId || `${event.toolName}-${curStep}`;
+					activeToolStarts.set(key, {
+						toolName: event.toolName,
+						args: event.args,
+						startTime: Date.now(),
+						stepIndex: curStep,
+					});
+
 					const argsSummary = event.args ? ` (${JSON.stringify(event.args).slice(0, 60)})` : "";
-					this.emitProgress("agent", `Executing tool: ${event.toolName}${argsSummary}`);
+					this.emitProgress("agent", `[Step ${curStep}] Executing tool: ${event.toolName}${argsSummary}`);
 				} else if (event.type === "tool_execution_end") {
+					const key = event.toolCallId || `${event.toolName}-${stepIndex}`;
+					const active = activeToolStarts.get(key);
+					const durationMs = active ? Date.now() - active.startTime : undefined;
+					const curStep = active ? active.stepIndex : stepIndex;
+					activeToolStarts.delete(key);
+
+					let toolResultText = "";
+					if (event.result) {
+						if (typeof event.result === "string") {
+							toolResultText = event.result;
+						} else if (typeof event.result === "object") {
+							if ("content" in event.result && Array.isArray(event.result.content)) {
+								toolResultText = event.result.content
+									.map((c: any) => (typeof c === "string" ? c : c.text || JSON.stringify(c)))
+									.join("\n");
+							} else {
+								toolResultText = JSON.stringify(event.result);
+							}
+						}
+					}
+					if (event.error) {
+						toolResultText = event.error instanceof Error ? event.error.message : String(event.error);
+					}
+
+					// Persist step log to database audit trail
+					this.store.recordStepLog({
+						taskId,
+						runId: run.id,
+						stepIndex: curStep,
+						toolName: event.toolName,
+						toolArgs: active?.args ?? event.args,
+						toolResult: toolResultText.slice(0, 8192),
+						isError: Boolean(event.isError),
+						durationMs,
+						timestamp: new Date().toISOString(),
+					});
+
 					const status = event.isError ? "failed" : "completed";
-					this.emitProgress("agent", `Tool ${event.toolName} ${status}`);
-				} else if (event.type === "message_end" && event.message.role === "assistant") {
+					this.emitProgress("agent", `[Step ${curStep}] Tool ${event.toolName} ${status} (${durationMs ?? 0}ms)`);
+				} else if (event.type === "message_end" && event.message?.role === "assistant") {
 					const msg = event.message as { usage?: { input?: number; output?: number } };
 					if (msg.usage) {
 						inputTokens += msg.usage.input ?? 0;

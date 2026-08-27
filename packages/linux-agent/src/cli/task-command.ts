@@ -39,6 +39,13 @@ export async function handleTaskCommand(args: string[]): Promise<void> {
 		case "templates":
 			await handleTemplate(args.slice(1));
 			break;
+		case "sudoers":
+		case "privilege":
+		case "privileges": {
+			const { handleSudoersCommand } = await import("../systemd/sudoers.ts");
+			await handleSudoersCommand(args.slice(1));
+			break;
+		}
 		case "explain": {
 			const { handleExplain } = await import("./schedule-explainer.ts");
 			await handleExplain(args.slice(1));
@@ -47,6 +54,11 @@ export async function handleTaskCommand(args: string[]): Promise<void> {
 		case "test": {
 			const { handleTest } = await import("./task-tester.ts");
 			await handleTest(args.slice(1));
+			break;
+		}
+		case "audit": {
+			const { handleAuditCommand } = await import("./audit-command.ts");
+			await handleAuditCommand(args.slice(1));
 			break;
 		}
 		case "list":
@@ -78,7 +90,7 @@ export async function handleTaskCommand(args: string[]): Promise<void> {
 			handleCancel(args.slice(1));
 			break;
 		case "doctor":
-			handleDoctor();
+			await handleDoctor();
 			break;
 		case "cleanup":
 			handleCleanup(args.slice(1));
@@ -198,6 +210,7 @@ async function handleCreate(args: string[]): Promise<void> {
 	let retryStrategy: ("fixed" | "exponential") | undefined;
 	let policyMode: PolicyMode | undefined;
 	let modelTier: ModelTier | undefined;
+	let elevated = false;
 	let interactive = false;
 	let smart: boolean | undefined;
 	const toolsAllow: string[] = [];
@@ -218,6 +231,8 @@ async function handleCreate(args: string[]): Promise<void> {
 			smart = true;
 		} else if (arg === "--no-smart" || arg === "--no-ai") {
 			smart = false;
+		} else if (arg === "--sudo" || arg === "--elevated") {
+			elevated = true;
 		} else if (arg === "--template" && i + 1 < args.length) {
 			templateName = args[++i];
 		} else if (arg === "--name" && i + 1 < args.length) {
@@ -340,14 +355,15 @@ ${chalk.bold("Schedule Options:")}
   --cron <expression>       UTC 5-part cron: "*/15 * * * *"
   --at <datetime>           Run once at ISO datetime: "2026-08-30T15:00:00Z"
 
-${chalk.bold("Operational Options:")}
-  --name <name>             Task name (auto-generated if not provided)
-  --profile <name>          Agent profile: sysadmin, devops, sre, software-engineer, security
-  --policy <mode>           Policy mode: safe, supervised, autonomous (default: autonomous)
-  --model-tier <tier>       Model tier: fast, default, reasoning, coding
-  --timeout <seconds>       Execution timeout in seconds (default: 120)
-  --overlap <policy>        Overlap policy: skip, queue (default: skip)
-  --disabled                Create task in disabled state (default: enabled)
+${chalk.bold("Operational & Execution Options:")}
+  --name <name>             Unique task name (auto-slugged from goal if omitted)
+  --profile <name>          Agent persona (sysadmin, devops, sre, software-engineer, security)
+  --policy <mode>           Safety policy mode (safe, supervised, autonomous) [default: autonomous]
+  --model-tier <tier>       Model routing (fast, default, reasoning, coding)
+  --timeout <seconds>       Execution duration timeout in seconds [default: 120]
+  --overlap <policy>        Overlap concurrency policy (skip, queue) [default: skip]
+  --sudo, --elevated        Require root / passwordless sudo privileges for sysadmin commands
+  --disabled                Create task in disabled state [default: enabled]
   --interactive, -i         Launch interactive guided wizard
 
 ${chalk.bold("Retry Options:")}
@@ -411,6 +427,7 @@ ${chalk.bold("Examples:")}
 					timeoutSeconds,
 					overlapPolicy,
 					enabled,
+					elevated,
 					toolsAllow: toolsAllow.length > 0 ? toolsAllow : undefined,
 					toolsDeny: toolsDeny.length > 0 ? toolsDeny : undefined,
 					retryPolicy:
@@ -430,6 +447,17 @@ ${chalk.bold("Examples:")}
 				console.log(chalk.dim(`  Name: ${task.name}`));
 				if (task.schedule) {
 					console.log(chalk.dim(`  Schedule: ${formatSchedule(task.schedule)}`));
+					const { isDaemonRunning } = await import("../systemd/installer.ts");
+					const daemonStatus = isDaemonRunning();
+					if (!daemonStatus.running) {
+						console.log();
+						console.log(
+							chalk.yellow("⚠️  Note: Background scheduler daemon (forge-taskd) is not currently running."),
+						);
+						console.log(chalk.dim('  To start it now: "forge task service start" (or "forge task daemon")'));
+					} else {
+						console.log(chalk.green(`  Scheduler: Active (${daemonStatus.details})`));
+					}
 				}
 				return;
 			} catch (err: any) {
@@ -535,6 +563,7 @@ ${chalk.bold("Examples:")}
 			toolsDeny: toolsDeny.length > 0 ? toolsDeny : undefined,
 			skills: skills.length > 0 ? skills : undefined,
 			modelTier,
+			elevated,
 			notifications,
 		};
 
@@ -550,7 +579,33 @@ ${chalk.bold("Examples:")}
 		if (task.policyMode) {
 			console.log(chalk.dim(`  Policy: ${task.policyMode}`));
 		}
+		if (task.elevated) {
+			console.log(chalk.dim("  Privilege: elevated (sudo)"));
+			const { checkPrivilegeLevel } = await import("../systemd/sudoers.ts");
+			const priv = checkPrivilegeLevel();
+			if (priv.level === "unprivileged") {
+				console.log(
+					chalk.yellow(
+						"  ⚠️  Warning: Current user does not have passwordless sudo. This task may fail in background.",
+					),
+				);
+				console.log(
+					chalk.dim('      To configure sudo: "forge task sudoers show" (or "sudo forge task sudoers install")'),
+				);
+			}
+		}
 		console.log(chalk.dim(`  Enabled: ${task.enabled}`));
+		if (task.schedule && task.enabled) {
+			const { isDaemonRunning } = await import("../systemd/installer.ts");
+			const daemonStatus = isDaemonRunning();
+			if (!daemonStatus.running) {
+				console.log();
+				console.log(chalk.yellow("⚠️  Note: Background scheduler daemon (forge-taskd) is not currently running."));
+				console.log(chalk.dim('  To start it now: "forge task service start" (or "forge task daemon")'));
+			} else {
+				console.log(chalk.green(`  Scheduler: Active (${daemonStatus.details})`));
+			}
+		}
 	} finally {
 		store.close();
 	}
@@ -880,13 +935,37 @@ function handleCancel(args: string[]): void {
 	}
 }
 
-function handleDoctor(): void {
+async function handleDoctor(): Promise<void> {
 	const store = new TaskStore(getDefaultTaskDbPath());
 	try {
 		console.log(chalk.bold("forge task doctor"));
 		console.log();
 
-		// Check for stale leases
+		// 1. Check Privilege Level
+		const { checkPrivilegeLevel } = await import("../systemd/sudoers.ts");
+		const priv = checkPrivilegeLevel();
+		console.log(chalk.bold("Privilege Status:"));
+		console.log(`  User:                 ${chalk.cyan(priv.username)}`);
+		console.log(`  Root (UID 0):         ${priv.isRoot ? chalk.green("YES") : chalk.yellow("NO")}`);
+		console.log(
+			`  Passwordless Sudo:    ${priv.hasPasswordlessSudo ? chalk.green("ENABLED") : chalk.red("DISABLED")}`,
+		);
+		console.log(`  Operational Level:    ${chalk.magenta(priv.level.toUpperCase())}`);
+		console.log();
+
+		// 2. Check Daemon Status
+		const { isDaemonRunning } = await import("../systemd/installer.ts");
+		const daemon = isDaemonRunning();
+		console.log(chalk.bold("Scheduler Daemon:"));
+		if (daemon.running) {
+			console.log(chalk.green(`  Status:               ACTIVE (${daemon.details})`));
+		} else {
+			console.log(chalk.yellow("  Status:               INACTIVE (not running)"));
+			console.log(chalk.dim('  To start:             "forge task service start" (or "forge task daemon")'));
+		}
+		console.log();
+
+		// 3. Check for stale leases
 		const recovered = store.recoverStaleLeases();
 		if (recovered.length > 0) {
 			console.log(chalk.yellow(`⚠ Recovered ${recovered.length} stale lease(s):`));
@@ -898,11 +977,23 @@ function handleDoctor(): void {
 			console.log(chalk.green("✓ No stale leases found."));
 		}
 
-		// Check task stats
+		// 4. Check task stats & elevated tasks
 		const tasks = store.listTasks();
 		const enabled = tasks.filter((t) => t.enabled).length;
 		const disabled = tasks.filter((t) => !t.enabled).length;
-		console.log(`\nTasks: ${tasks.length} total (${enabled} enabled, ${disabled} disabled)`);
+		const elevatedCount = tasks.filter((t) => t.elevated).length;
+		console.log(
+			`\nTasks: ${tasks.length} total (${enabled} enabled, ${disabled} disabled, ${elevatedCount} elevated)`,
+		);
+
+		if (elevatedCount > 0 && priv.level === "unprivileged") {
+			console.log(
+				chalk.yellow(
+					`\n⚠️  Warning: ${elevatedCount} task(s) require elevated privileges, but passwordless sudo is not configured.`,
+				),
+			);
+			console.log(chalk.dim('  Run "sudo forge task sudoers install" to enable required permissions.'));
+		}
 	} finally {
 		store.close();
 	}
@@ -932,36 +1023,36 @@ async function handleDaemon(): Promise<void> {
 
 async function handleService(args: string[]): Promise<void> {
 	const action = args[0] || "status";
-	const { installUserService, uninstallUserService, startUserService, stopUserService, getUserServiceStatus } =
+	const { installService, uninstallService, startDaemonService, stopDaemonService, getServiceStatus, isRootUser } =
 		await import("../systemd/installer.ts");
 
 	if (action === "install") {
-		const res = installUserService();
-		console.log(chalk.green(`✓ Installed systemd user service unit: ${res.unitPath}`));
-		console.log(chalk.dim("To enable and start: forge task service start"));
+		const res = installService();
+		const modeStr = isRootUser() ? "system service" : "user service";
+		console.log(chalk.green(`✓ Installed systemd ${modeStr} unit: ${res.unitPath}`));
+		console.log(chalk.dim('To enable and start: "forge task service start"'));
 	} else if (action === "uninstall") {
-		const removed = uninstallUserService();
+		const removed = uninstallService();
 		if (removed) {
 			console.log(chalk.green("✓ Uninstalled forge-taskd.service."));
 		} else {
 			console.log(chalk.yellow("No installed service unit found."));
 		}
 	} else if (action === "start") {
-		try {
-			startUserService();
-			console.log(chalk.green("✓ Started forge-taskd.service via systemctl --user."));
-		} catch (e: any) {
-			console.error(chalk.red(`Failed to start service: ${e.message}`));
+		const res = startDaemonService();
+		if (res.started) {
+			console.log(
+				chalk.green(`✓ Started forge-taskd (${res.mode === "systemd" ? "systemd service" : `PID ${res.pid}`}).`),
+			);
+		} else {
+			console.error(chalk.red(`Failed to start daemon: ${res.error}`));
+			process.exitCode = 1;
 		}
 	} else if (action === "stop") {
-		try {
-			stopUserService();
-			console.log(chalk.yellow("✓ Stopped forge-taskd.service."));
-		} catch (e: any) {
-			console.error(chalk.red(`Failed to stop service: ${e.message}`));
-		}
+		stopDaemonService();
+		console.log(chalk.yellow("✓ Stopped forge-taskd daemon and service."));
 	} else if (action === "status") {
-		const status = getUserServiceStatus();
+		const status = getServiceStatus();
 		console.log(status);
 	} else {
 		console.error(chalk.red(`Unknown service action: ${action}. Use: install, uninstall, start, stop, status`));
@@ -1035,8 +1126,10 @@ ${chalk.bold("Commands:")}
   create "<goal>"           Create a new persistent task
   wizard                    Launch interactive task creation wizard
   template [list|show]      Manage curated task templates
+  sudoers [show|install]    Configure & verify sudoers privilege rules
   explain <schedule|task>   Explain cron/interval schedule & timeline
   test <task|goal>          Safe dry-run task simulation
+  audit <task|run-id>       Forensic audit trail, tool traces & export
   list                      List all tasks
   show <task>               Show task details
   status <task>             Show task status with recent runs
@@ -1046,7 +1139,7 @@ ${chalk.bold("Commands:")}
   pause <task>              Disable a task
   resume <task>             Re-enable a task
   cancel <task>             Cancel a task and release its lease
-  doctor                    Diagnose issues (stale leases, etc.)
+  doctor                    Diagnose issues (privileges, daemon, stale leases)
   cleanup [--days N]        Remove old completed runs (default: 30 days)
   daemon                    Run task scheduler in foreground
   service <action>          Manage systemd user service (install, start, stop, status, uninstall)
@@ -1060,6 +1153,8 @@ ${chalk.bold("Examples:")}
   forge task create --template nginx-error-monitor
   forge task explain "*/15 * * * *"
   forge task test "Check memory usage"
+  forge task audit nginx-monitor
+  forge task audit export nginx-monitor --format md
   forge task create --name nginx-monitor --every 30s "Monitor nginx error log"
   forge task create --name db-vacuum --cron "0 2 * * *" "Vacuum database"
   forge task list

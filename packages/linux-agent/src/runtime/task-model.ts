@@ -112,6 +112,7 @@ export interface Task {
 	toolsDeny?: string[];
 	skills?: string[];
 	modelTier?: ModelTier;
+	elevated?: boolean;
 	notifications?: NotificationConfig;
 	createdAt: string;
 	updatedAt: string;
@@ -128,6 +129,12 @@ export interface TaskRun {
 	id: string;
 	taskId: string;
 	sessionId?: string;
+	triggerType?: "schedule" | "manual" | "retry" | "test" | "oneshot";
+	hostUser?: string;
+	hostName?: string;
+	elevated?: boolean;
+	modelUsed?: string;
+	transcriptPath?: string;
 	startedAt: string;
 	finishedAt?: string;
 	status: TaskState;
@@ -140,6 +147,24 @@ export interface TaskRun {
 	durationMs?: number;
 	cpuPercent?: number;
 	memoryMb?: number;
+}
+
+// ============================================================
+// Task step log (Granular Tool Call Traces)
+// ============================================================
+
+export interface TaskStepLog {
+	id?: number;
+	taskId: string;
+	runId: string;
+	stepIndex: number;
+	toolName: string;
+	toolArgs?: Record<string, unknown> | string;
+	toolResult?: string;
+	isError?: boolean;
+	durationMs?: number;
+	policyDecision?: Record<string, unknown>;
+	timestamp: string;
 }
 
 // ============================================================
@@ -220,6 +245,7 @@ export interface CreateTaskInput {
 	toolsDeny?: string[];
 	skills?: string[];
 	modelTier?: ModelTier;
+	elevated?: boolean;
 	notifications?: NotificationConfig;
 }
 
@@ -243,7 +269,9 @@ export interface TaskConfigYAML {
 		retries?: number;
 		retry_delay_seconds?: number;
 		retry_strategy?: "fixed" | "exponential";
+		elevated?: boolean;
 	};
+	elevated?: boolean;
 	profile?: string;
 	goal: string;
 	skills?: string[];
@@ -333,6 +361,7 @@ export function parseTaskConfig(config: TaskConfigYAML): CreateTaskInput {
 		toolsDeny: config.tools?.deny,
 		skills: config.skills,
 		modelTier: config.model_tier,
+		elevated: config.elevated ?? config.execution?.elevated,
 		notifications: config.notifications,
 	};
 }

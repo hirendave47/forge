@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   tools_deny        TEXT,          -- JSON array of denied tool names
   skills            TEXT,          -- JSON array of skill names
   model_tier        TEXT,          -- 'fast' | 'default' | 'reasoning' | 'coding' | NULL
+  elevated          INTEGER DEFAULT 0, -- 1 if requires root / passwordless sudo
   notifications     TEXT,          -- JSON notification config
   created_at        TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
@@ -49,6 +50,12 @@ CREATE TABLE IF NOT EXISTS task_runs (
   id              TEXT PRIMARY KEY,
   task_id         TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
   session_id      TEXT,
+  trigger_type    TEXT DEFAULT 'schedule', -- 'schedule' | 'manual' | 'retry' | 'test' | 'oneshot'
+  host_user       TEXT,
+  host_name       TEXT,
+  elevated        INTEGER DEFAULT 0,
+  model_used      TEXT,
+  transcript_path TEXT,
   started_at      TEXT NOT NULL DEFAULT (datetime('now')),
   finished_at     TEXT,
   status          TEXT NOT NULL DEFAULT 'CREATED',
@@ -65,6 +72,26 @@ CREATE TABLE IF NOT EXISTS task_runs (
 
 CREATE INDEX IF NOT EXISTS idx_task_runs_task_id ON task_runs(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_runs_status ON task_runs(status);
+
+-- ============================================================
+-- Task step logs: granular tool calls & command execution trace
+-- ============================================================
+CREATE TABLE IF NOT EXISTS task_step_logs (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id         TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  run_id          TEXT NOT NULL REFERENCES task_runs(id) ON DELETE CASCADE,
+  step_index      INTEGER NOT NULL,
+  tool_name       TEXT NOT NULL,
+  tool_args       TEXT,             -- JSON string of parameters
+  tool_result     TEXT,             -- Output stdout/stderr/content
+  is_error        INTEGER DEFAULT 0,-- 1 if tool execution failed
+  duration_ms     INTEGER,          -- Latency in ms
+  policy_decision TEXT,             -- JSON string: { allowed, risk }
+  timestamp       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_step_logs_run_id ON task_step_logs(run_id);
+CREATE INDEX IF NOT EXISTS idx_step_logs_task_id ON task_step_logs(task_id);
 
 -- ============================================================
 -- Task locks: execution lease system

@@ -126,6 +126,7 @@ describe("runTaskWizard", () => {
 			output,
 			dbPath: TEST_DB,
 			smart: false,
+			autoStartDaemon: false,
 		});
 
 		expect(result).toBeDefined();
@@ -167,6 +168,7 @@ describe("runTaskWizard", () => {
 			output,
 			dbPath: TEST_DB,
 			initialGoal: "Monitor nginx error logs",
+			autoStartDaemon: false,
 		});
 
 		expect(result).toBeDefined();
@@ -187,20 +189,22 @@ describe("runTaskWizard", () => {
 		// 4. Cron expression: "0 2 * * *"
 		// 5. Policy: autonomous (1)
 		// 6. Advanced settings: Yes (y)
-		// 7. Timeout: 300
-		// 8. Overlap: queue (2)
-		// 9. Retries: 2
-		// 10. Retry delay: 45
-		// 11. Retry strategy: exponential (2)
-		// 12. Email: "alerts@example.com"
-		// 13. Webhook: "https://hooks.slack.com/test"
-		// 14. Action: Save (1)
+		// 7. Elevated privileges: Yes (y)
+		// 8. Timeout: 300
+		// 9. Overlap: queue (2)
+		// 10. Retries: 2
+		// 11. Retry delay: 45
+		// 12. Retry strategy: exponential (2)
+		// 13. Email: "alerts@example.com"
+		// 14. Webhook: "https://hooks.slack.com/test"
+		// 15. Action: Save (1)
 		feedInputs(input, [
 			"nightly-pg-backup",
 			"2",
 			"2",
 			"0 2 * * *",
 			"1",
+			"y",
 			"y",
 			"300",
 			"2",
@@ -218,11 +222,13 @@ describe("runTaskWizard", () => {
 			dbPath: TEST_DB,
 			initialGoal: "Nightly backup of Postgres",
 			smart: false,
+			autoStartDaemon: false,
 		});
 
 		expect(result).toBeDefined();
 		expect(result?.name).toBe("nightly-pg-backup");
 		expect(result?.schedule).toEqual({ type: "cron", expression: "0 2 * * *" });
+		expect(result?.elevated).toBe(true);
 		expect(result?.timeoutSeconds).toBe(300);
 		expect(result?.overlapPolicy).toBe("queue");
 		expect(result?.retryPolicy?.maxRetries).toBe(2);

@@ -15,12 +15,13 @@ Forge is a lightweight, ultra-fast, and modular general-purpose autonomous AI Ag
 7. [Agent Profiles & Personas](#7-agent-profiles--personas)
 8. [Deterministic Processors & Checkpoints](#8-deterministic-processors--checkpoints)
 9. [Policy Engine & Production Guardrails](#9-policy-engine--production-guardrails)
-10. [Automated Verification Engine](#10-automated-verification-engine)
-11. [Model Context Protocol (MCP) Integration](#11-model-context-protocol-mcp-integration)
-12. [systemd Background Daemon (`forge-taskd`)](#12-systemd-background-daemon-forge-taskd)
-13. [Notifications (Email & Webhook)](#13-notifications-email--webhook)
-14. [Model Providers & Custom OpenAI Endpoints](#14-model-providers--custom-openai-compatible-endpoints)
-15. [Operational Skills Reference](#15-operational-skills-reference)
+10. [Root & Sudo Privileges Architecture (`forge task sudoers`)](#10-root--sudo-privileges-architecture-forge-task-sudoers)
+11. [Automated Verification Engine](#11-automated-verification-engine)
+12. [Model Context Protocol (MCP) Integration](#12-model-context-protocol-mcp-integration)
+13. [systemd Background Daemon (`forge-taskd`)](#13-systemd-background-daemon-forge-taskd)
+14. [Notifications (Email & Webhook)](#14-notifications-email--webhook)
+15. [Model Providers & Custom OpenAI Endpoints](#15-model-providers--custom-openai-compatible-endpoints)
+16. [Operational Skills Reference](#16-operational-skills-reference)
 
 ---
 
@@ -192,10 +193,15 @@ forge task <command> [options]
 |---|---|---|
 | `wizard` | Launch interactive guided task creation wizard | `forge task wizard` |
 | `template [list|show]` | Browse & inspect curated production templates | `forge task template list` |
+| `sudoers [show|install|check]` | Configure & audit non-interactive sudoers rules | `forge task sudoers show` |
+| `audit <task|run-id>` | View forensic execution trace & tool step logs | `forge task audit nginx-monitor` |
+| `audit show <run-id>` | Deep dive into specific run tool calls & output | `forge task audit show 98c06897` |
+| `audit export <task>` | Export compliance audit report (MD / JSON / JSONL) | `forge task audit export nginx-mon --format md` |
 | `explain <schedule>` | Natural language schedule explainer & timeline | `forge task explain "*/15 * * * *"` |
 | `test <task|goal>` | Safe dry-run task simulation | `forge task test nginx-monitor` |
 | `create "<goal>" [options]` | Create a new scheduled or one-time task | `forge task create --name mem-check --every 5m "Check RAM"` |
 | `create --template <name>` | Create task from curated template | `forge task create --template nginx-error-monitor` |
+| `create --sudo` / `--elevated` | Create task requiring elevated privileges | `forge task create --sudo --name sec-log "Audit auth.log"` |
 | `create --interactive` / `-i` | Launch interactive guided wizard | `forge task create -i` |
 | `create --from <file>` | Create task from YAML config | `forge task create --from tasks/nginx-monitor.yaml` |
 | `list` / `ls` | List all tasks with status & schedules | `forge task list` |
@@ -207,10 +213,10 @@ forge task <command> [options]
 | `pause <task>` | Disable a task | `forge task pause nginx-monitor` |
 | `resume <task>` | Re-enable a paused task | `forge task resume nginx-monitor` |
 | `cancel <task>` | Cancel task and release lock lease | `forge task cancel nginx-monitor` |
-| `doctor` | Diagnose and recover stale leases | `forge task doctor` |
+| `doctor` | Diagnose privileges, daemon, and stale leases | `forge task doctor` |
 | `cleanup` | Remove completed runs older than N days | `forge task cleanup --days 14` |
 | `daemon` | Run task scheduler in foreground | `forge task daemon` |
-| `service <action>` | Manage systemd user service | `forge task service install` |
+| `service <action>` | Manage systemd service (install, start, stop, status) | `forge task service install` |
 
 ### Curated Task Templates (`forge task template`)
 
@@ -271,6 +277,29 @@ forge task test "Check system memory usage and top 5 processes" --timeout 30
 
 ---
 
+### Forensic Auditing & Step Execution Traces (`forge task audit`)
+
+Forge records an immutable, granular audit trail of every task, run, and step:
+* **Host & Execution Context**: Hostname, username, UID, privilege level (`elevated`), working directory, and AI model used.
+* **Step-by-Step Tool Trace**: Every tool called (`bash`, `read`, `write`, `edit`), exact arguments/commands, duration in ms, and full stdout/stderr output.
+* **Compliance & Post-Mortem Export**: Export full audit trails into Markdown incident reports, JSON, or JSONL for compliance and ticketing systems.
+
+```bash
+# 1. View task execution overview and latest run step trace
+forge task audit nginx-error-monitor
+
+# 2. Deep-dive into a specific execution run
+forge task audit show 98c06897-6a4a-42c2-8418-874e0d7c181b
+
+# 3. Export full compliance report in Markdown
+forge task audit export nginx-error-monitor --format md --out incident-report.md
+
+# 4. Export structured JSON for SIEM / external log pipelines
+forge task audit export nginx-error-monitor --format json > audit.json
+```
+
+---
+
 ### Interactive Task Wizard (`forge task wizard` / `forge task create -i`)
 
 Forge includes a terminal wizard that guides you step-by-step through configuring tasks with automated host discovery and dynamic follow-up questions:
@@ -319,6 +348,7 @@ forge task create "<goal>" [options]
 | `--model-tier <tier>` | Model tier routing (`fast`, `default`, `reasoning`, `coding`) | `default` |
 | `--timeout <seconds>` | Maximum execution duration in seconds | `120` |
 | `--overlap <policy>` | Concurrency policy (`skip`, `queue`) | `skip` |
+| `--sudo, --elevated` | Flag task as requiring elevated root/sudo privileges | `false` |
 | `--disabled` | Create task in disabled state | `false` (enabled) |
 
 #### 3. Retry & Fault Tolerance
@@ -755,7 +785,71 @@ The Policy Engine evaluates operations independently of the LLM:
 
 ---
 
-## 10. Automated Verification Engine
+## 10. Root & Sudo Privileges Architecture (`forge task sudoers`)
+
+Linux Systems Engineering, DevOps, and SRE tasks frequently require elevated permissions:
+* **Audit & Secure Logs**: Reading `/var/log/audit/audit.log`, `/var/log/secure`, `/var/log/messages`, and system journalctl.
+* **Service Management**: `systemctl restart`, `systemctl reload`, `docker restart`, `systemctl is-active`.
+* **Network & Sockets**: Inspecting all socket PIDs with `ss -tulpn` or `lsof -i`.
+* **Package & Maintenance**: Trimming rotated logs, vacuuming tables, clearing cache mountpoints.
+
+Forge provides two production architectures for executing elevated tasks safely:
+
+### Mode 1: Root System Service (Recommended for Dedicated SRE & Jump Box Nodes)
+When running as `root` (`UID 0`) or installed via `sudo forge task service install`:
+* Forge installs to `/etc/systemd/system/forge-taskd.service` (`WantedBy=multi-user.target`).
+* Commands execute with native root capabilities.
+* **Safety is guaranteed**: Even under root, Forge's Policy Engine strictly blocks destructive commands (`rm -rf /`, `reboot`, `shutdown`, `mkfs`, `kill -9 1`, `iptables -F`).
+
+### Mode 2: Granular Sudoers (Recommended for Least-Privilege Environments)
+When running under an unprivileged user (e.g. `kvmadmin` or `ubuntu`), background tasks cannot prompt for a password interactively.
+
+Forge provides a built-in helper to audit, preview, and generate clean `/etc/sudoers.d/forge` rules:
+
+```bash
+# 1. Audit current privilege status
+forge task sudoers check
+
+# 2. Preview recommended granular sudoers file
+forge task sudoers show
+
+# 3. Preview full sudoers configuration
+forge task sudoers show --full
+
+# 4. Install /etc/sudoers.d/forge with visudo syntax validation
+sudo forge task sudoers install
+```
+
+#### Example Granular `/etc/sudoers.d/forge` Rules:
+```sudoers
+# /etc/sudoers.d/forge - Granular sysadmin sudo privileges for Forge Autonomous Agent
+kvmadmin ALL=(ALL) NOPASSWD: \
+    /usr/bin/systemctl status *, \
+    /usr/bin/systemctl restart *, \
+    /usr/bin/systemctl reload *, \
+    /usr/bin/systemctl start *, \
+    /usr/bin/systemctl stop *, \
+    /usr/bin/systemctl is-active *, \
+    /usr/bin/journalctl *, \
+    /usr/sbin/ss *, \
+    /usr/bin/docker *, \
+    /usr/bin/podman *, \
+    /usr/bin/lsof *, \
+    /usr/bin/df *, \
+    /usr/bin/free *, \
+    /usr/bin/dmesg *, \
+    /usr/bin/cat /var/log/*, \
+    /usr/bin/tail /var/log/*, \
+    /usr/sbin/nginx -t, \
+    /usr/sbin/sshd -t
+```
+
+### Non-Interactive Sudo Guardrail
+Forge agent commands automatically execute with `sudo -n <cmd>`. If a command requires a password, it immediately fails fast with actionable diagnostics rather than hanging on background standard input.
+
+---
+
+## 11. Automated Verification Engine
 
 Every modifying operational action triggers independent automated verification:
 
@@ -770,7 +864,7 @@ The agent is blocked from reporting success if verification fails.
 
 ---
 
-## 11. Model Context Protocol (MCP) Integration
+## 12. Model Context Protocol (MCP) Integration
 
 Forge supports external tools via MCP (Model Context Protocol).
 
@@ -801,14 +895,14 @@ Tools are automatically discovered and prefixed (e.g. `mcp_kubernetes_list_pods`
 
 ---
 
-## 12. systemd Background Daemon (`forge-taskd`)
+## 13. systemd Background Daemon (`forge-taskd`)
 
-Forge operates unattended in the background as a systemd **user service** without requiring root privileges.
+Forge operates unattended in the background as a systemd system service (when root) or user service (when non-root).
 
 ### Managing the Service
 
 ```bash
-# 1. Install user service unit (~/.config/systemd/user/forge-taskd.service)
+# 1. Install service unit (auto-detects root vs user mode)
 forge task service install
 
 # 2. Start and enable service
@@ -824,32 +918,9 @@ forge task service stop
 forge task service uninstall
 ```
 
-### systemd Unit Definition
-
-```ini
-[Unit]
-Description=Forge Autonomous Task Scheduler Daemon (forge-taskd)
-Documentation=https://github.com/hirendave47/forge
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/forge task daemon
-Restart=always
-RestartSec=5s
-Environment=FORGE_CODING_AGENT_DIR=%h/.forge/agent
-Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
-StandardOutput=journal
-StandardError=journal
-LimitNOFILE=65536
-
-[Install]
-WantedBy=default.target
-```
-
 ---
 
-## 13. Notifications (Email & Webhook)
+## 14. Notifications (Email & Webhook)
 
 Dispatch status updates, error alerts, and periodic digests via Postfix SMTP or Webhooks:
 
@@ -866,7 +937,7 @@ export FORGE_NOTIFICATION_TO="hiren.dave@example.com"
 
 ---
 
-## 14. Model Providers & Custom OpenAI-Compatible Endpoints
+## 15. Model Providers & Custom OpenAI-Compatible Endpoints
 
 Forge supports 30+ LLM providers out of the box (Anthropic, OpenAI, Google Gemini, Groq, DeepSeek, Cerebras, xAI, OpenRouter, Mistral, etc.) as well as custom self-hosted or proxy OpenAI-compatible inference servers (such as Ollama, vLLM, forge-local, LocalAI, LM Studio, etc.).
 
@@ -928,7 +999,7 @@ You can also configure one or more custom OpenAI-compatible endpoints directly:
 
 ---
 
-## 15. Operational Skills Reference
+## 16. Operational Skills Reference
 
 Skills in `.forge/skills/` are loaded progressively on demand:
 

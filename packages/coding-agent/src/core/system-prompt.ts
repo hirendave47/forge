@@ -144,6 +144,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 5. **Polling & Waiting**: Use \`wait_interval\` instead of busy-loop bash commands when waiting for services, files, or logs to change.
 6. **Notifications**: Use \`send_notification\` for progress digests, alert summaries, and final reports.
 7. **Safety**: Never run destructive commands (\`reboot\`, \`shutdown\`, \`kill 1\`, \`mkfs\`, \`iptables -F\`, \`rm -rf /\`).
+8. **Privilege & Sudo**: When elevated permissions are required on unprivileged accounts, use non-interactive \`sudo -n <command>\` to ensure commands execute seamlessly or fail fast with clear diagnostics without hanging.
 
 Available tools:
 ${toolsList}${guidelines}
