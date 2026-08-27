@@ -16,11 +16,13 @@ import type {
 	DefaultProjectTrust,
 	FullscreenExitOutput,
 	MermaidRenderingMode,
+	NotificationSettings,
 	TuiMode,
 	WarningSettings,
 } from "../../../core/settings-manager.ts";
 import { getSettingsListTheme, parseAutoThemeSetting, type TerminalTheme, theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
+import { ExtensionInputComponent } from "./extension-input.ts";
 import { keyDisplayText } from "./keybinding-hints.ts";
 import { SelectSubmenu, SteppedSubmenu, type SteppedSubmenuStep } from "./settings-submenu.ts";
 
@@ -85,6 +87,7 @@ export interface SettingsConfig {
 	fullscreenExitOutput: FullscreenExitOutput;
 	fullscreenScrollbar: ScrollViewScrollbar;
 	warnings: WarningSettings;
+	notifications: NotificationSettings;
 }
 
 export interface SettingsCallbacks {
@@ -121,6 +124,7 @@ export interface SettingsCallbacks {
 	onFullscreenExitOutputChange: (output: FullscreenExitOutput) => void;
 	onFullscreenScrollbarChange: (mode: ScrollViewScrollbar) => void;
 	onWarningsChange: (warnings: WarningSettings) => void;
+	onNotificationsChange: (notifications: NotificationSettings) => void;
 	onCancel: () => void;
 }
 
@@ -156,6 +160,121 @@ class WarningSettingsSubmenu extends Container {
 						this.state = { ...this.state, anthropicExtraUsage: newValue === "true" };
 						onChange({ ...this.state });
 						break;
+				}
+			},
+			onCancel,
+		);
+
+		this.addChild(this.settingsList);
+	}
+
+	handleInput(data: string): void {
+		this.settingsList.handleInput(data);
+	}
+}
+
+/** Helper to build a submenu item backed by a free-text ExtensionInputComponent. */
+function textInputSubmenuItem(
+	id: string,
+	label: string,
+	description: string,
+	getValue: () => string,
+	onSave: (value: string) => void,
+): SettingItem {
+	return {
+		id,
+		label,
+		description,
+		currentValue: getValue() || "(not set)",
+		submenu: (_currentValue, done) => {
+			const input = new ExtensionInputComponent(
+				label,
+				undefined,
+				(value) => {
+					onSave(value.trim());
+					done(value.trim() || "(not set)");
+				},
+				() => done(),
+			);
+			return input;
+		},
+	};
+}
+
+class NotificationSettingsSubmenu extends Container {
+	private settingsList: SettingsList;
+	private state: NotificationSettings;
+
+	constructor(
+		notifications: NotificationSettings,
+		onChange: (notifications: NotificationSettings) => void,
+		onCancel: () => void,
+	) {
+		super();
+
+		this.state = { ...notifications };
+
+		const items: SettingItem[] = [
+			textInputSubmenuItem(
+				"smtp-host",
+				"SMTP host",
+				"Hostname or IP of the SMTP relay (default: localhost)",
+				() => this.state.smtpHost ?? "",
+				(v) => {
+					this.state = { ...this.state, smtpHost: v || undefined };
+					onChange({ ...this.state });
+				},
+			),
+			{
+				id: "smtp-port",
+				label: "SMTP port",
+				description: "Port of the SMTP relay (default: 25)",
+				currentValue: String(this.state.smtpPort ?? 25),
+				values: ["25", "465", "587", "2525"],
+			},
+			textInputSubmenuItem(
+				"notify-from",
+				"From address",
+				"Sender email address for notifications",
+				() => this.state.from ?? "",
+				(v) => {
+					this.state = { ...this.state, from: v || undefined };
+					onChange({ ...this.state });
+				},
+			),
+			textInputSubmenuItem(
+				"notify-to",
+				"To address",
+				"Default recipient email address for notifications",
+				() => this.state.to ?? "",
+				(v) => {
+					this.state = { ...this.state, to: v || undefined };
+					onChange({ ...this.state });
+				},
+			),
+			textInputSubmenuItem(
+				"webhook-url",
+				"Webhook URL",
+				"Optional webhook URL for Slack / Discord / Teams notifications",
+				() => this.state.webhookUrl ?? "",
+				(v) => {
+					this.state = { ...this.state, webhookUrl: v || undefined };
+					onChange({ ...this.state });
+				},
+			),
+		];
+
+		this.settingsList = new SettingsList(
+			items,
+			Math.min(items.length, 10),
+			getSettingsListTheme(),
+			(id, newValue) => {
+				if (id === "smtp-port") {
+					const port = parseInt(newValue, 10);
+					if (!Number.isNaN(port)) {
+						this.state = { ...this.state, smtpPort: port };
+						onChange({ ...this.state });
+					}
 				}
 			},
 			onCancel,
@@ -445,6 +564,7 @@ export class SettingsSelectorComponent extends Container {
 		const followUpKey = keyDisplayText("app.message.followUp");
 		const cycleThinkingKey = keyDisplayText("app.thinking.cycle");
 		let currentWarnings = { ...config.warnings };
+		let currentNotifications = { ...config.notifications };
 		const currentModelThinkingLevels = { ...config.modelThinkingLevels };
 		const defaultModelByValue = new Map(
 			config.availableDefaultModels.map((model) => [modelSettingKey(model), model]),
@@ -564,6 +684,21 @@ export class SettingsSelectorComponent extends Container {
 						(warnings) => {
 							currentWarnings = warnings;
 							callbacks.onWarningsChange(warnings);
+						},
+						() => done(),
+					),
+			},
+			{
+				id: "notifications",
+				label: "Notifications",
+				description: "SMTP server, sender/recipient addresses, and webhook URL for send_notification",
+				currentValue: "configure",
+				submenu: (_currentValue, done) =>
+					new NotificationSettingsSubmenu(
+						currentNotifications,
+						(notifications) => {
+							currentNotifications = notifications;
+							callbacks.onNotificationsChange(notifications);
 						},
 						() => done(),
 					),

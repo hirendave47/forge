@@ -52,7 +52,7 @@ describe("Custom OpenAI-Compatible Provider", () => {
 
 	describe("saveCustomOpenAIProviderToModelsJson", () => {
 		it("creates a new models.json file when none exists", async () => {
-			await saveCustomOpenAIProviderToModelsJson(modelsPath, "qforge", {
+			await saveCustomOpenAIProviderToModelsJson(modelsPath, "forge-local", {
 				baseUrl: "http://127.0.0.1:8082/v1",
 				apiKey: "test-token-123",
 				modelId: "qwen3-coder-next",
@@ -62,8 +62,8 @@ describe("Custom OpenAI-Compatible Provider", () => {
 			expect(existsSync(modelsPath)).toBe(true);
 			const parsed = JSON.parse(await readFile(modelsPath, "utf-8"));
 			expect(parsed.providers).toBeDefined();
-			expect(parsed.providers.qforge).toEqual({
-				name: "qforge",
+			expect(parsed.providers["forge-local"]).toEqual({
+				name: "forge-local",
 				baseUrl: "http://127.0.0.1:8082/v1",
 				api: "openai-completions",
 				apiKey: "test-token-123",
@@ -90,8 +90,8 @@ describe("Custom OpenAI-Compatible Provider", () => {
 				contextWindow: 256000,
 			});
 
-			// Then save qforge
-			await saveCustomOpenAIProviderToModelsJson(modelsPath, "qforge", {
+			// Then save forge-local
+			await saveCustomOpenAIProviderToModelsJson(modelsPath, "forge-local", {
 				baseUrl: "http://127.0.0.1:8082/v1",
 				apiKey: "test-token-456",
 				modelId: "qwen3-coder-next",
@@ -106,12 +106,12 @@ describe("Custom OpenAI-Compatible Provider", () => {
 			});
 
 			const parsed = JSON.parse(await readFile(modelsPath, "utf-8"));
-			expect(Object.keys(parsed.providers)).toEqual(["ollama", "qforge"]);
+			expect(Object.keys(parsed.providers)).toEqual(["ollama", "forge-local"]);
 			expect(parsed.providers.ollama.models).toHaveLength(2);
 			expect(parsed.providers.ollama.models[0].id).toBe("gemini-3.7-flash");
 			expect(parsed.providers.ollama.models[1].id).toBe("llama3-70b");
-			expect(parsed.providers.qforge.models).toHaveLength(1);
-			expect(parsed.providers.qforge.models[0].id).toBe("qwen3-coder-next");
+			expect(parsed.providers["forge-local"].models).toHaveLength(1);
+			expect(parsed.providers["forge-local"].models[0].id).toBe("qwen3-coder-next");
 		});
 	});
 
@@ -129,7 +129,7 @@ describe("Custom OpenAI-Compatible Provider", () => {
 				"Endpoint URL (e.g. http://127.0.0.1:8000/v1)": "http://127.0.0.1:8082/v1",
 				"API Token / Key (optional, press Enter if not required)": "secret-token",
 				"Model Name / ID (e.g. gemini-3.7-flash, qwen3-coder-next)": "qwen3-coder-next",
-				"Custom Provider ID (optional, e.g. qforge, ollama, custom)": "qforge",
+				"Custom Provider ID (optional, e.g. forge-local, ollama, custom)": "forge-local",
 				"Context Window Size (optional, default: 128000)": "256000",
 			};
 
@@ -146,13 +146,13 @@ describe("Custom OpenAI-Compatible Provider", () => {
 			expect(credential.key).toBe("secret-token");
 			expect(credential.env?.CUSTOM_OPENAI_BASE_URL).toBe("http://127.0.0.1:8082/v1");
 			expect(credential.env?.CUSTOM_OPENAI_MODEL).toBe("qwen3-coder-next");
-			expect(credential.env?.CUSTOM_OPENAI_PROVIDER).toBe("qforge");
+			expect(credential.env?.CUSTOM_OPENAI_PROVIDER).toBe("forge-local");
 		});
 	});
 
 	describe("ModelRuntime integration", () => {
 		it("discovers custom models configured in models.json", async () => {
-			await saveCustomOpenAIProviderToModelsJson(modelsPath, "qforge", {
+			await saveCustomOpenAIProviderToModelsJson(modelsPath, "forge-local", {
 				baseUrl: "http://127.0.0.1:8082/v1",
 				apiKey: "a313d06dbbe31d4c4dffa26f4f6097efe5f355a103e15c996f143c1da1fcf569",
 				modelId: "qwen3-coder-next",
@@ -165,14 +165,14 @@ describe("Custom OpenAI-Compatible Provider", () => {
 				refreshOnCreate: true,
 			});
 
-			const qforgeModel = runtime.getModel("qforge", "qwen3-coder-next");
-			expect(qforgeModel).toBeDefined();
-			expect(qforgeModel?.id).toBe("qwen3-coder-next");
-			expect(qforgeModel?.provider).toBe("qforge");
-			expect(qforgeModel?.baseUrl).toBe("http://127.0.0.1:8082/v1");
-			expect(qforgeModel?.contextWindow).toBe(128000);
+			const forgeLocalModel = runtime.getModel("forge-local", "qwen3-coder-next");
+			expect(forgeLocalModel).toBeDefined();
+			expect(forgeLocalModel?.id).toBe("qwen3-coder-next");
+			expect(forgeLocalModel?.provider).toBe("forge-local");
+			expect(forgeLocalModel?.baseUrl).toBe("http://127.0.0.1:8082/v1");
+			expect(forgeLocalModel?.contextWindow).toBe(128000);
 
-			const authStatus = runtime.getProviderAuthStatus("qforge");
+			const authStatus = runtime.getProviderAuthStatus("forge-local");
 			expect(authStatus.configured).toBe(true);
 		});
 	});

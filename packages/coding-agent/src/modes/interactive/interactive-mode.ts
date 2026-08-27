@@ -4511,6 +4511,7 @@ export class InteractiveMode {
 					fullscreenExitOutput: this.settingsManager.getFullscreenExitOutput(),
 					fullscreenScrollbar: this.settingsManager.getFullscreenScrollbar(),
 					warnings: this.settingsManager.getWarnings(),
+					notifications: this.settingsManager.getNotificationSettings(),
 				},
 				{
 					onAutoCompactChange: (enabled) => {
@@ -4690,6 +4691,9 @@ export class InteractiveMode {
 					},
 					onWarningsChange: (warnings) => {
 						this.settingsManager.setWarnings(warnings);
+					},
+					onNotificationsChange: (notifications) => {
+						this.settingsManager.setNotificationSettings(notifications);
 					},
 					onCancel: () => {
 						done();

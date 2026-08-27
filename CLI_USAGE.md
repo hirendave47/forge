@@ -188,7 +188,13 @@ forge task <command> [options]
 
 | Subcommand | Description | Example |
 |---|---|---|
-| `create "<goal>"` | Create a new scheduled task | `forge task create --name mem-check --every 5m "Check RAM"` |
+| `wizard` | Launch interactive guided task creation wizard | `forge task wizard` |
+| `template [list|show]` | Browse & inspect curated production templates | `forge task template list` |
+| `explain <schedule>` | Natural language schedule explainer & timeline | `forge task explain "*/15 * * * *"` |
+| `test <task|goal>` | Safe dry-run task simulation | `forge task test nginx-monitor` |
+| `create "<goal>" [options]` | Create a new scheduled or one-time task | `forge task create --name mem-check --every 5m "Check RAM"` |
+| `create --template <name>` | Create task from curated template | `forge task create --template nginx-error-monitor` |
+| `create --interactive` / `-i` | Launch interactive guided wizard | `forge task create -i` |
 | `create --from <file>` | Create task from YAML config | `forge task create --from tasks/nginx-monitor.yaml` |
 | `list` / `ls` | List all tasks with status & schedules | `forge task list` |
 | `show <task>` | Show detailed configuration | `forge task show nginx-monitor` |
@@ -203,6 +209,148 @@ forge task <command> [options]
 | `cleanup` | Remove completed runs older than N days | `forge task cleanup --days 14` |
 | `daemon` | Run task scheduler in foreground | `forge task daemon` |
 | `service <action>` | Manage systemd user service | `forge task service install` |
+
+### Curated Task Templates (`forge task template`)
+
+Forge ships with built-in production templates for common operational patterns:
+
+```bash
+# List all available templates
+forge task template list
+
+# Inspect template definition and goal
+forge task template show nginx-error-monitor
+
+# Create task from template
+forge task create --template nginx-error-monitor --name prod-nginx-mon
+```
+
+| Template ID | Category | Profile | Schedule | Description |
+|---|---|---|---|---|
+| `nginx-error-monitor` | Sysadmin | `sysadmin` | `every 30s` | High-frequency /var/log/nginx/error.log monitoring & root cause context windowing |
+| `disk-space-cleaner` | SRE | `sre` | `every 1h` | Mount point utilization check & safe dry-run cache/temp purge when >85% |
+| `systemd-service-watchdog` | Sysadmin | `sysadmin` | `every 1m` | Supervise critical units (nginx, docker, redis) with automatic restart on crash |
+| `memory-leak-detector` | SRE | `sre` | `every 5m` | Track top process resident set size (RSS) and saturation alerts |
+| `postgres-nightly-backup` | SRE | `sre` | `0 2 * * *` | Compressed pg_dump with SHA-256 checksums and 7-day retention |
+| `ssl-cert-expiry-check` | Security | `security` | `0 8 * * *` | Daily TLS certificate expiration audit with alerts if <14 days remaining |
+| `docker-unhealthy-pruner` | DevOps | `devops` | `every 15m` | Container healthcheck watchdog and dangling image cleanup |
+| `security-port-auditor` | Security | `security` | `every 1h` | Non-destructive listening TCP/UDP port and SSH login session audit |
+
+---
+
+### Schedule Explainer & Timeline Visualizer (`forge task explain`)
+
+Convert cryptic cron expressions and intervals into clear plain English and preview upcoming execution times:
+
+```bash
+# Explain a 5-part UTC cron expression
+forge task explain "*/15 * * * *"
+
+# Explain a recurring interval
+forge task explain "every 30s"
+
+# Explain the schedule of an existing task
+forge task explain nginx-monitor
+```
+
+---
+
+### Safe Dry-Run Task Simulation (`forge task test`)
+
+Execute a task in safe, read-only mode to verify tool calls, token usage, and exit criteria without modifying system state or task schedules:
+
+```bash
+# Test an existing task
+forge task test nginx-monitor
+
+# Test a raw operational goal
+forge task test "Check system memory usage and top 5 processes" --timeout 30
+```
+
+---
+
+### Interactive Task Wizard (`forge task wizard` / `forge task create -i`)
+
+Forge includes a terminal wizard that guides you step-by-step through configuring tasks with automated host discovery and dynamic follow-up questions:
+
+```bash
+# Launch interactive wizard
+forge task wizard
+
+# Launch wizard with an initial goal
+forge task wizard "Monitor disk usage and alert when full"
+
+# Launch wizard with instant smart AI follow-up refinement
+forge task wizard --smart "Supervise postgres health"
+```
+
+**Wizard Features & Workflow:**
+1. **Goal Formulation**: Specify what operational objective the agent should achieve.
+2. **Host Environment Auto-Discovery**: Automatically inspects local OS version, running systemd services, disk mount utilization, accessible log files in `/var/log`, and open TCP ports.
+3. **Dynamic AI Follow-Up Questions**: Generates 2–3 contextual operational questions tailored to your goal and local host environment (e.g. asking for exact log file paths from detected logs, disk utilization thresholds, auto-remediation restart policies).
+4. **Smart Persona & Schedule Recommendations**: Automatically recommends the optimal Agent Persona (`sysadmin`, `sre`, `devops`, `security`, `software-engineer`) and schedule frequency based on your task intent.
+5. **Live Schedule Previews**: Previews the next 3 trigger timestamps for cron and interval schedules in local time.
+6. **Safety & Execution Limits**: Choose between `autonomous`, `supervised`, or `safe` (read-only diagnostics), with optional retry policies and notification alerts.
+7. **Action**: Save directly to SQLite database and activate, or export to a declarative `task.yaml` file for version control.
+
+---
+
+### `forge task create` Options Reference
+
+```bash
+forge task create "<goal>" [options]
+```
+
+#### 1. Schedule Options (Mutually Exclusive)
+| Option | Description | Example |
+|---|---|---|
+| `--every <interval>` | Recurring interval (`30s`, `5m`, `1h`) | `--every 5m` |
+| `--cron <expr>` | UTC 5-part cron expression | `--cron "*/15 * * * *"` |
+| `--at <datetime>` | Run once at ISO 8601 datetime | `--at "2026-08-30T15:00:00Z"` |
+
+#### 2. Operational & Execution Options
+| Option | Description | Default |
+|---|---|---|
+| `--name <name>` | Unique task name (auto-generated if omitted) | Slug from goal |
+| `--profile <name>` | Agent persona (`sysadmin`, `devops`, `sre`, `software-engineer`, `security`) | `default` |
+| `--policy <mode>` | Safety policy mode (`safe`, `supervised`, `autonomous`) | `autonomous` |
+| `--model-tier <tier>` | Model tier routing (`fast`, `default`, `reasoning`, `coding`) | `default` |
+| `--timeout <seconds>` | Maximum execution duration in seconds | `120` |
+| `--overlap <policy>` | Concurrency policy (`skip`, `queue`) | `skip` |
+| `--disabled` | Create task in disabled state | `false` (enabled) |
+
+#### 3. Retry & Fault Tolerance
+| Option | Description | Default |
+|---|---|---|
+| `--retries <n>` | Maximum retry attempts upon failure | `0` |
+| `--retry-delay <sec>` | Delay between retry attempts | `30` |
+| `--retry-strategy <type>` | Backoff strategy (`fixed`, `exponential`) | `fixed` |
+
+#### 4. Tools, Skills & Notifications
+| Option | Description | Example |
+|---|---|---|
+| `--tools, -t <list>` | Comma-separated allowlist of tools | `--tools read,grep,send_notification` |
+| `--exclude-tools, -xt <l>` | Comma-separated denylist of tools | `--exclude-tools bash,edit` |
+| `--skills <list>` | Comma-separated skill names | `--skills linux-log-analysis` |
+| `--notify-email <emails>` | Comma-separated notification emails | `--notify-email oncall@example.com` |
+| `--notify-webhook <url>` | Notification webhook endpoint | `--notify-webhook https://hooks.slack.com/...` |
+
+### CLI Creation Examples
+
+```bash
+# 1. Interval-based system monitoring
+forge task create --name disk-check --every 5m "Check disk usage across mounts and alert if >90%"
+
+# 2. Cron-scheduled database vacuum with retries
+forge task create --name db-vacuum --cron "0 2 * * *" --retries 2 --retry-strategy exponential "Vacuum PostgreSQL tables"
+
+# 3. Security audit with safe read-only tools and email notifications
+forge task create --name sec-audit --profile security --policy safe --tools read,grep \
+  --notify-email "security@example.com" --cron "0 0 * * 1" "Audit /etc/ssh/sshd_config and listening ports"
+
+# 4. One-time scheduled maintenance
+forge task create --name cert-renew --at "2026-08-30T18:00:00Z" "Renew TLS certificates via certbot"
+```
 
 ### Task Referencing
 
@@ -423,8 +571,8 @@ Dispatch status updates, error alerts, and periodic digests via Postfix SMTP or 
 # SMTP Configuration
 export FORGE_SMTP_HOST="localhost"
 export FORGE_SMTP_PORT=25
-export FORGE_NOTIFICATION_FROM="noreply@qforge.dev.fyre.ibm.com"
-export FORGE_NOTIFICATION_TO="hiren.dave@ibm.com"
+export FORGE_NOTIFICATION_FROM="noreply@example.com"
+export FORGE_NOTIFICATION_TO="hiren.dave@example.com"
 
 # Webhook Configuration (Slack, Discord, Teams)
 # export FORGE_NOTIFICATION_WEBHOOK="https://hooks.slack.com/services/..."
@@ -434,7 +582,7 @@ export FORGE_NOTIFICATION_TO="hiren.dave@ibm.com"
 
 ## 13. Model Providers & Custom OpenAI-Compatible Endpoints
 
-Forge supports 30+ LLM providers out of the box (Anthropic, OpenAI, Google Gemini, Groq, DeepSeek, Cerebras, xAI, OpenRouter, Mistral, etc.) as well as custom self-hosted or proxy OpenAI-compatible inference servers (such as Ollama, vLLM, QForge, LocalAI, LM Studio, etc.).
+Forge supports 30+ LLM providers out of the box (Anthropic, OpenAI, Google Gemini, Groq, DeepSeek, Cerebras, xAI, OpenRouter, Mistral, etc.) as well as custom self-hosted or proxy OpenAI-compatible inference servers (such as Ollama, vLLM, forge-local, LocalAI, LM Studio, etc.).
 
 ### Interactive Setup via `/login`
 Run `/login` in interactive mode and select **`Custom (OpenAI-compatible)`**:
@@ -445,7 +593,7 @@ Forge will prompt you for:
 1. **Endpoint URL**: `http://127.0.0.1:8000/v1` (or your private inference endpoint)
 2. **API Token / Key**: (optional, press Enter if unauthenticated)
 3. **Model Name / ID**: `gemini-3.7-flash`, `qwen3-coder-next`, `llama3`, etc.
-4. **Custom Provider ID**: `qforge`, `ollama`, `custom`, etc.
+4. **Custom Provider ID**: `forge-local`, `ollama`, `custom`, etc.
 5. **Context Window Size**: `128000` (default) or `256000`
 
 The configuration is automatically persisted to `~/.forge/agent/models.json` and selected as the active model for immediate use.
@@ -472,7 +620,7 @@ You can also configure one or more custom OpenAI-compatible endpoints directly:
         }
       ]
     },
-    "qforge": {
+    "forge-local": {
       "baseUrl": "http://127.0.0.1:8082/v1",
       "api": "openai-completions",
       "apiKey": "a313d06dbbe31d4c4dffa26f4f6097efe5f355a103e15c996f143c1da1fcf569",

@@ -29,7 +29,7 @@ Forge is a lightweight, ultra-fast, and modular general-purpose autonomous AI Ag
 
 ### C. Email & Webhook Notifications (`send_notification`)
 * **File**: `packages/coding-agent/src/core/tools/notify.ts`
-* **Rule**: Dispatch milestone updates, periodic monitoring digests, and final reports via email (default: `localhost:25` Postfix SMTP, from `noreply@qforge.dev.fyre.ibm.com` to `hiren.dave@ibm.com`) or configured webhooks.
+* **Rule**: Dispatch milestone updates, periodic monitoring digests, and final reports via email (default: `localhost:25` Postfix SMTP, from `noreply@example.com` to `hirendave@exapmle.com`) or configured webhooks.
 
 ### D. Production Safety Guardrails
 * **File**: `packages/coding-agent/src/core/tools/bash.ts`

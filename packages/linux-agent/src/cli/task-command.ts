@@ -7,12 +7,16 @@
 import chalk from "chalk";
 import {
 	type CreateTaskInput,
+	type ModelTier,
+	type OverlapPolicy,
+	type PolicyMode,
 	parseIntervalString,
 	parseTaskConfig,
 	type TaskConfigYAML,
 	type TaskSchedule,
 } from "../runtime/task-model.ts";
 import { getExitCode, type ProgressEvent, TaskRuntime } from "../runtime/task-runtime.ts";
+import { computeNextCronRun } from "../scheduler/cron.ts";
 import { getDefaultTaskDbPath, TaskStore } from "../store/task-store.ts";
 
 export async function handleTaskCommand(args: string[]): Promise<void> {
@@ -24,9 +28,27 @@ export async function handleTaskCommand(args: string[]): Promise<void> {
 	}
 
 	switch (subcommand) {
+		case "wizard":
+		case "interactive":
+			await handleWizard(args.slice(1));
+			break;
 		case "create":
 			await handleCreate(args.slice(1));
 			break;
+		case "template":
+		case "templates":
+			await handleTemplate(args.slice(1));
+			break;
+		case "explain": {
+			const { handleExplain } = await import("./schedule-explainer.ts");
+			await handleExplain(args.slice(1));
+			break;
+		}
+		case "test": {
+			const { handleTest } = await import("./task-tester.ts");
+			await handleTest(args.slice(1));
+			break;
+		}
 		case "list":
 		case "ls":
 			handleList();
@@ -78,26 +100,228 @@ export async function handleTaskCommand(args: string[]): Promise<void> {
 // Subcommand implementations
 // ================================================================
 
+async function handleWizard(args: string[]): Promise<void> {
+	const { runTaskWizard } = await import("./wizard/index.ts");
+	let initialGoal: string | undefined;
+	let smart: boolean | undefined;
+	for (const arg of args) {
+		if (arg === "--smart" || arg === "--ai") {
+			smart = true;
+		} else if (arg === "--no-smart" || arg === "--no-ai") {
+			smart = false;
+		} else if (!arg.startsWith("-") && !initialGoal) {
+			initialGoal = arg;
+		}
+	}
+	await runTaskWizard({ initialGoal, smart });
+}
+
+async function handleTemplate(args: string[]): Promise<void> {
+	const { listTaskTemplates, getTaskTemplate } = await import("../templates/index.ts");
+	const action = args[0] ?? "list";
+
+	if (action === "list" || action === "ls") {
+		const templates = listTaskTemplates();
+		console.log();
+		console.log(chalk.bold("Available Curated Task Templates:"));
+		console.log();
+		console.log(chalk.dim("  TEMPLATE ID                 CATEGORY    PROFILE     SCHEDULE        DESCRIPTION"));
+		console.log(
+			chalk.dim("  ─────────────────────────────────────────────────────────────────────────────────────────────"),
+		);
+		for (const t of templates) {
+			const id = padRight(t.id, 27);
+			const cat = padRight(t.category, 11);
+			const prof = padRight(t.profile, 11);
+			const sched = padRight(formatSchedule(t.schedule), 15);
+			const desc = t.description.length > 50 ? `${t.description.slice(0, 47)}...` : t.description;
+			console.log(`  ${chalk.cyan(id)} ${cat} ${prof} ${sched} ${desc}`);
+		}
+		console.log();
+		console.log(chalk.dim("  To instantiate: forge task create --template <id> [--name <custom-name>]"));
+		console.log(chalk.dim("  To view details: forge task template show <id>"));
+		return;
+	}
+
+	if (action === "show" && args[1]) {
+		const template = getTaskTemplate(args[1]);
+		if (!template) {
+			console.error(chalk.red(`Template not found: "${args[1]}"`));
+			process.exitCode = 1;
+			return;
+		}
+		console.log();
+		console.log(`${chalk.bold("Template:")}     ${chalk.green(template.id)} (${template.title})`);
+		console.log(`${chalk.bold("Category:")}     ${template.category}`);
+		console.log(`${chalk.bold("Profile:")}      ${template.profile}`);
+		console.log(`${chalk.bold("Schedule:")}     ${formatSchedule(template.schedule)}`);
+		console.log(`${chalk.bold("Policy Mode:")}  ${template.policyMode}`);
+		console.log(`${chalk.bold("Timeout:")}      ${template.timeoutSeconds}s`);
+		if (template.retryPolicy) {
+			console.log(
+				`${chalk.bold("Retries:")}      max=${template.retryPolicy.maxRetries} delay=${template.retryPolicy.delaySeconds}s (${template.retryPolicy.strategy})`,
+			);
+		}
+		if (template.toolsAllow) {
+			console.log(`${chalk.bold("Tools Allow:")}  ${template.toolsAllow.join(", ")}`);
+		}
+		console.log();
+		console.log(chalk.bold("Goal:"));
+		console.log(chalk.dim(template.goal));
+		console.log();
+		console.log(chalk.dim(`To create task: forge task create --template ${template.id}`));
+		return;
+	}
+
+	console.log(`${chalk.bold("forge task template")} — Manage curated task templates
+
+${chalk.bold("Usage:")}
+  forge task template list
+  forge task template show <id>
+  forge task create --template <id>`);
+}
+
 async function handleCreate(args: string[]): Promise<void> {
 	let name: string | undefined;
 	let goal: string | undefined;
 	let profile: string | undefined;
 	let every: string | undefined;
+	let cron: string | undefined;
+	let at: string | undefined;
 	let showHelp = false;
 	let fromFile: string | undefined;
+	let templateName: string | undefined;
+	let timeoutSeconds: number | undefined;
+	let overlapPolicy: OverlapPolicy | undefined;
+	let retries: number | undefined;
+	let retryDelay: number | undefined;
+	let retryStrategy: ("fixed" | "exponential") | undefined;
+	let policyMode: PolicyMode | undefined;
+	let modelTier: ModelTier | undefined;
+	let interactive = false;
+	let smart: boolean | undefined;
+	const toolsAllow: string[] = [];
+	const toolsDeny: string[] = [];
+	const skills: string[] = [];
+	const notifyEmail: string[] = [];
+	let notifyWebhook: string | undefined;
+	let enabled = true;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
 		if (arg === "--help" || arg === "-h") {
 			showHelp = true;
+		} else if (arg === "--interactive" || arg === "-i") {
+			interactive = true;
+		} else if (arg === "--smart" || arg === "--ai") {
+			interactive = true;
+			smart = true;
+		} else if (arg === "--no-smart" || arg === "--no-ai") {
+			smart = false;
+		} else if (arg === "--template" && i + 1 < args.length) {
+			templateName = args[++i];
 		} else if (arg === "--name" && i + 1 < args.length) {
 			name = args[++i];
 		} else if (arg === "--profile" && i + 1 < args.length) {
 			profile = args[++i];
 		} else if (arg === "--every" && i + 1 < args.length) {
 			every = args[++i];
+		} else if (arg === "--cron" && i + 1 < args.length) {
+			cron = args[++i];
+		} else if (arg === "--at" && i + 1 < args.length) {
+			at = args[++i];
 		} else if (arg === "--from" && i + 1 < args.length) {
 			fromFile = args[++i];
+		} else if (arg === "--timeout" && i + 1 < args.length) {
+			const parsed = Number.parseInt(args[++i], 10);
+			if (Number.isNaN(parsed) || parsed <= 0) {
+				console.error(chalk.red(`Invalid timeout: "${args[i]}". Must be a positive integer.`));
+				process.exitCode = 3;
+				return;
+			}
+			timeoutSeconds = parsed;
+		} else if (arg === "--overlap" && i + 1 < args.length) {
+			const val = args[++i].toLowerCase();
+			if (val !== "skip" && val !== "queue") {
+				console.error(chalk.red(`Invalid overlap policy: "${val}". Expected "skip" or "queue".`));
+				process.exitCode = 3;
+				return;
+			}
+			overlapPolicy = val;
+		} else if (arg === "--retries" && i + 1 < args.length) {
+			const parsed = Number.parseInt(args[++i], 10);
+			if (Number.isNaN(parsed) || parsed < 0) {
+				console.error(chalk.red(`Invalid retries: "${args[i]}". Must be a non-negative integer.`));
+				process.exitCode = 3;
+				return;
+			}
+			retries = parsed;
+		} else if (arg === "--retry-delay" && i + 1 < args.length) {
+			const parsed = Number.parseInt(args[++i], 10);
+			if (Number.isNaN(parsed) || parsed <= 0) {
+				console.error(chalk.red(`Invalid retry delay: "${args[i]}". Must be a positive integer.`));
+				process.exitCode = 3;
+				return;
+			}
+			retryDelay = parsed;
+		} else if (arg === "--retry-strategy" && i + 1 < args.length) {
+			const val = args[++i].toLowerCase();
+			if (val !== "fixed" && val !== "exponential") {
+				console.error(chalk.red(`Invalid retry strategy: "${val}". Expected "fixed" or "exponential".`));
+				process.exitCode = 3;
+				return;
+			}
+			retryStrategy = val;
+		} else if (arg === "--policy" && i + 1 < args.length) {
+			const val = args[++i].toLowerCase();
+			if (val !== "safe" && val !== "supervised" && val !== "autonomous") {
+				console.error(chalk.red(`Invalid policy mode: "${val}". Expected "safe", "supervised", or "autonomous".`));
+				process.exitCode = 3;
+				return;
+			}
+			policyMode = val as PolicyMode;
+		} else if (arg === "--model-tier" && i + 1 < args.length) {
+			const val = args[++i].toLowerCase();
+			if (val !== "fast" && val !== "default" && val !== "reasoning" && val !== "coding") {
+				console.error(
+					chalk.red(`Invalid model tier: "${val}". Expected "fast", "default", "reasoning", or "coding".`),
+				);
+				process.exitCode = 3;
+				return;
+			}
+			modelTier = val as ModelTier;
+		} else if ((arg === "--tools" || arg === "-t") && i + 1 < args.length) {
+			toolsAllow.push(
+				...args[++i]
+					.split(",")
+					.map((s) => s.trim())
+					.filter((s) => s.length > 0),
+			);
+		} else if ((arg === "--exclude-tools" || arg === "--deny-tools" || arg === "-xt") && i + 1 < args.length) {
+			toolsDeny.push(
+				...args[++i]
+					.split(",")
+					.map((s) => s.trim())
+					.filter((s) => s.length > 0),
+			);
+		} else if (arg === "--skills" && i + 1 < args.length) {
+			skills.push(
+				...args[++i]
+					.split(",")
+					.map((s) => s.trim())
+					.filter((s) => s.length > 0),
+			);
+		} else if (arg === "--notify-email" && i + 1 < args.length) {
+			notifyEmail.push(
+				...args[++i]
+					.split(",")
+					.map((s) => s.trim())
+					.filter((s) => s.length > 0),
+			);
+		} else if (arg === "--notify-webhook" && i + 1 < args.length) {
+			notifyWebhook = args[++i];
+		} else if (arg === "--disabled" || arg === "--no-enabled") {
+			enabled = false;
 		} else if (!arg.startsWith("-")) {
 			goal = arg;
 		}
@@ -109,24 +333,112 @@ async function handleCreate(args: string[]): Promise<void> {
 ${chalk.bold("Usage:")}
   forge task create "<goal>" [options]
   forge task create --from <file.yaml>
+  forge task create --interactive
 
-${chalk.bold("Options:")}
-  --name <name>             Task name (auto-generated if not provided)
+${chalk.bold("Schedule Options:")}
   --every <interval>        Repeat interval: 30s, 5m, 1h
+  --cron <expression>       UTC 5-part cron: "*/15 * * * *"
+  --at <datetime>           Run once at ISO datetime: "2026-08-30T15:00:00Z"
+
+${chalk.bold("Operational Options:")}
+  --name <name>             Task name (auto-generated if not provided)
   --profile <name>          Agent profile: sysadmin, devops, sre, software-engineer, security
+  --policy <mode>           Policy mode: safe, supervised, autonomous (default: autonomous)
+  --model-tier <tier>       Model tier: fast, default, reasoning, coding
+  --timeout <seconds>       Execution timeout in seconds (default: 120)
+  --overlap <policy>        Overlap policy: skip, queue (default: skip)
+  --disabled                Create task in disabled state (default: enabled)
+  --interactive, -i         Launch interactive guided wizard
+
+${chalk.bold("Retry Options:")}
+  --retries <n>             Maximum retry attempts on failure (default: 0)
+  --retry-delay <seconds>   Delay between retries in seconds (default: 30)
+  --retry-strategy <type>   Retry strategy: fixed, exponential (default: fixed)
+
+${chalk.bold("Tools & Skills:")}
+  --tools, -t <list>        Comma-separated allowlist of tools
+  --exclude-tools, -xt <l>  Comma-separated denylist of tools
+  --skills <list>           Comma-separated list of skill names
+
+${chalk.bold("Notification Options:")}
+  --notify-email <emails>   Comma-separated recipient emails
+  --notify-webhook <url>    Notification webhook URL
+
+${chalk.bold("File & General Options:")}
   --from <file>             Create from YAML task config file
+  --template <name>         Create from curated task template (e.g. nginx-error-monitor)
   --help, -h                Show this help
 
 ${chalk.bold("Examples:")}
   forge task create --name disk-check --every 5m "Check disk usage and alert if >90%"
-  forge task create --name nginx-monitor --every 30s --profile sysadmin "Monitor nginx errors"
+  forge task create --name nginx-monitor --cron "*/5 * * * *" --profile sysadmin "Monitor nginx errors"
+  forge task create --template nginx-error-monitor --name prod-nginx-mon
+  forge task create --interactive
   forge task create --from tasks/nginx-monitor.yaml`);
+		return;
+	}
+
+	if (interactive || (args.length === 0 && Boolean(process.stdin.isTTY))) {
+		const { runTaskWizard } = await import("./wizard/index.ts");
+		await runTaskWizard({ initialGoal: goal, smart });
 		return;
 	}
 
 	const store = new TaskStore(getDefaultTaskDbPath());
 
 	try {
+		// Handle curated template input
+		if (templateName) {
+			const { instantiateTemplate } = await import("../templates/index.ts");
+			try {
+				let overrideSchedule: TaskSchedule | undefined;
+				if (every) {
+					overrideSchedule = { type: "interval", seconds: parseIntervalString(every) };
+				} else if (cron) {
+					computeNextCronRun(cron);
+					overrideSchedule = { type: "cron", expression: cron };
+				} else if (at) {
+					overrideSchedule = { type: "once", at: new Date(at).toISOString() };
+				}
+
+				const templateInput = instantiateTemplate(templateName, {
+					name,
+					goal,
+					profile,
+					schedule: overrideSchedule,
+					policyMode,
+					modelTier,
+					timeoutSeconds,
+					overlapPolicy,
+					enabled,
+					toolsAllow: toolsAllow.length > 0 ? toolsAllow : undefined,
+					toolsDeny: toolsDeny.length > 0 ? toolsDeny : undefined,
+					retryPolicy:
+						retries !== undefined
+							? { maxRetries: retries, delaySeconds: retryDelay ?? 30, strategy: retryStrategy ?? "fixed" }
+							: undefined,
+					notifications:
+						notifyEmail.length > 0 || notifyWebhook
+							? {
+									email: notifyEmail.length > 0 ? { to: notifyEmail } : undefined,
+									webhook: notifyWebhook ? { url: notifyWebhook } : undefined,
+								}
+							: undefined,
+				});
+				const task = store.createTask(templateInput);
+				console.log(chalk.green(`✓ Task created from template "${templateName}": ${task.id}`));
+				console.log(chalk.dim(`  Name: ${task.name}`));
+				if (task.schedule) {
+					console.log(chalk.dim(`  Schedule: ${formatSchedule(task.schedule)}`));
+				}
+				return;
+			} catch (err: any) {
+				console.error(chalk.red(`Template error: ${err.message}`));
+				process.exitCode = 1;
+				return;
+			}
+		}
+
 		// Handle YAML file input
 		if (fromFile) {
 			const { readFileSync } = await import("node:fs");
@@ -145,18 +457,68 @@ ${chalk.bold("Examples:")}
 
 		if (!goal) {
 			console.error(chalk.red("Error: No goal specified."));
-			console.error(chalk.dim('Usage: forge task create "<goal>" [--name NAME] [--every INTERVAL]'));
+			console.error(chalk.dim('Usage: forge task create "<goal>" [options]'));
 			process.exitCode = 3;
 			return;
+		}
+
+		// Validate schedule mutual exclusivity
+		const scheduleCount = (every ? 1 : 0) + (cron ? 1 : 0) + (at ? 1 : 0);
+		if (scheduleCount > 1) {
+			console.error(chalk.red("Error: Cannot specify multiple schedules. Choose one of: --every, --cron, --at."));
+			process.exitCode = 3;
+			return;
+		}
+
+		let schedule: TaskSchedule | undefined;
+		if (every) {
+			try {
+				const seconds = parseIntervalString(every);
+				schedule = { type: "interval", seconds };
+			} catch (err: any) {
+				console.error(chalk.red(`Error: ${err.message}`));
+				process.exitCode = 3;
+				return;
+			}
+		} else if (cron) {
+			try {
+				computeNextCronRun(cron);
+				schedule = { type: "cron", expression: cron };
+			} catch (err: any) {
+				console.error(chalk.red(`Invalid cron expression "${cron}": ${err.message}`));
+				process.exitCode = 3;
+				return;
+			}
+		} else if (at) {
+			const target = new Date(at);
+			if (Number.isNaN(target.getTime())) {
+				console.error(
+					chalk.red(`Invalid datetime format for --at: "${at}". Use ISO 8601 format (e.g. 2026-08-30T15:00:00Z).`),
+				);
+				process.exitCode = 3;
+				return;
+			}
+			schedule = { type: "once", at: target.toISOString() };
 		}
 
 		// Auto-generate name from goal if not provided
 		const taskName = name ?? generateTaskName(goal);
 
-		let schedule: TaskSchedule | undefined;
-		if (every) {
-			const seconds = parseIntervalString(every);
-			schedule = { type: "interval", seconds };
+		let retryPolicy: CreateTaskInput["retryPolicy"];
+		if (retries !== undefined || retryDelay !== undefined || retryStrategy !== undefined) {
+			retryPolicy = {
+				maxRetries: retries,
+				delaySeconds: retryDelay,
+				strategy: retryStrategy,
+			};
+		}
+
+		let notifications: CreateTaskInput["notifications"];
+		if (notifyEmail.length > 0 || notifyWebhook) {
+			notifications = {
+				email: notifyEmail.length > 0 ? { to: notifyEmail } : undefined,
+				webhook: notifyWebhook ? { url: notifyWebhook } : undefined,
+			};
 		}
 
 		const input: CreateTaskInput = {
@@ -164,6 +526,16 @@ ${chalk.bold("Examples:")}
 			goal,
 			profile,
 			schedule,
+			enabled,
+			overlapPolicy,
+			timeoutSeconds,
+			retryPolicy,
+			policyMode,
+			toolsAllow: toolsAllow.length > 0 ? toolsAllow : undefined,
+			toolsDeny: toolsDeny.length > 0 ? toolsDeny : undefined,
+			skills: skills.length > 0 ? skills : undefined,
+			modelTier,
+			notifications,
 		};
 
 		const task = store.createTask(input);
@@ -171,6 +543,12 @@ ${chalk.bold("Examples:")}
 		console.log(chalk.dim(`  Name: ${task.name}`));
 		if (task.schedule) {
 			console.log(chalk.dim(`  Schedule: ${formatSchedule(task.schedule)}`));
+		}
+		if (task.profile) {
+			console.log(chalk.dim(`  Profile: ${task.profile}`));
+		}
+		if (task.policyMode) {
+			console.log(chalk.dim(`  Policy: ${task.policyMode}`));
 		}
 		console.log(chalk.dim(`  Enabled: ${task.enabled}`));
 	} finally {
@@ -247,6 +625,8 @@ function handleShow(args: string[]): void {
 		if (task.toolsAllow) console.log(`  Tools Allow:  ${task.toolsAllow.join(", ")}`);
 		if (task.toolsDeny) console.log(`  Tools Deny:   ${task.toolsDeny.join(", ")}`);
 		if (task.skills) console.log(`  Skills:       ${task.skills.join(", ")}`);
+		if (task.notifications?.email) console.log(`  Notify Email: ${task.notifications.email.to.join(", ")}`);
+		if (task.notifications?.webhook) console.log(`  Notify Hook:  ${task.notifications.webhook.url}`);
 		console.log(`  Created:      ${task.createdAt}`);
 		console.log(`  Updated:      ${task.updatedAt}`);
 		if (task.lastRunAt) console.log(`  Last Run:     ${task.lastRunAt}`);
@@ -653,6 +1033,10 @@ ${chalk.bold("Usage:")}
 
 ${chalk.bold("Commands:")}
   create "<goal>"           Create a new persistent task
+  wizard                    Launch interactive task creation wizard
+  template [list|show]      Manage curated task templates
+  explain <schedule|task>   Explain cron/interval schedule & timeline
+  test <task|goal>          Safe dry-run task simulation
   list                      List all tasks
   show <task>               Show task details
   status <task>             Show task status with recent runs
@@ -671,12 +1055,14 @@ ${chalk.bold("Task references:")}
   Tasks can be referenced by name, full UUID, or UUID prefix.
 
 ${chalk.bold("Examples:")}
+  forge task wizard
+  forge task template list
+  forge task create --template nginx-error-monitor
+  forge task explain "*/15 * * * *"
+  forge task test "Check memory usage"
   forge task create --name nginx-monitor --every 30s "Monitor nginx error log"
+  forge task create --name db-vacuum --cron "0 2 * * *" "Vacuum database"
   forge task list
   forge task status nginx-monitor
-  forge task runs nginx-monitor
-  forge task logs nginx-monitor
-  forge task service install
-  forge task service start
   forge task doctor`);
 }

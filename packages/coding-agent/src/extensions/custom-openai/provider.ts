@@ -176,7 +176,7 @@ export function createCustomOpenAIProvider(): CustomOpenAIProviderController {
 
 					const enteredProvider = await interaction.prompt({
 						type: "text",
-						message: "Custom Provider ID (optional, e.g. qforge, ollama, custom)",
+						message: "Custom Provider ID (optional, e.g. forge-local, ollama, custom)",
 						placeholder: "custom",
 					});
 					const rawProviderId = enteredProvider.trim().toLowerCase();

@@ -17,7 +17,7 @@ Forge includes safety interceptors that actively block destructive commands (e.g
 
 If you believe you have discovered a security vulnerability in Forge, please report it privately:
 
-- **Email**: `hiren.dave@ibm.com`
+- **Email**: `hirendave@example.com`
 - **GitHub Security Advisories**: Open a private advisory on [https://github.com/hirendave47/forge/security/advisories](https://github.com/hirendave47/forge/security/advisories)
 
 Please include:

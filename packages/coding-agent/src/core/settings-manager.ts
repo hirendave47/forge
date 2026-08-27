@@ -67,6 +67,14 @@ export interface WarningSettings {
 	anthropicExtraUsage?: boolean; // default: true
 }
 
+export interface NotificationSettings {
+	smtpHost?: string; // default: "localhost"
+	smtpPort?: number; // default: 25
+	from?: string; // default: "noreply@example.com"
+	to?: string; // default recipient address
+	webhookUrl?: string; // optional webhook URL (Slack, Discord, Teams, etc.)
+}
+
 export type DefaultProjectTrust = "ask" | "always" | "never";
 
 export type TransportSetting = Transport;
@@ -139,6 +147,7 @@ export interface Settings {
 	tuiMode?: TuiMode; // default: "regular"
 	fullscreenExitOutput?: FullscreenExitOutput; // default: "transcript"; no effect in regular TUI mode
 	fullscreenScrollbar?: ScrollViewScrollbar; // default: "auto"; no effect in regular TUI mode
+	notifications?: NotificationSettings; // SMTP / webhook notification defaults
 }
 
 function isMergeableObject(value: unknown): value is Record<string, unknown> {
@@ -1353,6 +1362,16 @@ export class SettingsManager {
 	setWarnings(warnings: WarningSettings): void {
 		this.globalSettings.warnings = { ...warnings };
 		this.markModified("warnings");
+		this.save();
+	}
+
+	getNotificationSettings(): NotificationSettings {
+		return { ...(this.settings.notifications ?? {}) };
+	}
+
+	setNotificationSettings(notifications: NotificationSettings): void {
+		this.globalSettings.notifications = { ...notifications };
+		this.markModified("notifications");
 		this.save();
 	}
 }

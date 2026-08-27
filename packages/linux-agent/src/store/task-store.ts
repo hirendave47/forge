@@ -149,8 +149,9 @@ export class TaskStore {
 		const id = generateTaskId();
 		const now = new Date().toISOString();
 		const retryPolicy = {
-			...DEFAULT_RETRY_POLICY,
-			...input.retryPolicy,
+			maxRetries: input.retryPolicy?.maxRetries ?? DEFAULT_RETRY_POLICY.maxRetries,
+			delaySeconds: input.retryPolicy?.delaySeconds ?? DEFAULT_RETRY_POLICY.delaySeconds,
+			strategy: input.retryPolicy?.strategy ?? DEFAULT_RETRY_POLICY.strategy,
 		};
 
 		const stmt = this.db.prepare(`
@@ -638,6 +639,9 @@ function deserializeSchedule(type: string | null, value: string | null): Task["s
 // ============================================================
 
 export function getDefaultTaskDbPath(): string {
+	if (process.env.FORGE_TASK_DB) {
+		return process.env.FORGE_TASK_DB;
+	}
 	const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
 	return join(home, ".forge", "agent", "tasks.db");
 }

@@ -1,8 +1,28 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { AgentTool } from "@earendil-works/forge-agent-core";
 import * as net from "net";
 import { type Static, Type } from "typebox";
+import { getAgentDir } from "../../config.ts";
 import type { ToolDefinition } from "../extensions/types.ts";
+import type { NotificationSettings } from "../settings-manager.ts";
 import { wrapToolDefinition } from "./tool-definition-wrapper.ts";
+
+/** Load notification defaults from ~/.forge/agent/settings.json without importing SettingsManager. */
+function loadNotificationDefaults(): NotificationSettings {
+	try {
+		const settingsPath = join(getAgentDir(), "settings.json");
+		const raw = readFileSync(settingsPath, "utf-8");
+		const parsed = JSON.parse(raw) as Record<string, unknown>;
+		const n = parsed.notifications;
+		if (n && typeof n === "object" && !Array.isArray(n)) {
+			return n as NotificationSettings;
+		}
+	} catch {
+		// File missing or unreadable — silently fall back to defaults
+	}
+	return {};
+}
 
 const notifySchema = Type.Object({
 	subject: Type.String({ description: "Notification subject line" }),
@@ -121,22 +141,31 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 		],
 		parameters: notifySchema,
 		async execute(_toolCallId, { subject, body, severity = "info", to, from }, _signal) {
-			const smtpHost = process.env.FORGE_SMTP_HOST || "localhost";
-			const smtpPort = parseInt(process.env.FORGE_SMTP_PORT || "25", 10);
-			const fromAddr = from || process.env.FORGE_NOTIFICATION_FROM || "noreply@qforge.dev.fyre.ibm.com";
-			const toAddr = to || process.env.FORGE_NOTIFICATION_TO || "hiren.dave@ibm.com";
-			const webhookUrl = process.env.FORGE_NOTIFICATION_WEBHOOK;
+			const saved = loadNotificationDefaults();
+			const smtpHost = process.env.FORGE_SMTP_HOST || saved.smtpHost || "localhost";
+			const smtpPort = parseInt(process.env.FORGE_SMTP_PORT || String(saved.smtpPort ?? 25), 10);
+			const fromAddr = from || process.env.FORGE_NOTIFICATION_FROM || saved.from || "noreply@example.com";
+			const toAddr = to || process.env.FORGE_NOTIFICATION_TO || saved.to || "";
+			const webhookUrl = process.env.FORGE_NOTIFICATION_WEBHOOK || saved.webhookUrl;
 
 			const results: string[] = [];
 			let anyFailure = false;
 
-			// 1. Send via SMTP (Postfix)
-			try {
-				const smtpResult = await sendSmtpEmail(smtpHost, smtpPort, fromAddr, toAddr, subject, body, severity);
-				results.push(smtpResult);
-			} catch (err: any) {
+			// 1. Send via SMTP (Postfix) — skip if no recipient is configured
+			if (!toAddr) {
 				anyFailure = true;
-				results.push(`SMTP delivery failed: ${err?.message || err}`);
+				results.push(
+					"SMTP delivery skipped: no recipient address configured. " +
+						"Set a default in Settings → Notifications → To address, or specify one in your prompt.",
+				);
+			} else {
+				try {
+					const smtpResult = await sendSmtpEmail(smtpHost, smtpPort, fromAddr, toAddr, subject, body, severity);
+					results.push(smtpResult);
+				} catch (err: any) {
+					anyFailure = true;
+					results.push(`SMTP delivery failed: ${err?.message || err}`);
+				}
 			}
 
 			// 2. Webhook if configured

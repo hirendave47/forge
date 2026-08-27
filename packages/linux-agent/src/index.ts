@@ -16,7 +16,10 @@
 
 // CLI
 export { handleRunCommand } from "./cli/run-command.ts";
+export { calculateTimeline, explainSchedule, formatTimelineTable, handleExplain } from "./cli/schedule-explainer.ts";
 export { handleTaskCommand } from "./cli/task-command.ts";
+export { handleTest, testTask } from "./cli/task-tester.ts";
+export * from "./cli/wizard/index.ts";
 // Integrations & MCP (§19, §20)
 export * from "./integrations/mcp-client.ts";
 export * from "./integrations/mcp-loader.ts";
@@ -85,5 +88,7 @@ export { SCHEMA_VERSION } from "./store/schema.ts";
 export { getDefaultTaskDbPath, TaskStore } from "./store/task-store.ts";
 // Systemd & Crash Recovery (§28, §29)
 export * from "./systemd/installer.ts";
+// Templates
+export * from "./templates/index.ts";
 // Verification Engine (§24)
 export * from "./verification/verification-engine.ts";
