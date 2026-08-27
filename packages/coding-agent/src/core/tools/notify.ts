@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
+import * as net from "node:net";
 import { join } from "node:path";
+import * as tls from "node:tls";
 import type { AgentTool } from "@earendil-works/forge-agent-core";
-import * as net from "net";
 import { type Static, Type } from "typebox";
 import { getAgentDir } from "../../config.ts";
 import type { ToolDefinition } from "../extensions/types.ts";
@@ -51,27 +52,50 @@ const notifySchema = Type.Object({
 
 export type NotifyToolInput = Static<typeof notifySchema>;
 
-function sendSmtpEmail(
-	host: string,
-	port: number,
-	from: string,
-	to: string,
-	subject: string,
-	body: string,
-	severity = "info",
-	format?: string,
-): Promise<string> {
+interface SmtpOptions {
+	host: string;
+	port: number;
+	from: string;
+	to: string;
+	subject: string;
+	body: string;
+	severity?: string;
+	format?: string;
+	user?: string;
+	pass?: string;
+	secure?: boolean;
+}
+
+function sendSmtpEmail(options: SmtpOptions): Promise<string> {
+	const {
+		host,
+		port,
+		from,
+		to,
+		subject,
+		body,
+		severity = "info",
+		format,
+		user,
+		pass,
+		secure = port === 465,
+	} = options;
+
 	return new Promise((resolve, reject) => {
-		const client = new net.Socket();
+		let client: net.Socket;
+		if (secure) {
+			client = tls.connect(port, host, { rejectUnauthorized: false });
+		} else {
+			client = net.connect(port, host);
+		}
+
 		let buffer = "";
 		let step = 0;
 
 		const timer = setTimeout(() => {
 			client.destroy();
 			reject(new Error(`SMTP connection timed out to ${host}:${port}`));
-		}, 2000);
-
-		client.connect(port, host, () => {});
+		}, 5000);
 
 		client.on("data", (data) => {
 			buffer += data.toString();
@@ -91,6 +115,30 @@ function sendSmtpEmail(
 				} else if (step === 1) {
 					if (!lastLine.startsWith("250")) {
 						throw new Error(`SMTP EHLO rejected: ${lastLine}`);
+					}
+					// If auth is provided, perform AUTH LOGIN
+					if (user && pass) {
+						step = 10;
+						client.write("AUTH LOGIN\r\n");
+					} else {
+						step = 2;
+						client.write(`MAIL FROM:<${from}>\r\n`);
+					}
+				} else if (step === 10) {
+					if (!lastLine.startsWith("334")) {
+						throw new Error(`SMTP AUTH LOGIN rejected: ${lastLine}`);
+					}
+					step = 11;
+					client.write(`${Buffer.from(user!).toString("base64")}\r\n`);
+				} else if (step === 11) {
+					if (!lastLine.startsWith("334")) {
+						throw new Error(`SMTP username rejected: ${lastLine}`);
+					}
+					step = 12;
+					client.write(`${Buffer.from(pass!).toString("base64")}\r\n`);
+				} else if (step === 12) {
+					if (!lastLine.startsWith("235")) {
+						throw new Error(`SMTP authentication failed: ${lastLine}`);
 					}
 					step = 2;
 					client.write(`MAIL FROM:<${from}>\r\n`);
@@ -152,6 +200,71 @@ function sendSmtpEmail(
 	});
 }
 
+function formatWebhookPayload(
+	webhookUrl: string,
+	subject: string,
+	body: string,
+	severity: string,
+): { body: string; headers: Record<string, string> } {
+	const timestamp = new Date().toISOString();
+
+	// Discord Webhook Adapter
+	if (webhookUrl.includes("discord.com/api/webhooks")) {
+		const colorMap: Record<string, number> = {
+			critical: 0xe74c3c, // Red
+			warning: 0xf39c12, // Orange
+			summary: 0x2ecc71, // Green
+			info: 0x3498db, // Blue
+		};
+		const color = colorMap[severity.toLowerCase()] ?? 0x3498db;
+		return {
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				embeds: [
+					{
+						title: `[${severity.toUpperCase()}] ${subject}`,
+						description: body.length > 4000 ? `${body.slice(0, 3990)}...` : body,
+						color,
+						timestamp,
+						footer: { text: "Forge Linux Agent" },
+					},
+				],
+			}),
+		};
+	}
+
+	// Slack Webhook Adapter
+	if (webhookUrl.includes("hooks.slack.com")) {
+		return {
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				blocks: [
+					{
+						type: "header",
+						text: {
+							type: "plain_text",
+							text: `[${severity.toUpperCase()}] ${subject}`,
+						},
+					},
+					{
+						type: "section",
+						text: {
+							type: "mrkdwn",
+							text: body.length > 3000 ? `${body.slice(0, 2990)}...` : body,
+						},
+					},
+				],
+			}),
+		};
+	}
+
+	// Generic JSON Webhook
+	return {
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ subject, body, severity, timestamp }),
+	};
+}
+
 export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema, undefined> {
 	return {
 		name: "send_notification",
@@ -166,6 +279,14 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 			const saved = loadNotificationDefaults();
 			const smtpHost = process.env.FORGE_SMTP_HOST || saved.smtpHost || "localhost";
 			const smtpPort = parseInt(process.env.FORGE_SMTP_PORT || String(saved.smtpPort ?? 25), 10);
+			const smtpUser = process.env.FORGE_SMTP_USER || saved.smtpUser;
+			const smtpPass = process.env.FORGE_SMTP_PASS || saved.smtpPass;
+			const smtpSecure =
+				process.env.FORGE_SMTP_SECURE === "true" ||
+				process.env.FORGE_SMTP_SECURE === "1" ||
+				saved.smtpSecure ||
+				smtpPort === 465;
+
 			const fromAddr = from || process.env.FORGE_NOTIFICATION_FROM || saved.from || "noreply@example.com";
 			const toAddr = to || process.env.FORGE_NOTIFICATION_TO || saved.to || "";
 			const webhookUrl = process.env.FORGE_NOTIFICATION_WEBHOOK || saved.webhookUrl;
@@ -173,7 +294,7 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 			const results: string[] = [];
 			let anyFailure = false;
 
-			// 1. Send via SMTP (Postfix) — skip if no recipient is configured
+			// 1. Send via SMTP — skip if no recipient is configured
 			if (!toAddr) {
 				anyFailure = true;
 				results.push(
@@ -182,16 +303,19 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 				);
 			} else {
 				try {
-					const smtpResult = await sendSmtpEmail(
-						smtpHost,
-						smtpPort,
-						fromAddr,
-						toAddr,
+					const smtpResult = await sendSmtpEmail({
+						host: smtpHost,
+						port: smtpPort,
+						from: fromAddr,
+						to: toAddr,
 						subject,
 						body,
 						severity,
 						format,
-					);
+						user: smtpUser,
+						pass: smtpPass,
+						secure: smtpSecure,
+					});
 					results.push(smtpResult);
 				} catch (err: unknown) {
 					anyFailure = true;
@@ -203,10 +327,16 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 			// 2. Webhook if configured
 			if (webhookUrl) {
 				try {
+					const { body: webhookBody, headers: webhookHeaders } = formatWebhookPayload(
+						webhookUrl,
+						subject,
+						body,
+						severity,
+					);
 					await fetch(webhookUrl, {
 						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ subject, body, severity, timestamp: new Date().toISOString() }),
+						headers: webhookHeaders,
+						body: webhookBody,
 					});
 					results.push("Webhook notification dispatched successfully");
 					anyFailure = false; // webhook succeeded — overall not a failure

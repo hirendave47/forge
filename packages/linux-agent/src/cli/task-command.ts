@@ -28,6 +28,10 @@ export async function handleTaskCommand(args: string[]): Promise<void> {
 	}
 
 	switch (subcommand) {
+		case "top":
+		case "monitor":
+			await handleTop(args.slice(1));
+			break;
 		case "wizard":
 		case "interactive":
 			await handleWizard(args.slice(1));
@@ -1159,6 +1163,138 @@ function padRight(str: string, len: number): string {
 	return str + " ".repeat(len - str.length);
 }
 
+async function handleTop(args: string[]): Promise<void> {
+	let once = false;
+	let intervalMs = 2000;
+	for (let i = 0; i < args.length; i++) {
+		if (args[i] === "--once" || args[i] === "-1") {
+			once = true;
+		} else if (args[i] === "--interval" && i + 1 < args.length) {
+			intervalMs = Math.max(500, Number.parseInt(args[++i], 10) * 1000);
+		}
+	}
+
+	const renderDashboard = async () => {
+		const store = new TaskStore(getDefaultTaskDbPath());
+		try {
+			const { isDaemonRunning } = await import("../systemd/installer.ts");
+			const daemon = isDaemonRunning();
+			const tasks = store.listTasks();
+			const now = new Date();
+			const os = await import("node:os");
+			const cpus = os.cpus().length;
+			const freeMemMb = Math.round(os.freemem() / 1024 / 1024);
+			const totalMemMb = Math.round(os.totalmem() / 1024 / 1024);
+			const loadAvg = os
+				.loadavg()
+				.map((l) => l.toFixed(2))
+				.join(", ");
+
+			const header = [
+				chalk.bold.cyan("Forge Task Monitor (top)"),
+				chalk.dim(
+					`— ${now.toLocaleTimeString()} | Host: ${os.hostname()} | Load: [${loadAvg}] | CPU: ${cpus} cores | Mem: ${totalMemMb - freeMemMb}/${totalMemMb} MB`,
+				),
+				chalk.dim(
+					`Daemon: ${daemon.running ? chalk.green(`ACTIVE (${daemon.details})`) : chalk.yellow("INACTIVE")} | Tasks: ${tasks.length} (${tasks.filter((t) => t.enabled).length} enabled)`,
+				),
+			].join("\n");
+
+			// Active worker leases / running tasks
+			const activeTasks: Array<{ task: (typeof tasks)[0]; lease: any; run: any }> = [];
+			for (const t of tasks) {
+				const lease = store.getLease(t.id);
+				if (lease && new Date(lease.expires_at) > now) {
+					const activeRun = store.getActiveRun(t.id);
+					activeTasks.push({ task: t, lease, run: activeRun });
+				}
+			}
+
+			const activeSection: string[] = [chalk.bold("\nActive Worker Leases & Running Tasks:")];
+			if (activeTasks.length === 0) {
+				activeSection.push(chalk.dim("  (No active tasks currently executing)"));
+			} else {
+				for (const { task, lease, run } of activeTasks) {
+					const runTime = run
+						? `${Math.round((Date.now() - new Date(run.started_at).getTime()) / 1000)}s`
+						: "starting";
+					activeSection.push(
+						`  ${chalk.green("▶")} ${chalk.bold(task.name)} (${task.id.slice(0, 8)}) — Run: ${run?.id?.slice(0, 8) ?? "init"} | Status: ${chalk.yellow(run?.status ?? "ACQUIRING")} | Running: ${runTime} | Lease Owner: ${lease.owner_id}`,
+					);
+				}
+			}
+
+			// Registered scheduled tasks table
+			const scheduledSection: string[] = [
+				chalk.bold("\nScheduled Tasks:"),
+				chalk.bold(
+					[
+						padRight("ID", 10),
+						padRight("NAME", 28),
+						padRight("STATUS", 10),
+						padRight("SCHEDULE", 16),
+						padRight("NEXT RUN", 16),
+						padRight("LAST RUN", 16),
+					].join("  "),
+				),
+				chalk.dim("─".repeat(84)),
+			];
+
+			for (const task of tasks.slice(0, 15)) {
+				const statusColor = task.enabled ? chalk.green : chalk.yellow;
+				let nextRunStr = "none";
+				if (task.enabled && task.nextRunAt) {
+					const diffSec = Math.round((new Date(task.nextRunAt).getTime() - Date.now()) / 1000);
+					nextRunStr = diffSec <= 0 ? "due now" : `in ${diffSec}s`;
+				}
+				scheduledSection.push(
+					[
+						padRight(task.id.slice(0, 8), 10),
+						padRight(task.name.slice(0, 26), 28),
+						statusColor(padRight(task.enabled ? "enabled" : "disabled", 10)),
+						padRight(task.schedule ? formatSchedule(task.schedule).slice(0, 14) : "manual", 16),
+						padRight(nextRunStr, 16),
+						padRight(task.lastRunAt ? formatTimeAgo(task.lastRunAt).slice(0, 14) : "never", 16),
+					].join("  "),
+				);
+			}
+
+			// Clear terminal and print
+			if (process.stdout.isTTY && !once) {
+				process.stdout.write("\x1Bc");
+			}
+			console.log(header);
+			console.log(activeSection.join("\n"));
+			console.log(scheduledSection.join("\n"));
+			if (!once) {
+				console.log(chalk.dim(`\nAuto-refreshing every ${intervalMs / 1000}s. Press Ctrl+C to exit.`));
+			}
+		} finally {
+			store.close();
+		}
+	};
+
+	await renderDashboard();
+	if (once || !process.stdout.isTTY) return;
+
+	const interval = setInterval(async () => {
+		try {
+			await renderDashboard();
+		} catch {
+			// ignore intermittent read error during dashboard render
+		}
+	}, intervalMs);
+
+	await new Promise<void>((resolve) => {
+		const cleanup = () => {
+			clearInterval(interval);
+			resolve();
+		};
+		process.once("SIGINT", cleanup);
+		process.once("SIGTERM", cleanup);
+	});
+}
+
 function printTaskHelp(): void {
 	console.log(`${chalk.bold("forge task")} — Manage persistent autonomous tasks
 
@@ -1168,6 +1304,7 @@ ${chalk.bold("Usage:")}
 ${chalk.bold("Commands:")}
   create "<goal>"           Create a new persistent task
   wizard                    Launch interactive task creation wizard
+  top / monitor             Live real-time dashboard of daemon, cron schedules, and active tasks
   template [list|show]      Manage curated task templates
   sudoers [show|install]    Configure & verify sudoers privilege rules
   explain <schedule|task>   Explain cron/interval schedule & timeline
@@ -1193,6 +1330,7 @@ ${chalk.bold("Task references:")}
 
 ${chalk.bold("Examples:")}
   forge task wizard
+  forge task top
   forge task template list
   forge task create --template nginx-error-monitor
   forge task explain "*/15 * * * *"

@@ -70,6 +70,9 @@ export interface WarningSettings {
 export interface NotificationSettings {
 	smtpHost?: string; // default: "localhost"
 	smtpPort?: number; // default: 25
+	smtpUser?: string; // optional SMTP username
+	smtpPass?: string; // optional SMTP password
+	smtpSecure?: boolean; // optional TLS toggle (default true for port 465)
 	from?: string; // default: "noreply@example.com"
 	to?: string; // default recipient address
 	webhookUrl?: string; // optional webhook URL (Slack, Discord, Teams, etc.)

@@ -609,6 +609,26 @@ export async function main(args: string[], options?: MainOptions) {
 		await handleTaskCommand(args.slice(1));
 		return;
 	}
+	if (args[0] === "top" || args[0] === "monitor") {
+		const { handleTaskCommand } = await import("@earendil-works/forge-linux-agent/cli");
+		await handleTaskCommand(["top", ...args.slice(1)]);
+		return;
+	}
+	if (args[0] === "wizard") {
+		const { handleTaskCommand } = await import("@earendil-works/forge-linux-agent/cli");
+		await handleTaskCommand(["wizard", ...args.slice(1)]);
+		return;
+	}
+	if (args[0] === "doctor") {
+		const { handleTaskCommand } = await import("@earendil-works/forge-linux-agent/cli");
+		await handleTaskCommand(["doctor", ...args.slice(1)]);
+		return;
+	}
+	if (args[0] === "audit") {
+		const { handleTaskCommand } = await import("@earendil-works/forge-linux-agent/cli");
+		await handleTaskCommand(["audit", ...args.slice(1)]);
+		return;
+	}
 
 	const parsed = parseArgs(args);
 	if (parsed.diagnostics.length > 0) {

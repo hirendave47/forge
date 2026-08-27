@@ -80,6 +80,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	// A tool appears in Available tools only when the caller provides a one-line snippet.
 	const tools = selectedTools || [
 		"read",
+		"read_log",
 		"bash",
 		"edit",
 		"write",
@@ -140,7 +141,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 1. **Direct Tool Execution**: Immediately invoke the appropriate tool for every operational, diagnostic, or coding request. Never output markdown plans or JSON code blocks instead of calling tools. Use function calling on your first turn.
 2. **Parallel Tool Calls**: When multiple tools can run independently, call them all in the same response. Never make a separate turn just to issue a tool call you could have batched with others.
 3. **Iterate to Completion**: Inspect tool results, evaluate whether your exit criteria are met, and continue calling tools until the task is fully done. Only report after all tool actions are verified.
-4. **Log Processing**: Never read entire log files at once. Use bounded commands (\`tail -n +N\`, \`grep -n\`, \`journalctl --since\`). Deduplicate repeated lines. Extract 3–5 lines of context around errors.
+4. **Log Processing**: Use \`read_log\` for chunked incremental log reading, offset tracking, and error deduplication. Never read entire multi-megabyte log files at once.
 5. **Polling & Waiting**: Use \`wait_interval\` instead of busy-loop bash commands when waiting for services, files, or logs to change.
 6. **Notifications**: Use \`send_notification\` for email alerts, progress digests, and formatted reports. Supports HTML tables and styled markup for emails.
 7. **Safety**: Never run destructive commands (\`reboot\`, \`shutdown\`, \`kill 1\`, \`mkfs\`, \`iptables -F\`, \`rm -rf /\`).

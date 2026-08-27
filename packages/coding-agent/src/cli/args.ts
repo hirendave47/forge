@@ -275,13 +275,18 @@ ${chalk.bold("Usage:")}
 
 ${chalk.bold("Commands:")}
   ${APP_NAME} run "<goal>"              Run a one-shot autonomous task
-  ${APP_NAME} run --profile sysadmin "<goal>"  Run with a specific agent profile
-  ${APP_NAME} task create "<goal>"      Create a persistent scheduled task
-  ${APP_NAME} task list                 List all tasks
-  ${APP_NAME} task status <task>        Show task status
-  ${APP_NAME} task runs <task>          Show execution history
-  ${APP_NAME} task logs <task>          Show event log
-  ${APP_NAME} task doctor               Diagnose issues (stale leases, etc.)
+  ${APP_NAME} run --profile sysadmin "<goal>"  Run with a specific agent profile (sysadmin, devops, sre, security)
+  ${APP_NAME} task wizard               Interactive step-by-step wizard to create tasks
+  ${APP_NAME} task top / monitor        Live real-time dashboard of daemon, cron schedules, and active tasks
+  ${APP_NAME} task create "<goal>"      Create a persistent scheduled task (--every, --cron, --at)
+  ${APP_NAME} task list                 List all registered tasks and their schedules
+  ${APP_NAME} task status <task>        Show live task execution status
+  ${APP_NAME} task runs <task>          Show run execution history
+  ${APP_NAME} task logs <task>          Show detailed step-by-step audit logs
+  ${APP_NAME} task audit                Security and policy audit of all tasks and executed tools
+  ${APP_NAME} task sudoers [show|install] Configure passwordless sudo for elevated tasks
+  ${APP_NAME} task doctor               Diagnose issues (stale leases, database integrity)
+  ${APP_NAME} task cleanup              Prune old completed runs and expired leases
   ${APP_NAME} install <source> [-l]     Install extension source and add to settings
   ${APP_NAME} remove <source> [-l]      Remove extension source from settings
   ${APP_NAME} uninstall <source> [-l]   Alias for remove
@@ -349,60 +354,23 @@ ${chalk.bold("Examples:")}
   # Print an OAuth bearer token for an external client (refreshes if expired)
   ${APP_NAME} auth print-bearer-token --provider openai-codex
 
-  # Interactive mode
+  # Run an autonomous one-shot system diagnosis
+  ${APP_NAME} run "Investigate system memory usage, identify top 5 processes"
+
+  # Create a recurring background health monitoring task
+  ${APP_NAME} task create "Monitor nginx error log for HTTP 5xx spikes" --every 5m
+
+  # Open the interactive task wizard
+  ${APP_NAME} task wizard
+
+  # Monitor all background tasks and active worker leases live
+  ${APP_NAME} task top
+
+  # Interactive agent mode
   ${APP_NAME}
-
-  # Interactive mode with initial prompt
-  ${APP_NAME} "List all .ts files in src/"
-
-  # Include files in initial message
-  ${APP_NAME} @prompt.md @image.png "What color is the sky?"
 
   # Non-interactive mode (process and exit)
   ${APP_NAME} -p "List all .ts files in src/"
-
-  # Prompt beginning with a dash
-  ${APP_NAME} -p -- "- Summarize these points"
-
-  # Multiple messages (interactive)
-  ${APP_NAME} "Read package.json" "What dependencies do we have?"
-
-  # Continue previous session
-  ${APP_NAME} --continue "What did we discuss?"
-
-  # Start a named session
-  ${APP_NAME} --name "Refactor auth module"
-
-  # Use different model
-  ${APP_NAME} --provider openai --model gpt-4o-mini "Help me refactor this code"
-
-  # Use model with provider prefix (no --provider needed)
-  ${APP_NAME} --model openai/gpt-4o "Help me refactor this code"
-
-  # Use model with thinking level shorthand
-  ${APP_NAME} --model sonnet:high "Solve this complex problem"
-
-  # Limit model cycling to specific models
-  ${APP_NAME} --models claude-sonnet,claude-haiku,gpt-4o
-
-  # Limit to a specific provider with glob pattern
-  ${APP_NAME} --models "github-copilot/*"
-
-  # Cycle models with fixed thinking levels
-  ${APP_NAME} --models sonnet:high,haiku:low
-
-  # Start with a specific thinking level
-  ${APP_NAME} --thinking high "Solve this complex problem"
-
-  # Read-only mode (no file modifications possible)
-  ${APP_NAME} --tools read,grep,find,ls -p "Review the code in src/"
-
-  # Disable one tool while keeping the rest available
-  ${APP_NAME} --exclude-tools ask_question
-
-  # Export a session file to HTML
-  ${APP_NAME} --export ~/${CONFIG_DIR_NAME}/agent/sessions/--path--/session.jsonl
-  ${APP_NAME} --export session.jsonl output.html
 
 ${chalk.bold("Environment Variables:")}
   ANTHROPIC_AUTH_TOKEN             - Anthropic bearer auth token
@@ -453,9 +421,18 @@ ${chalk.bold("Environment Variables:")}
   FORGE_OFFLINE                    - Disable startup network operations when set to 1/true/yes
   FORGE_TELEMETRY                  - Override install telemetry when set to 1/true/yes or 0/false/no
   FORGE_SHARE_VIEWER_URL           - Base URL for /share command (default: https://forge.dev/session/)
+  FORGE_SMTP_HOST                  - SMTP host for email notifications (default: localhost)
+  FORGE_SMTP_PORT                  - SMTP port for email notifications (default: 25)
+  FORGE_SMTP_USER                  - Optional SMTP username for authentication
+  FORGE_SMTP_PASS                  - Optional SMTP password for authentication
+  FORGE_SMTP_SECURE                - Enable TLS for SMTP (default: true on port 465)
+  FORGE_NOTIFICATION_FROM          - Default sender address (default: noreply@example.com)
+  FORGE_NOTIFICATION_TO            - Default recipient address for notifications
+  FORGE_NOTIFICATION_WEBHOOK       - Default Webhook URL (Slack, Discord, Teams)
 
 ${chalk.bold("Built-in Tool Names:")}
   read              - Read file contents
+  read_log          - Ingest log files with bounded chunking, line offsets, and error deduplication
   bash              - Execute bash commands
   powershell        - Execute PowerShell commands on Windows
   edit              - Edit files with find/replace
