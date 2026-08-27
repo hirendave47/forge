@@ -6,7 +6,7 @@
  */
 
 /** SQL statements to create the initial schema. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const CREATE_TABLES_SQL = `
 -- Enable WAL mode for concurrent readers
@@ -192,8 +192,6 @@ CREATE INDEX IF NOT EXISTS idx_dedup_task_hash ON dedup_entries(task_id, hash);
 
 -- Schema version tracking
 CREATE TABLE IF NOT EXISTS schema_version (
-  version INTEGER NOT NULL
+  version INTEGER NOT NULL PRIMARY KEY
 );
-
-INSERT INTO schema_version (version) VALUES (${SCHEMA_VERSION});
 `;

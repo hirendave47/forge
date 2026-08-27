@@ -150,28 +150,73 @@ export class TaskStore {
 		this.initialize();
 	}
 
-	private initialize(): void {
-		// Check if schema exists
+	private ensureColumn(table: string, column: string, columnDef: string): void {
 		try {
-			const row = this.db.prepare("SELECT version FROM schema_version LIMIT 1").get() as VersionRow | undefined;
-			if (row && row.version >= SCHEMA_VERSION) {
-				return; // Schema is up to date
+			const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as unknown as Array<{ name: string }>;
+			const exists = columns.some((col) => col.name === column);
+			if (!exists) {
+				this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${columnDef}`);
 			}
 		} catch {
-			// Table doesn't exist yet — create schema
+			// If table doesn't exist yet or query fails, ignore as CREATE_TABLES_SQL handles it
 		}
+	}
+
+	private initialize(): void {
+		// 1. Create all base tables and indexes
 		this.db.exec(CREATE_TABLES_SQL);
+
+		// 2. Ensure all columns exist for existing databases created with earlier schema revisions
+		this.ensureColumn("tasks", "profile", "TEXT");
+		this.ensureColumn("tasks", "schedule_type", "TEXT");
+		this.ensureColumn("tasks", "schedule_value", "TEXT");
+		this.ensureColumn("tasks", "enabled", "INTEGER NOT NULL DEFAULT 1");
+		this.ensureColumn("tasks", "overlap_policy", "TEXT NOT NULL DEFAULT 'skip'");
+		this.ensureColumn("tasks", "timeout_seconds", "INTEGER DEFAULT 120");
+		this.ensureColumn("tasks", "retry_max", "INTEGER DEFAULT 0");
+		this.ensureColumn("tasks", "retry_delay_seconds", "INTEGER DEFAULT 30");
+		this.ensureColumn("tasks", "retry_strategy", "TEXT DEFAULT 'fixed'");
+		this.ensureColumn("tasks", "policy_mode", "TEXT DEFAULT 'autonomous'");
+		this.ensureColumn("tasks", "tools_allow", "TEXT");
+		this.ensureColumn("tasks", "tools_deny", "TEXT");
+		this.ensureColumn("tasks", "skills", "TEXT");
+		this.ensureColumn("tasks", "model_tier", "TEXT");
+		this.ensureColumn("tasks", "elevated", "INTEGER DEFAULT 0");
+		this.ensureColumn("tasks", "notifications", "TEXT");
+		this.ensureColumn("tasks", "next_run_at", "TEXT");
+		this.ensureColumn("tasks", "last_run_at", "TEXT");
+		this.ensureColumn("tasks", "last_success_at", "TEXT");
+
+		this.ensureColumn("task_runs", "session_id", "TEXT");
+		this.ensureColumn("task_runs", "trigger_type", "TEXT DEFAULT 'schedule'");
+		this.ensureColumn("task_runs", "host_user", "TEXT");
+		this.ensureColumn("task_runs", "host_name", "TEXT");
+		this.ensureColumn("task_runs", "elevated", "INTEGER DEFAULT 0");
+		this.ensureColumn("task_runs", "model_used", "TEXT");
+		this.ensureColumn("task_runs", "transcript_path", "TEXT");
+		this.ensureColumn("task_runs", "finished_at", "TEXT");
+		this.ensureColumn("task_runs", "status", "TEXT NOT NULL DEFAULT 'CREATED'");
+		this.ensureColumn("task_runs", "exit_reason", "TEXT");
+		this.ensureColumn("task_runs", "error", "TEXT");
+		this.ensureColumn("task_runs", "result_summary", "TEXT");
+		this.ensureColumn("task_runs", "input_tokens", "INTEGER DEFAULT 0");
+		this.ensureColumn("task_runs", "output_tokens", "INTEGER DEFAULT 0");
+		this.ensureColumn("task_runs", "tool_calls", "INTEGER DEFAULT 0");
+		this.ensureColumn("task_runs", "duration_ms", "INTEGER");
+		this.ensureColumn("task_runs", "cpu_percent", "REAL");
+		this.ensureColumn("task_runs", "memory_mb", "REAL");
+
+		// 3. Record / update schema version
 		try {
-			this.db.exec("ALTER TABLE tasks ADD COLUMN elevated INTEGER DEFAULT 0");
-		} catch {}
-		try {
-			this.db.exec("ALTER TABLE task_runs ADD COLUMN trigger_type TEXT DEFAULT 'schedule'");
-			this.db.exec("ALTER TABLE task_runs ADD COLUMN host_user TEXT");
-			this.db.exec("ALTER TABLE task_runs ADD COLUMN host_name TEXT");
-			this.db.exec("ALTER TABLE task_runs ADD COLUMN elevated INTEGER DEFAULT 0");
-			this.db.exec("ALTER TABLE task_runs ADD COLUMN model_used TEXT");
-			this.db.exec("ALTER TABLE task_runs ADD COLUMN transcript_path TEXT");
-		} catch {}
+			const row = this.db.prepare("SELECT version FROM schema_version LIMIT 1").get() as VersionRow | undefined;
+			if (!row) {
+				this.db.prepare("INSERT INTO schema_version (version) VALUES (?)").run(SCHEMA_VERSION);
+			} else if (row.version < SCHEMA_VERSION) {
+				this.db.prepare("UPDATE schema_version SET version = ?").run(SCHEMA_VERSION);
+			}
+		} catch {
+			// Fallback if schema_version query fails
+		}
 	}
 
 	// ================================================================

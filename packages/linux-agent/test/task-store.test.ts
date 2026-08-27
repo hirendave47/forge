@@ -316,4 +316,91 @@ describe("TaskStore", () => {
 			expect(removed).toBe(1);
 		});
 	});
+
+	describe("Schema Migration and Legacy DB Upgrade", () => {
+		it("should seamlessly migrate a legacy database missing the elevated column", async () => {
+			const { DatabaseSync } = await import("node:sqlite");
+			const legacyDbPath = getTestDbPath();
+
+			// Initialize a legacy DB (schema version 1) without the elevated column in tasks and task_runs
+			const rawDb = new DatabaseSync(legacyDbPath);
+			rawDb.exec(`
+				CREATE TABLE tasks (
+					id TEXT PRIMARY KEY,
+					name TEXT NOT NULL UNIQUE,
+					goal TEXT NOT NULL,
+					profile TEXT,
+					schedule_type TEXT,
+					schedule_value TEXT,
+					enabled INTEGER NOT NULL DEFAULT 1,
+					overlap_policy TEXT NOT NULL DEFAULT 'skip',
+					timeout_seconds INTEGER DEFAULT 120,
+					retry_max INTEGER DEFAULT 0,
+					retry_delay_seconds INTEGER DEFAULT 30,
+					retry_strategy TEXT DEFAULT 'fixed',
+					policy_mode TEXT DEFAULT 'autonomous',
+					tools_allow TEXT,
+					tools_deny TEXT,
+					skills TEXT,
+					model_tier TEXT,
+					notifications TEXT,
+					created_at TEXT NOT NULL DEFAULT (datetime('now')),
+					updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+					next_run_at TEXT,
+					last_run_at TEXT,
+					last_success_at TEXT
+				);
+				CREATE TABLE task_runs (
+					id TEXT PRIMARY KEY,
+					task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+					session_id TEXT,
+					started_at TEXT NOT NULL DEFAULT (datetime('now')),
+					finished_at TEXT,
+					status TEXT NOT NULL DEFAULT 'CREATED',
+					exit_reason TEXT,
+					error TEXT,
+					result_summary TEXT,
+					input_tokens INTEGER DEFAULT 0,
+					output_tokens INTEGER DEFAULT 0,
+					tool_calls INTEGER DEFAULT 0,
+					duration_ms INTEGER,
+					cpu_percent REAL,
+					memory_mb REAL
+				);
+				CREATE TABLE schema_version (
+					version INTEGER NOT NULL
+				);
+				INSERT INTO schema_version (version) VALUES (1);
+			`);
+			rawDb.close();
+
+			// Now open with TaskStore - should automatically detect missing columns and migrate without error
+			const upgradedStore = new TaskStore(legacyDbPath);
+			try {
+				const created = upgradedStore.createTask({
+					name: "migrated-elevated-task",
+					goal: "Ensure elevated column works after migration",
+					elevated: true,
+				});
+
+				expect(created.elevated).toBe(true);
+				const fetched = upgradedStore.getTask(created.id);
+				expect(fetched?.elevated).toBe(true);
+
+				const run = upgradedStore.createRun(created.id, "CREATED", {
+					elevated: true,
+					triggerType: "manual",
+				});
+				expect(run.elevated).toBe(true);
+				expect(run.triggerType).toBe("manual");
+			} finally {
+				upgradedStore.close();
+				try {
+					rmSync(legacyDbPath, { force: true });
+					rmSync(`${legacyDbPath}-wal`, { force: true });
+					rmSync(`${legacyDbPath}-shm`, { force: true });
+				} catch {}
+			}
+		});
+	});
 });
