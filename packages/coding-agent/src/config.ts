@@ -503,7 +503,7 @@ export const PACKAGE_NAME: string = pkg.name || "@earendil-works/forge-coding-ag
 export const APP_NAME: string = configName || "forge";
 export const APP_TITLE: string = configName ? APP_NAME : "Forge";
 export const CONFIG_DIR_NAME: string = configObj?.configDir || ".forge";
-export const VERSION: string = pkg.version || "0.0.0";
+export const VERSION: string = pkg.version || "1.0.0";
 
 // e.g., FORGE_CODING_AGENT_DIR
 export const ENV_AGENT_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_DIR`;

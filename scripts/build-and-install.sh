@@ -90,15 +90,13 @@ chmod +x "$BINARY_SRC"
 echo ""
 echo "==> [4/4] Installing binary to $TARGET_BIN..."
 if [[ -w "$TARGET_DIR" ]]; then
-  cp "$BINARY_SRC" "$TARGET_BIN"
-  chmod +x "$TARGET_BIN"
+  install -m 755 "$BINARY_SRC" "$TARGET_BIN"
 elif command -v docker &>/dev/null; then
   echo "==> Installing to $TARGET_DIR using container permissions..."
-  docker run --rm -v "$(dirname "$BINARY_SRC")":/src -v "$TARGET_DIR":/dest oven/bun /bin/sh -c "cp /src/$(basename "$BINARY_SRC") /dest/$(basename "$TARGET_BIN") && chmod +x /dest/$(basename "$TARGET_BIN")"
+  docker run --rm -v "$(dirname "$BINARY_SRC")":/src -v "$TARGET_DIR":/dest oven/bun /bin/sh -c "install -m 755 /src/$(basename "$BINARY_SRC") /dest/$(basename "$TARGET_BIN")"
 else
-  echo "==> Elevated permissions required to write to $TARGET_DIR. Running sudo cp..."
-  sudo cp "$BINARY_SRC" "$TARGET_BIN"
-  sudo chmod +x "$TARGET_BIN"
+  echo "==> Elevated permissions required to write to $TARGET_DIR. Running sudo install..."
+  sudo install -m 755 "$BINARY_SRC" "$TARGET_BIN"
 fi
 
 echo ""
