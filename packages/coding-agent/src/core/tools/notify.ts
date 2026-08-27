@@ -193,9 +193,10 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 						format,
 					);
 					results.push(smtpResult);
-				} catch (err: any) {
+				} catch (err: unknown) {
 					anyFailure = true;
-					results.push(`SMTP delivery failed: ${err?.message || err}`);
+					const message = err instanceof Error ? err.message : String(err);
+					results.push(`SMTP delivery failed: ${message}`);
 				}
 			}
 
@@ -209,9 +210,10 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 					});
 					results.push("Webhook notification dispatched successfully");
 					anyFailure = false; // webhook succeeded — overall not a failure
-				} catch (err: any) {
-					anyFailure = anyFailure || true;
-					results.push(`Webhook delivery failed: ${err?.message || err}`);
+				} catch (err: unknown) {
+					anyFailure = true;
+					const message = err instanceof Error ? err.message : String(err);
+					results.push(`Webhook delivery failed: ${message}`);
 				}
 			}
 

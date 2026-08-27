@@ -599,7 +599,7 @@ export async function main(args: string[], options?: MainOptions) {
 	}
 
 	// Dispatch Linux agent subcommands: `forge run` and `forge task`
-	if (args[0] === "run" && args.length > 1) {
+	if (args[0] === "run") {
 		const { handleRunCommand } = await import("@earendil-works/forge-linux-agent/cli");
 		await handleRunCommand(args.slice(1));
 		return;

@@ -89,6 +89,11 @@ export async function handleTaskCommand(args: string[]): Promise<void> {
 		case "cancel":
 			handleCancel(args.slice(1));
 			break;
+		case "delete":
+		case "remove":
+		case "rm":
+			handleDelete(args.slice(1));
+			break;
 		case "doctor":
 			await handleDoctor();
 			break;
@@ -942,6 +947,34 @@ function handleCancel(args: string[]): void {
 	}
 }
 
+function handleDelete(args: string[]): void {
+	const taskRef = args[0];
+	if (!taskRef) {
+		console.error(chalk.red("Error: Task ID or name required."));
+		process.exitCode = 1;
+		return;
+	}
+
+	const store = new TaskStore(getDefaultTaskDbPath());
+	try {
+		const task = resolveTask(store, taskRef);
+		if (!task) {
+			console.error(chalk.red(`Task not found: ${taskRef}`));
+			process.exitCode = 1;
+			return;
+		}
+		const deleted = store.deleteTask(task.id);
+		if (deleted) {
+			console.log(chalk.green(`✓ Task "${task.name}" (${task.id}) deleted.`));
+		} else {
+			console.error(chalk.red(`Failed to delete task: ${taskRef}`));
+			process.exitCode = 1;
+		}
+	} finally {
+		store.close();
+	}
+}
+
 async function handleDoctor(): Promise<void> {
 	const store = new TaskStore(getDefaultTaskDbPath());
 	try {
@@ -1149,6 +1182,7 @@ ${chalk.bold("Commands:")}
   pause <task>              Disable a task
   resume <task>             Re-enable a task
   cancel <task>             Cancel a task and release its lease
+  delete <task>             Delete a task permanently (aliases: remove, rm)
   doctor                    Diagnose issues (privileges, daemon, stale leases)
   cleanup [--days N]        Remove old completed runs (default: 30 days)
   daemon                    Run task scheduler in foreground

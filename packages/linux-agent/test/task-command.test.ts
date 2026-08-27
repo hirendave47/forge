@@ -269,5 +269,18 @@ describe("forge task create CLI Handler", () => {
 		// List without throwing
 		await handleTaskCommand(["list"]);
 		expect(process.exitCode).toBe(0);
+
+		// Delete task
+		await handleTaskCommand(["delete", "qforge-dr-user-login-mon"]);
+		expect(process.exitCode).toBe(0);
+
+		store = new TaskStore(TEST_DB);
+		task = store.getTaskByName("qforge-dr-user-login-monitoring");
+		expect(task).toBeUndefined();
+		store.close();
+
+		// Delete nonexistent task fails with exit code 1
+		await handleTaskCommand(["delete", "nonexistent-task-id"]);
+		expect(process.exitCode).toBe(1);
 	});
 });

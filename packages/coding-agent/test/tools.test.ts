@@ -4,8 +4,14 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { executeBashWithOperations } from "../src/core/bash-executor.ts";
-import { type BashOperations, createBashTool, createLocalBashOperations } from "../src/core/tools/bash.ts";
+import {
+	type BashOperations,
+	checkDangerousCommand,
+	createBashTool,
+	createLocalBashOperations,
+} from "../src/core/tools/bash.ts";
 import { computeEditsDiff } from "../src/core/tools/edit-diff.ts";
+import { createWaitIntervalTool } from "../src/core/tools/wait-interval.ts";
 import {
 	createEditTool,
 	createFindTool,
@@ -1208,5 +1214,99 @@ describe("edit tool CRLF handling", () => {
 
 		const content = readFileSync(testFile, "utf-8");
 		expect(content).toBe("\uFEFFfirst\r\nSECOND\r\nthird\r\nFOURTH\r\n");
+	});
+
+	describe("bash tool safety guardrail interceptor", () => {
+		it("should block system reboot and shutdown commands", () => {
+			expect(checkDangerousCommand("reboot")).toBeTruthy();
+			expect(checkDangerousCommand("sudo reboot")).toBeTruthy();
+			expect(checkDangerousCommand("poweroff")).toBeTruthy();
+			expect(checkDangerousCommand("shutdown -h now")).toBeTruthy();
+			expect(checkDangerousCommand("halt")).toBeTruthy();
+			expect(checkDangerousCommand("init 0")).toBeTruthy();
+			expect(checkDangerousCommand("init 6")).toBeTruthy();
+			expect(checkDangerousCommand("systemctl reboot")).toBeTruthy();
+			expect(checkDangerousCommand("systemctl poweroff")).toBeTruthy();
+		});
+
+		it("should block killing init or PID 1", () => {
+			expect(checkDangerousCommand("kill -9 1")).toBeTruthy();
+			expect(checkDangerousCommand("kill 1")).toBeTruthy();
+			expect(checkDangerousCommand("killall init")).toBeTruthy();
+			expect(checkDangerousCommand("killall systemd")).toBeTruthy();
+		});
+
+		it("should block filesystem formatting and disk wiping", () => {
+			expect(checkDangerousCommand("mkfs /dev/sda")).toBeTruthy();
+			expect(checkDangerousCommand("mkfs.ext4 /dev/nvme0n1")).toBeTruthy();
+			expect(checkDangerousCommand("wipefs /dev/sdb")).toBeTruthy();
+			expect(checkDangerousCommand("fdisk /dev/sda")).toBeTruthy();
+			expect(checkDangerousCommand("dd if=/dev/zero of=/dev/sda")).toBeTruthy();
+		});
+
+		it("should block firewall flushing and disabling network interfaces", () => {
+			expect(checkDangerousCommand("iptables -F")).toBeTruthy();
+			expect(checkDangerousCommand("iptables --flush")).toBeTruthy();
+			expect(checkDangerousCommand("ip6tables -F")).toBeTruthy();
+			expect(checkDangerousCommand("ufw disable")).toBeTruthy();
+			expect(checkDangerousCommand("ip link set eth0 down")).toBeTruthy();
+		});
+
+		it("should block destructive deletion of root or home directory", () => {
+			expect(checkDangerousCommand("rm -rf /")).toBeTruthy();
+			expect(checkDangerousCommand("rm -rf ~")).toBeTruthy();
+			expect(checkDangerousCommand("rm -rf /*")).toBeTruthy();
+			expect(checkDangerousCommand("rm -rf ~/")).toBeTruthy();
+			expect(checkDangerousCommand("rm -rf ~/*")).toBeTruthy();
+			expect(checkDangerousCommand("rm -rf $HOME")).toBeTruthy();
+			expect(checkDangerousCommand("rm -rf " + "$" + "{HOME}")).toBeTruthy();
+			expect(checkDangerousCommand("sudo rm -rf /")).toBeTruthy();
+			expect(checkDangerousCommand("rm -r -f /")).toBeTruthy();
+		});
+
+		it("should allow safe commands", () => {
+			expect(checkDangerousCommand("ls -la")).toBeNull();
+			expect(checkDangerousCommand("cat /var/log/syslog")).toBeNull();
+			expect(checkDangerousCommand("grep -r 'error' /tmp")).toBeNull();
+			expect(checkDangerousCommand("git status")).toBeNull();
+			expect(checkDangerousCommand("systemctl status nginx")).toBeNull();
+			expect(checkDangerousCommand("df -h")).toBeNull();
+		});
+
+		it("should return security block message when bash tool executes dangerous command", async () => {
+			const result = await bashTool.execute("test-dangerous-call", { command: "reboot" });
+			const output = getTextOutput(result);
+			expect(output).toContain("[SECURITY GUARDRAIL BLOCKED]");
+			expect(output).toContain("System reboot/shutdown commands are blocked");
+		});
+	});
+
+	describe("wait_interval tool", () => {
+		it("should execute wait interval successfully", async () => {
+			const waitTool = createWaitIntervalTool();
+			const result = await waitTool.execute("test-wait-1", { seconds: 0.05, reason: "Testing wait" });
+			const output = getTextOutput(result);
+			expect(output).toContain("Waited for 0.05 seconds");
+			expect(output).toContain("Testing wait");
+			expect((result as { isError?: boolean }).isError).toBeUndefined();
+		});
+
+		it("should reject negative interval duration", async () => {
+			const waitTool = createWaitIntervalTool();
+			const result = await waitTool.execute("test-wait-neg", { seconds: -1 });
+			expect((result as { isError?: boolean }).isError).toBe(true);
+			const output = getTextOutput(result);
+			expect(output).toContain("Invalid interval duration");
+		});
+
+		it("should handle abort signal cleanly", async () => {
+			const waitTool = createWaitIntervalTool();
+			const controller = new AbortController();
+			controller.abort();
+			const result = await waitTool.execute("test-wait-abort", { seconds: 10 }, controller.signal);
+			expect((result as { isError?: boolean }).isError).toBe(true);
+			const output = getTextOutput(result);
+			expect(output).toContain("Wait interval aborted");
+		});
 	});
 });

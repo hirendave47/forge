@@ -335,7 +335,7 @@ export interface ShellToolConfig {
 	tempFilePrefix: string;
 }
 
-const DANGEROUS_PATTERNS = [
+export const DANGEROUS_PATTERNS = [
 	{
 		regex: /\b(reboot|poweroff|shutdown|halt)\b|\binit\s+[06]\b|\btelinit\s+[06]\b|\bsystemctl\s+(reboot|poweroff|halt)\b/i,
 		reason: "System reboot/shutdown commands are blocked for production safety.",
@@ -353,12 +353,12 @@ const DANGEROUS_PATTERNS = [
 		reason: "Flushing firewalls or bringing down network interfaces is blocked to prevent losing SSH/access.",
 	},
 	{
-		regex: /\brm\s+(-[a-zA-Z]*[rf][a-zA-Z]*\s+)?(\/|~|\$HOME|\$\{HOME\})\/?(\s|$)/i,
+		regex: /\brm\s+(?:.*?\s+)?(?:\/|\/\*|~\/?|~\/\*|\$HOME\/?|\$HOME\/\*|\$\{HOME\}\/?|\$\{HOME\}\/\*)(?:\s|$)/i,
 		reason: "Recursive deletion of root / home directory is blocked for system safety.",
 	},
 ];
 
-function checkDangerousCommand(cmd: string): string | null {
+export function checkDangerousCommand(cmd: string): string | null {
 	for (const pattern of DANGEROUS_PATTERNS) {
 		if (pattern.regex.test(cmd)) {
 			return pattern.reason;

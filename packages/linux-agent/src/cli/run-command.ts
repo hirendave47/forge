@@ -61,7 +61,7 @@ export async function handleRunCommand(args: string[]): Promise<void> {
 		return;
 	}
 
-	if (!goal) {
+	if (!goal || goal.trim().length === 0) {
 		console.error(chalk.red("Error: No goal specified."));
 		console.error(chalk.dim('Usage: forge run "<goal>" [--profile NAME] [--timeout SECONDS] [--pretty] [--debug]'));
 		process.exitCode = 3;

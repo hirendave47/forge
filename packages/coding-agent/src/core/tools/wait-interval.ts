@@ -22,23 +22,43 @@ export function createWaitIntervalToolDefinition(): ToolDefinition<typeof waitIn
 			if (signal?.aborted) {
 				return { content: [{ type: "text", text: "Wait interval aborted." }], isError: true, details: undefined };
 			}
-			const reasonStr = reason || "Waiting for next check cycle";
-			await new Promise<void>((resolve, reject) => {
-				const timeout = setTimeout(() => {
-					signal?.removeEventListener("abort", onAbort);
-					resolve();
-				}, seconds * 1000);
-				const onAbort = () => {
-					clearTimeout(timeout);
-					reject(new Error("Wait interval aborted"));
+			const parsedSeconds = Number(seconds);
+			if (!Number.isFinite(parsedSeconds) || parsedSeconds < 0) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Invalid interval duration: ${seconds}. Must be a non-negative number of seconds.`,
+						},
+					],
+					isError: true,
+					details: undefined,
 				};
-				signal?.addEventListener("abort", onAbort, { once: true });
-			});
+			}
+			const safeSeconds = Math.min(parsedSeconds, 3600);
+			const reasonStr = reason || "Waiting for next check cycle";
+
+			try {
+				await new Promise<void>((resolve, reject) => {
+					const timeout = setTimeout(() => {
+						signal?.removeEventListener("abort", onAbort);
+						resolve();
+					}, safeSeconds * 1000);
+					const onAbort = () => {
+						clearTimeout(timeout);
+						reject(new Error("Wait interval aborted"));
+					};
+					signal?.addEventListener("abort", onAbort, { once: true });
+				});
+			} catch {
+				return { content: [{ type: "text", text: "Wait interval aborted." }], isError: true, details: undefined };
+			}
+
 			return {
 				content: [
 					{
 						type: "text",
-						text: `Waited for ${seconds} seconds. Reason: ${reasonStr}. Ready for next action.`,
+						text: `Waited for ${safeSeconds} seconds. Reason: ${reasonStr}. Ready for next action.`,
 					},
 				],
 				details: undefined,
