@@ -293,6 +293,40 @@ export class TaskStore {
 		return row ? rowToTask(row) : undefined;
 	}
 
+	resolveTask(ref: string): Task | undefined {
+		if (!ref || typeof ref !== "string") return undefined;
+		const trimmed = ref.trim();
+		if (!trimmed) return undefined;
+
+		// 1. Exact match by name
+		const byName = this.getTaskByName(trimmed);
+		if (byName) return byName;
+
+		// 2. Exact match by ID
+		const byId = this.getTask(trimmed);
+		if (byId) return byId;
+
+		const all = this.listTasks();
+
+		// 3. Prefix match by ID (UUID prefix)
+		const idMatches = all.filter((t) => t.id.startsWith(trimmed));
+		if (idMatches.length > 0) return idMatches[0];
+
+		// 4. Case-insensitive exact name match
+		const caseMatch = all.find((t) => t.name.toLowerCase() === trimmed.toLowerCase());
+		if (caseMatch) return caseMatch;
+
+		// 5. Prefix match by name (e.g. truncated name or user-typed prefix)
+		const namePrefixMatches = all.filter((t) => t.name.toLowerCase().startsWith(trimmed.toLowerCase()));
+		if (namePrefixMatches.length > 0) return namePrefixMatches[0];
+
+		// 6. Substring match by name if unique
+		const nameSubMatches = all.filter((t) => t.name.toLowerCase().includes(trimmed.toLowerCase()));
+		if (nameSubMatches.length === 1) return nameSubMatches[0];
+
+		return undefined;
+	}
+
 	listTasks(): Task[] {
 		const rows = this.db.prepare("SELECT * FROM tasks ORDER BY created_at DESC").all() as unknown as TaskRow[];
 		return rows.map(rowToTask);

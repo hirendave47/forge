@@ -1,6 +1,6 @@
 {
 	"name": "@earendil-works/forge-client",
-	"version": "0.84.3",
+	"version": "1.0.0",
 	"description": "Transport-neutral client for remote forge sessions over framed CBOR bytes",
 	"type": "module",
 	"main": "./dist/index.js",

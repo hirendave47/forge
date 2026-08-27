@@ -1,6 +1,6 @@
 {
 	"name": "@earendil-works/forge-linux-agent",
-	"version": "0.84.3",
+	"version": "1.0.0",
 	"description": "Forge Linux Agent Runtime — Task scheduler, execution pipeline, and autonomous operations",
 	"type": "module",
 	"main": "./dist/index.js",

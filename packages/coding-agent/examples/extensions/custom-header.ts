@@ -56,7 +56,7 @@ export default function (pi: ExtensionAPI) {
 						const subtitle = `${theme.fg("muted", "   shitty coding agent")}${theme.fg("dim", ` v${VERSION}`)}`;
 						return [...mascotLines, subtitle];
 					},
-					invalidate() { },
+					invalidate() {},
 				};
 			});
 		}

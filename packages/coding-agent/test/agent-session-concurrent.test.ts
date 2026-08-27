@@ -146,7 +146,7 @@ describe("AgentSession concurrent prompt guard", () => {
 
 		// Cleanup
 		await session.abort();
-		await firstPrompt.catch(() => { }); // Ignore abort error
+		await firstPrompt.catch(() => {}); // Ignore abort error
 	});
 
 	it("should allow steer() while streaming", async () => {
@@ -162,7 +162,7 @@ describe("AgentSession concurrent prompt guard", () => {
 
 		// Cleanup
 		await session.abort();
-		await firstPrompt.catch(() => { });
+		await firstPrompt.catch(() => {});
 	});
 
 	it("should allow followUp() while streaming", async () => {
@@ -178,7 +178,7 @@ describe("AgentSession concurrent prompt guard", () => {
 
 		// Cleanup
 		await session.abort();
-		await firstPrompt.catch(() => { });
+		await firstPrompt.catch(() => {});
 	});
 
 	it("should queue extension-origin steering messages while streaming", async () => {
@@ -268,7 +268,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		await new Promise((resolve) => setTimeout(resolve, 10));
 		expect(session.isStreaming).toBe(true);
 
-		const forge = (
+		const pi = (
 			globalThis as typeof globalThis & {
 				testExtensionApi?: {
 					sendUserMessage: (content: string, options?: { deliverAs?: "steer" | "followUp" }) => void;
@@ -286,7 +286,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		expect(queueEvents.some((event) => event.steering.includes("Steer from extension"))).toBe(true);
 
 		await session.abort();
-		await firstPrompt.catch(() => { });
+		await firstPrompt.catch(() => {});
 
 		expect(sawSteeringMessage).toBe(true);
 	});
@@ -457,7 +457,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		};
 		sessionWithRunner._extensionRunner = {
 			hasHandlers: (eventType) => eventType === "tool_call",
-			emit: async () => { },
+			emit: async () => {},
 			emitMessageEnd: async () => undefined,
 			emitToolCall: async () => {
 				snapshots.push(
@@ -470,7 +470,7 @@ describe("AgentSession concurrent prompt guard", () => {
 			},
 			emitInput: async () => ({ action: "continue" }),
 			emitBeforeAgentStart: async () => undefined,
-			invalidate: () => { },
+			invalidate: () => {},
 		};
 
 		await session.prompt("hi");
@@ -602,7 +602,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		};
 		sessionWithRunner._extensionRunner = {
 			hasHandlers: () => false,
-			emit: async () => { },
+			emit: async () => {},
 			emitMessageEnd: async (event) => {
 				if (event.type === "message_end" && event.message?.role === "assistant") {
 					await new Promise((resolve) => setTimeout(resolve, 40));
@@ -611,7 +611,7 @@ describe("AgentSession concurrent prompt guard", () => {
 			},
 			emitInput: async () => ({ action: "continue" }),
 			emitBeforeAgentStart: async () => undefined,
-			invalidate: () => { },
+			invalidate: () => {},
 		};
 
 		await session.prompt("hi");

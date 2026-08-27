@@ -1,6 +1,6 @@
 {
 	"name": "@earendil-works/forge-telemetry",
-	"version": "0.84.3",
+	"version": "1.0.0",
 	"description": "Vendor-neutral telemetry contracts and typed schema utilities for forge",
 	"type": "module",
 	"main": "./dist/index.js",

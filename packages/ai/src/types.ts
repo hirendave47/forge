@@ -89,9 +89,9 @@ export type ChatTemplateKwargValue =
 	| boolean
 	| null
 	| {
-		$var: "thinking.enabled" | "thinking.effort" | "thinking.budget";
-		omitWhenOff?: boolean;
-	};
+			$var: "thinking.enabled" | "thinking.effort" | "thinking.budget";
+			omitWhenOff?: boolean;
+	  };
 
 /** Top-level request field used to cap reasoning tokens on OpenAI-compatible servers. */
 export type ThinkingTokenBudgetField = "thinking_token_budget" | "thinking_budget" | "thinking_budget_tokens";
@@ -503,13 +503,13 @@ export type GrammarVariants = Partial<Record<GrammarFormat, string>>;
  */
 export type ConstrainedSamplingConfig =
 	| {
-		type: "json_schema";
-		strict: "prefer" | "require";
-	}
+			type: "json_schema";
+			strict: "prefer" | "require";
+	  }
 	| {
-		type: "grammar";
-		variants: GrammarVariants;
-	};
+			type: "grammar";
+			variants: GrammarVariants;
+	  };
 
 export interface Tool<TParameters extends TSchema = TSchema> {
 	name: string;
@@ -544,10 +544,10 @@ export type AssistantMessageEvent =
 	| { type: "toolcall_delta"; contentIndex: number; delta: string; partial: AssistantMessage }
 	| { type: "toolcall_end"; contentIndex: number; toolCall: ToolCall; partial: AssistantMessage }
 	| {
-		type: "done";
-		reason: Extract<StopReason, "stop" | "length" | "toolUse" | "deferred">;
-		message: AssistantMessage;
-	}
+			type: "done";
+			reason: Extract<StopReason, "stop" | "length" | "toolUse" | "deferred">;
+			message: AssistantMessage;
+	  }
 	| { type: "error"; reason: Extract<StopReason, "aborted" | "error">; error: AssistantMessage };
 
 /**
@@ -577,17 +577,17 @@ export interface OpenAICompletionsCompat {
 	requiresReasoningContentOnAssistantMessages?: boolean;
 	/** Format for reasoning/thinking parameter. "openai" uses reasoning_effort, "openrouter" uses reasoning: { effort }, "deepseek" uses thinking: { type } plus reasoning_effort when supported, "together" uses reasoning: { enabled } plus reasoning_effort when supported, "baseten" uses configurable chat_template_args plus reasoning_effort when supported, "zai" uses thinking: { type }, "qwen" uses top-level enable_thinking: boolean, "qwen-chat-template" uses chat_template_kwargs.enable_thinking and preserve_thinking, "chat-template" uses configurable chat_template_kwargs, "string-thinking" uses top-level thinking: string, and "ant-ling" uses reasoning: { effort } only when the mapped effort is non-null. Default: "openai". */
 	thinkingFormat?:
-	| "openai"
-	| "openrouter"
-	| "deepseek"
-	| "together"
-	| "baseten"
-	| "zai"
-	| "qwen"
-	| "chat-template"
-	| "qwen-chat-template"
-	| "string-thinking"
-	| "ant-ling";
+		| "openai"
+		| "openrouter"
+		| "deepseek"
+		| "together"
+		| "baseten"
+		| "zai"
+		| "qwen"
+		| "chat-template"
+		| "qwen-chat-template"
+		| "string-thinking"
+		| "ant-ling";
 	/** Kwargs to send as `chat_template_kwargs` when `thinkingFormat` is `chat-template`. Use `{ "$var": "thinking.enabled" }`, `{ "$var": "thinking.effort" }`, or `{ "$var": "thinking.budget" }` for pi-controlled thinking values. */
 	chatTemplateKwargs?: Record<string, ChatTemplateKwargValue>;
 	/** Arguments to send as `chat_template_args` when `thinkingFormat` is `baseten`. Use `{ "$var": "thinking.enabled" }`, `{ "$var": "thinking.effort" }`, or `{ "$var": "thinking.budget" }` for pi-controlled thinking values. */
@@ -740,13 +740,13 @@ export interface OpenRouterRouting {
 	quantizations?: string[];
 	/** Sorting strategy. Can be a string (e.g., "price", "throughput", "latency") or an object with `by` and `partition`. */
 	sort?:
-	| string
-	| {
-		/** The sorting metric: "price", "throughput", "latency". */
-		by?: string;
-		/** Partitioning strategy: "model" (default) or "none". */
-		partition?: string | null;
-	};
+		| string
+		| {
+				/** The sorting metric: "price", "throughput", "latency". */
+				by?: string;
+				/** Partitioning strategy: "model" (default) or "none". */
+				partition?: string | null;
+		  };
 	/** Maximum price per million tokens (USD). */
 	max_price?: {
 		/** Price per million prompt tokens. */
@@ -762,30 +762,30 @@ export interface OpenRouterRouting {
 	};
 	/** Preferred minimum throughput (tokens/second). Can be a number (applies to p50) or an object with percentile-specific cutoffs. */
 	preferred_min_throughput?:
-	| number
-	| {
-		/** Minimum tokens/second at the 50th percentile. */
-		p50?: number;
-		/** Minimum tokens/second at the 75th percentile. */
-		p75?: number;
-		/** Minimum tokens/second at the 90th percentile. */
-		p90?: number;
-		/** Minimum tokens/second at the 99th percentile. */
-		p99?: number;
-	};
+		| number
+		| {
+				/** Minimum tokens/second at the 50th percentile. */
+				p50?: number;
+				/** Minimum tokens/second at the 75th percentile. */
+				p75?: number;
+				/** Minimum tokens/second at the 90th percentile. */
+				p90?: number;
+				/** Minimum tokens/second at the 99th percentile. */
+				p99?: number;
+		  };
 	/** Preferred maximum latency (seconds). Can be a number (applies to p50) or an object with percentile-specific cutoffs. */
 	preferred_max_latency?:
-	| number
-	| {
-		/** Maximum latency in seconds at the 50th percentile. */
-		p50?: number;
-		/** Maximum latency in seconds at the 75th percentile. */
-		p75?: number;
-		/** Maximum latency in seconds at the 90th percentile. */
-		p90?: number;
-		/** Maximum latency in seconds at the 99th percentile. */
-		p99?: number;
-	};
+		| number
+		| {
+				/** Maximum latency in seconds at the 50th percentile. */
+				p50?: number;
+				/** Maximum latency in seconds at the 75th percentile. */
+				p75?: number;
+				/** Maximum latency in seconds at the 90th percentile. */
+				p90?: number;
+				/** Maximum latency in seconds at the 99th percentile. */
+				p99?: number;
+		  };
 }
 
 /**
@@ -839,14 +839,14 @@ export interface Model<TApi extends Api> {
 	headers?: Record<string, string>;
 	/** Compatibility overrides for OpenAI-compatible APIs. If not set, auto-detected from baseUrl. */
 	compat?: TApi extends "openai-completions"
-	? OpenAICompletionsCompat
-	: TApi extends "openai-responses" | "azure-openai-responses" | "openai-codex-responses"
-	? OpenAIResponsesCompat
-	: TApi extends "anthropic-messages"
-	? AnthropicMessagesCompat
-	: TApi extends "bedrock-converse-stream"
-	? BedrockCompat
-	: never;
+		? OpenAICompletionsCompat
+		: TApi extends "openai-responses" | "azure-openai-responses" | "openai-codex-responses"
+			? OpenAIResponsesCompat
+			: TApi extends "anthropic-messages"
+				? AnthropicMessagesCompat
+				: TApi extends "bedrock-converse-stream"
+					? BedrockCompat
+					: never;
 }
 
 export interface ImagesModel<TApi extends ImagesApi>

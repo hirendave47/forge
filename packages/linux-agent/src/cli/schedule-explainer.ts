@@ -160,7 +160,7 @@ ${chalk.bold("Examples:")}
 		// Try resolving as task from SQLite store
 		const store = new TaskStore(getDefaultTaskDbPath());
 		try {
-			const task = store.getTaskByName(rawInput) ?? store.getTask(rawInput);
+			const task = store.resolveTask(rawInput);
 			if (task) {
 				if (!task.schedule) {
 					console.log(chalk.yellow(`Task "${task.name}" is configured for manual execution only.`));

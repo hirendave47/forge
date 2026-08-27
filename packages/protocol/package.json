@@ -1,6 +1,6 @@
 {
 	"name": "@earendil-works/forge-protocol",
-	"version": "0.84.3",
+	"version": "1.0.0",
 	"description": "Transport-neutral CBOR protocol for remote forge sessions",
 	"type": "module",
 	"main": "./dist/index.js",

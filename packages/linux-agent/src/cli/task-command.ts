@@ -620,12 +620,15 @@ function handleList(): void {
 			return;
 		}
 
+		const nameColWidth = Math.max(24, ...tasks.map((t) => t.name.length));
+		const schedColWidth = Math.max(14, ...tasks.map((t) => (t.schedule ? formatSchedule(t.schedule).length : 6)));
+
 		// Print table header
 		const header = [
 			padRight("ID", 10),
-			padRight("NAME", 24),
+			padRight("NAME", nameColWidth),
 			padRight("STATUS", 10),
-			padRight("SCHEDULE", 14),
+			padRight("SCHEDULE", schedColWidth),
 			padRight("LAST RUN", 20),
 		].join("  ");
 		console.log(chalk.bold(header));
@@ -635,9 +638,9 @@ function handleList(): void {
 			const statusColor = task.enabled ? chalk.green : chalk.yellow;
 			const row = [
 				padRight(task.id.slice(0, 8), 10),
-				padRight(task.name.slice(0, 24), 24),
+				padRight(task.name, nameColWidth),
 				statusColor(padRight(task.enabled ? "enabled" : "disabled", 10)),
-				padRight(task.schedule ? formatSchedule(task.schedule) : "manual", 14),
+				padRight(task.schedule ? formatSchedule(task.schedule) : "manual", schedColWidth),
 				padRight(task.lastRunAt ? formatTimeAgo(task.lastRunAt) : "never", 20),
 			].join("  ");
 			console.log(row);
@@ -1081,17 +1084,7 @@ async function handleService(args: string[]): Promise<void> {
 // ================================================================
 
 function resolveTask(store: TaskStore, ref: string): ReturnType<TaskStore["getTask"]> {
-	// Try by name first, then by full ID, then by partial ID prefix
-	const byName = store.getTaskByName(ref);
-	if (byName) return byName;
-
-	const byId = store.getTask(ref);
-	if (byId) return byId;
-
-	// Try partial UUID match
-	const all = store.listTasks();
-	const match = all.find((t) => t.id.startsWith(ref));
-	return match;
+	return store.resolveTask(ref);
 }
 
 function generateTaskName(goal: string): string {
@@ -1129,7 +1122,7 @@ function formatTimeAgo(isoDate: string): string {
 }
 
 function padRight(str: string, len: number): string {
-	if (str.length >= len) return str.slice(0, len);
+	if (str.length >= len) return str;
 	return str + " ".repeat(len - str.length);
 }
 

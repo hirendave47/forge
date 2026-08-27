@@ -175,7 +175,7 @@ export default function (pi: ExtensionAPI) {
 			done(result.status);
 
 			// Return empty component (immediately disposed since done() was called)
-			return { render: () => [], invalidate: () => { } };
+			return { render: () => [], invalidate: () => {} };
 		});
 
 		// Return result to prevent default bash handling

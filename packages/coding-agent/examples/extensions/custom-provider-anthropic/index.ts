@@ -231,9 +231,9 @@ function convertMessages(messages: Message[], isOAuth: boolean, _tools?: Tool[])
 					item.type === "text"
 						? { type: "text" as const, text: sanitizeSurrogates(item.text) }
 						: {
-							type: "image" as const,
-							source: { type: "base64" as const, media_type: item.mimeType as any, data: item.data },
-						},
+								type: "image" as const,
+								source: { type: "base64" as const, media_type: item.mimeType as any, data: item.data },
+							},
 				);
 				if (blocks.length > 0) {
 					params.push({ role: "user", content: blocks });
@@ -503,7 +503,7 @@ function streamCustomAnthropic(
 						(block as any).partialJson += event.delta.partial_json;
 						try {
 							block.arguments = JSON.parse((block as any).partialJson);
-						} catch { }
+						} catch {}
 						stream.push({
 							type: "toolcall_delta",
 							contentIndex: index,
@@ -526,7 +526,7 @@ function streamCustomAnthropic(
 					} else if (block.type === "toolCall") {
 						try {
 							block.arguments = JSON.parse((block as any).partialJson);
-						} catch { }
+						} catch {}
 						delete (block as any).partialJson;
 						stream.push({ type: "toolcall_end", contentIndex: index, toolCall: block, partial: output });
 					}

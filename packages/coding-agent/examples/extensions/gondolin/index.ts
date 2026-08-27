@@ -334,9 +334,9 @@ function createGondolinBashOps(vm: VM, localCwd: string, shellPath: string): Bas
 			const timer =
 				timeout && timeout > 0
 					? setTimeout(() => {
-						timedOut = true;
-						controller.abort();
-					}, timeout * 1000)
+							timedOut = true;
+							controller.abort();
+						}, timeout * 1000)
 					: undefined;
 
 			try {

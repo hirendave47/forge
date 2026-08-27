@@ -1,6 +1,6 @@
 {
 	"name": "@earendil-works/forge-session-backend-sqlite-node",
-	"version": "0.84.3",
+	"version": "1.0.0",
 	"description": "Node sqlite session backend for @earendil-works/forge-agent-core sessions",
 	"type": "module",
 	"main": "./dist/index.js",

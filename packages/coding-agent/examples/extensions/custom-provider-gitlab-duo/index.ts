@@ -327,21 +327,21 @@ export function streamGitLabDuo(
 			const innerStream =
 				cfg.backend === "anthropic"
 					? anthropicMessagesApi().streamSimple(
-						{
-							...(modelWithBaseUrl as Model<"anthropic-messages">),
-							compat: {
-								...(modelWithBaseUrl as Model<"anthropic-messages">).compat,
-								forceAdaptiveThinking: true,
+							{
+								...(modelWithBaseUrl as Model<"anthropic-messages">),
+								compat: {
+									...(modelWithBaseUrl as Model<"anthropic-messages">).compat,
+									forceAdaptiveThinking: true,
+								},
 							},
-						},
-						context,
-						streamOptions,
-					)
+							context,
+							streamOptions,
+						)
 					: openAIResponsesApi().streamSimple(
-						modelWithBaseUrl as Model<"openai-responses">,
-						context,
-						streamOptions,
-					);
+							modelWithBaseUrl as Model<"openai-responses">,
+							context,
+							streamOptions,
+						);
 
 			for await (const event of innerStream) stream.push(event);
 			stream.end();

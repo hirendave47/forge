@@ -48,7 +48,7 @@ async function findConflicts(pi: ExtensionAPI, cwd: string): Promise<ConflictBlo
 					separatorLine = undefined;
 				}
 			}
-		} catch { }
+		} catch {}
 	}
 	return blocks;
 }

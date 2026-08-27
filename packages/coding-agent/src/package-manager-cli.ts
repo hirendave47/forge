@@ -760,11 +760,11 @@ async function createCommandSettingsManager(options: {
 	const extensionsResult =
 		options.projectTrustOverride === undefined && hasTrustRequiringProjectResources(options.cwd)
 			? await new DefaultResourceLoader({
-				cwd: options.cwd,
-				agentDir: options.agentDir,
-				settingsManager,
-				extensionFactories: options.extensionFactories,
-			}).loadProjectTrustExtensions()
+					cwd: options.cwd,
+					agentDir: options.agentDir,
+					settingsManager,
+					extensionFactories: options.extensionFactories,
+				}).loadProjectTrustExtensions()
 			: undefined;
 	for (const error of extensionsResult?.errors ?? []) {
 		projectTrustWarnings.push(`Failed to load extension "${error.path}": ${error.error}`);

@@ -1,6 +1,6 @@
 {
 	"name": "@earendil-works/forge-coding-agent",
-	"version": "0.84.3",
+	"version": "1.0.0",
 	"description": "Forge — Autonomous AI Agent Framework for Linux",
 	"type": "module",
 	"forgeConfig": {

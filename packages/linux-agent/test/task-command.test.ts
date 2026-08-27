@@ -219,4 +219,55 @@ describe("forge task create CLI Handler", () => {
 		await handleTaskCommand(["create", "--name", "no-goal"]);
 		expect(process.exitCode).toBe(3);
 	});
+
+	it("should support status, cancel, pause, resume, show with long task names and truncated prefixes", async () => {
+		await handleTaskCommand([
+			"create",
+			"--name",
+			"qforge-dr-user-login-monitoring",
+			"--every",
+			"30s",
+			"Monitor user logins",
+		]);
+		expect(process.exitCode).toBe(0);
+
+		// Show with truncated name prefix
+		await handleTaskCommand(["show", "qforge-dr-user-login-mon"]);
+		expect(process.exitCode).toBe(0);
+
+		// Status with truncated name prefix
+		await handleTaskCommand(["status", "qforge-dr-user-login-mon"]);
+		expect(process.exitCode).toBe(0);
+
+		// Pause with truncated name prefix
+		await handleTaskCommand(["pause", "qforge-dr-user-login-mon"]);
+		expect(process.exitCode).toBe(0);
+
+		let store = new TaskStore(TEST_DB);
+		let task = store.getTaskByName("qforge-dr-user-login-monitoring");
+		expect(task?.enabled).toBe(false);
+		store.close();
+
+		// Resume with truncated name prefix
+		await handleTaskCommand(["resume", "qforge-dr-user-login-mon"]);
+		expect(process.exitCode).toBe(0);
+
+		store = new TaskStore(TEST_DB);
+		task = store.getTaskByName("qforge-dr-user-login-monitoring");
+		expect(task?.enabled).toBe(true);
+		store.close();
+
+		// Cancel with truncated name prefix
+		await handleTaskCommand(["cancel", "qforge-dr-user-login-mon"]);
+		expect(process.exitCode).toBe(0);
+
+		store = new TaskStore(TEST_DB);
+		task = store.getTaskByName("qforge-dr-user-login-monitoring");
+		expect(task?.enabled).toBe(false);
+		store.close();
+
+		// List without throwing
+		await handleTaskCommand(["list"]);
+		expect(process.exitCode).toBe(0);
+	});
 });

@@ -68,6 +68,28 @@ describe("TaskStore", () => {
 		it("should return undefined for non-existent task", () => {
 			expect(store.getTask("non-existent")).toBeUndefined();
 			expect(store.getTaskByName("non-existent")).toBeUndefined();
+			expect(store.resolveTask("non-existent")).toBeUndefined();
+			expect(store.resolveTask("")).toBeUndefined();
+		});
+
+		it("should resolve task flexibly by exact name, full ID, UUID prefix, case-insensitive, and name prefix", () => {
+			const task = store.createTask({
+				name: "qforge-dr-user-login-monitoring",
+				goal: "Monitor user logins",
+			});
+
+			// Exact name
+			expect(store.resolveTask("qforge-dr-user-login-monitoring")?.id).toBe(task.id);
+			// Full ID
+			expect(store.resolveTask(task.id)?.id).toBe(task.id);
+			// UUID prefix (8 chars)
+			expect(store.resolveTask(task.id.slice(0, 8))?.id).toBe(task.id);
+			// Case-insensitive
+			expect(store.resolveTask("QFORGE-DR-USER-LOGIN-MONITORING")?.id).toBe(task.id);
+			// Truncated / name prefix (like when copied from 24-char table)
+			expect(store.resolveTask("qforge-dr-user-login-mon")?.id).toBe(task.id);
+			// Unique substring
+			expect(store.resolveTask("user-login")?.id).toBe(task.id);
 		});
 
 		it("should list all tasks", () => {

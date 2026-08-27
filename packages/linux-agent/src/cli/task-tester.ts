@@ -31,7 +31,7 @@ export async function testTask(target: string, options: TaskTesterOptions = {}):
 	// Check if target matches existing task in store
 	const store = new TaskStore(dbPath);
 	try {
-		const existing = store.getTaskByName(target) ?? store.getTask(target);
+		const existing = store.resolveTask(target);
 		if (existing) {
 			goal = existing.goal;
 			profile = existing.profile;

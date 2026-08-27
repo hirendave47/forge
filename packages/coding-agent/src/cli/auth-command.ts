@@ -13,7 +13,7 @@ export interface AuthCommand {
 	minExpiryMs?: number;
 }
 
-export class AuthCommandError extends Error { }
+export class AuthCommandError extends Error {}
 
 const AUTH_COMMAND_USAGE: Record<AuthCommandKind, string> = {
 	check: `${APP_NAME} auth check --provider <provider> [--json] [--credentials] [--no-refresh]`,

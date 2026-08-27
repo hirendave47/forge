@@ -181,8 +181,8 @@ function createMinimalResourceLoader(systemPrompt: string): ResourceLoader {
 		getSystemPromptSource: () => undefined,
 		getAppendSystemPrompt: () => [],
 		getAppendSystemPromptSources: () => [],
-		extendResources: () => { },
-		reload: async () => { },
+		extendResources: () => {},
+		reload: async () => {},
 	};
 }
 
@@ -322,7 +322,7 @@ async function main(): Promise<void> {
 	});
 
 	session.setActiveToolsByName(["deterministic_probe"]);
-	const unsubscribe = session.subscribe(() => { });
+	const unsubscribe = session.subscribe(() => {});
 
 	const records: SubrequestRecord[] = [];
 	const turnElapsedMs: number[] = [];

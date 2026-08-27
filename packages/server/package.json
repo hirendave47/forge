@@ -1,6 +1,6 @@
 {
 	"name": "@earendil-works/forge-server",
-	"version": "0.84.3",
+	"version": "1.0.0",
 	"description": "experimental server package for forge",
 	"type": "module",
 	"main": "./dist/index.js",

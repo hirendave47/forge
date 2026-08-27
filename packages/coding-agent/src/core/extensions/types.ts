@@ -1308,15 +1308,15 @@ export interface ExtensionAPI {
 		name: string,
 		options:
 			| {
-				description?: string;
-				type: "boolean";
-				default?: boolean;
-			}
+					description?: string;
+					type: "boolean";
+					default?: boolean;
+			  }
 			| {
-				description?: string;
-				type: "string";
-				default?: string;
-			},
+					description?: string;
+					type: "string";
+					default?: string;
+			  },
 	): void;
 
 	/** Get the value of a registered CLI flag. */
@@ -1562,12 +1562,12 @@ export type ExtensionFactory = (pi: ExtensionAPI) => void | Promise<void>;
 export type InlineExtension =
 	| ExtensionFactory
 	| {
-		/** Display name shown as `<inline:name>` in the startup Extensions list. */
-		name: string;
-		factory: ExtensionFactory;
-		/** Omit this extension from the startup Extensions list. */
-		hidden?: boolean;
-	};
+			/** Display name shown as `<inline:name>` in the startup Extensions list. */
+			name: string;
+			factory: ExtensionFactory;
+			/** Omit this extension from the startup Extensions list. */
+			hidden?: boolean;
+	  };
 
 // ============================================================================
 // Loaded Extension Types
@@ -1731,7 +1731,7 @@ export interface ExtensionCommandContextActions {
  * Full runtime = state + actions.
  * Created by loader with throwing action stubs, completed by runner.initialize().
  */
-export interface ExtensionRuntime extends ExtensionRuntimeState, ExtensionActions { }
+export interface ExtensionRuntime extends ExtensionRuntimeState, ExtensionActions {}
 
 /** Loaded extension with all registered items. */
 export interface Extension {

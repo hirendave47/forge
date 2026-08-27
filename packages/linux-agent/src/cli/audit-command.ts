@@ -392,12 +392,7 @@ function buildRunAuditMarkdown(store: TaskStore, run: TaskRun): string {
 }
 
 function resolveTask(store: TaskStore, ref: string): ReturnType<TaskStore["getTask"]> {
-	const byName = store.getTaskByName(ref);
-	if (byName) return byName;
-	const byId = store.getTask(ref);
-	if (byId) return byId;
-	const all = store.listTasks();
-	return all.find((t) => t.id.startsWith(ref));
+	return store.resolveTask(ref);
 }
 
 function getStatusColor(status: string): (text: string) => string {
@@ -419,7 +414,7 @@ function getStatusColor(status: string): (text: string) => string {
 }
 
 function padRight(str: string, len: number): string {
-	if (str.length >= len) return str.slice(0, len);
+	if (str.length >= len) return str;
 	return str + " ".repeat(len - str.length);
 }
 
