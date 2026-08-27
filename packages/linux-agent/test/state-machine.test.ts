@@ -60,8 +60,20 @@ describe("State Machine", () => {
 			expect(isValidTransition("RETRY_WAIT", "DUE")).toBe(true);
 		});
 
-		it("should reject CREATED → RUNNING (must go through ENABLED → DUE → ACQUIRING)", () => {
-			expect(isValidTransition("CREATED", "RUNNING")).toBe(false);
+		it("should allow CREATED → ACQUIRING", () => {
+			expect(isValidTransition("CREATED", "ACQUIRING")).toBe(true);
+		});
+
+		it("should allow CREATED → SKIPPED", () => {
+			expect(isValidTransition("CREATED", "SKIPPED")).toBe(true);
+		});
+
+		it("should allow CREATED → RUNNING", () => {
+			expect(isValidTransition("CREATED", "RUNNING")).toBe(true);
+		});
+
+		it("should reject CREATED → SUCCEEDED (must go through execution states)", () => {
+			expect(isValidTransition("CREATED", "SUCCEEDED")).toBe(false);
 		});
 
 		it("should reject CANCELLED → anything (terminal state)", () => {
@@ -82,19 +94,20 @@ describe("State Machine", () => {
 	describe("assertValidTransition", () => {
 		it("should not throw for valid transition", () => {
 			expect(() => assertValidTransition("ENABLED", "DUE")).not.toThrow();
+			expect(() => assertValidTransition("CREATED", "ACQUIRING")).not.toThrow();
 		});
 
 		it("should throw InvalidStateTransitionError for invalid transition", () => {
-			expect(() => assertValidTransition("CREATED", "RUNNING")).toThrow(InvalidStateTransitionError);
+			expect(() => assertValidTransition("CREATED", "SUCCEEDED")).toThrow(InvalidStateTransitionError);
 		});
 
 		it("should include from and to in error", () => {
 			try {
-				assertValidTransition("CREATED", "RUNNING");
+				assertValidTransition("CREATED", "SUCCEEDED");
 			} catch (e) {
 				const err = e as InvalidStateTransitionError;
 				expect(err.from).toBe("CREATED");
-				expect(err.to).toBe("RUNNING");
+				expect(err.to).toBe("SUCCEEDED");
 			}
 		});
 	});
@@ -104,8 +117,11 @@ describe("State Machine", () => {
 			const next = getValidNextStates("CREATED");
 			expect(next).toContain("ENABLED");
 			expect(next).toContain("DISABLED");
+			expect(next).toContain("ACQUIRING");
+			expect(next).toContain("RUNNING");
+			expect(next).toContain("SKIPPED");
 			expect(next).toContain("CANCELLED");
-			expect(next).not.toContain("RUNNING");
+			expect(next).not.toContain("SUCCEEDED");
 		});
 
 		it("should return empty for CANCELLED", () => {

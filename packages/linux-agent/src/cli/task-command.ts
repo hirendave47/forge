@@ -1055,11 +1055,22 @@ async function handleService(args: string[]): Promise<void> {
 	} else if (action === "stop") {
 		stopDaemonService();
 		console.log(chalk.yellow("✓ Stopped forge-taskd daemon and service."));
+	} else if (action === "restart") {
+		stopDaemonService();
+		const res = startDaemonService();
+		if (res.started) {
+			console.log(
+				chalk.green(`✓ Restarted forge-taskd (${res.mode === "systemd" ? "systemd service" : `PID ${res.pid}`}).`),
+			);
+		} else {
+			console.error(chalk.red(`Failed to restart daemon: ${res.error}`));
+			process.exitCode = 1;
+		}
 	} else if (action === "status") {
 		const status = getServiceStatus();
 		console.log(status);
 	} else {
-		console.error(chalk.red(`Unknown service action: ${action}. Use: install, uninstall, start, stop, status`));
+		console.error(chalk.red(`Unknown service action: ${action}. Use: install, uninstall, start, stop, restart, status`));
 	}
 }
 
