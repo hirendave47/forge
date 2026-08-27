@@ -10,15 +10,17 @@ Forge is a lightweight, ultra-fast, and modular general-purpose autonomous AI Ag
 2. [Installation & Quick Start](#2-installation--quick-start)
 3. [One-Shot Tasks (`forge run`)](#3-one-shot-tasks-forge-run)
 4. [Persistent Scheduled Tasks (`forge task`)](#4-persistent-scheduled-tasks-forge-task)
-5. [Task YAML Configuration Specification](#5-task-yaml-configuration-specification)
-6. [Agent Profiles & Personas](#6-agent-profiles--personas)
-7. [Deterministic Processors & Checkpoints](#7-deterministic-processors--checkpoints)
-8. [Policy Engine & Production Guardrails](#8-policy-engine--production-guardrails)
-9. [Automated Verification Engine](#9-automated-verification-engine)
-10. [Model Context Protocol (MCP) Integration](#10-model-context-protocol-mcp-integration)
-11. [systemd Background Daemon (`forge-taskd`)](#11-systemd-background-daemon-forge-taskd)
-12. [Notifications (Email & Webhook)](#12-notifications-email--webhook)
-13. [Operational Skills Reference](#13-operational-skills-reference)
+5. [Step-by-Step How-To Guides & Recipes](#5-step-by-step-how-to-guides--recipes)
+6. [Task YAML Configuration Specification](#6-task-yaml-configuration-specification)
+7. [Agent Profiles & Personas](#7-agent-profiles--personas)
+8. [Deterministic Processors & Checkpoints](#8-deterministic-processors--checkpoints)
+9. [Policy Engine & Production Guardrails](#9-policy-engine--production-guardrails)
+10. [Automated Verification Engine](#10-automated-verification-engine)
+11. [Model Context Protocol (MCP) Integration](#11-model-context-protocol-mcp-integration)
+12. [systemd Background Daemon (`forge-taskd`)](#12-systemd-background-daemon-forge-taskd)
+13. [Notifications (Email & Webhook)](#13-notifications-email--webhook)
+14. [Model Providers & Custom OpenAI Endpoints](#14-model-providers--custom-openai-compatible-endpoints)
+15. [Operational Skills Reference](#15-operational-skills-reference)
 
 ---
 
@@ -358,7 +360,291 @@ Tasks can be referenced by **name**, **full UUID**, or **UUID prefix** (e.g. `ng
 
 ---
 
-## 5. Task YAML Configuration Specification
+## 5. Step-by-Step How-To Guides & Practical Recipes
+
+This section provides end-to-end operational recipes and practical workflows for managing autonomous tasks with Forge CLI.
+
+---
+
+### How-To 1: Interactive Wizard with Host Auto-Discovery & Dynamic AI Questions
+
+The interactive wizard is the recommended way to create tasks when you want Forge to inspect your system environment and guide you through operational edge cases:
+
+```bash
+# Launch interactive wizard with smart refinement
+forge task wizard --smart
+```
+
+#### Walkthrough Transcript:
+```text
+┌────────────────────────────────────────────────────────┐
+│             FORGE TASK CREATION WIZARD                 │
+│       Configure autonomous Linux background tasks      │
+└────────────────────────────────────────────────────────┘
+
+? What is the operational goal for this task? (or type 'template' for presets): Supervise postgres database health and disk storage
+  [Host Context] OS: Ubuntu | Services: postgresql, containerd, cron | Disk /: 82%
+
+  Operational Clarifications:
+? What is the database name or connection port? [5432]: 5432
+? What disk usage percentage should trigger table vacuuming or log pruning? [85]: 80
+? Should the agent send email alerts on connection failure? (Y/n): Y
+? Task Name (unique identifier) [supervise-postgres-database]: postgres-watchdog
+
+? Select an Agent Persona / Profile:
+  1) sysadmin — Linux administration, service status
+  2) sre (default) — Observability, error deduplication, resource saturation (Recommended)
+  3) devops — Infrastructure automation, containers, CI/CD
+  4) security — Security auditing, file permissions, open ports
+  5) software-engineer — Code fixes, unit tests, regression detection
+  6) default — General-purpose agent without specialized profile
+  Select [1-6] [2]: 2
+
+? How should this task be scheduled?
+  1) Interval (default) — Repeat every N seconds, minutes, or hours (e.g. 30s, 5m, 1h)
+  2) Cron Expression — Standard 5-part UTC cron (e.g. */15 * * * *)
+  3) One-Time (Once) — Run once at a scheduled ISO datetime
+  4) Manual Only — No automatic schedule, triggered on-demand via CLI
+  Select [1-4] [1]: 1
+? Repeat interval (e.g. 30s, 5m, 1h) [5m]: 5m
+  → Next execution in: 5m (2:25:00 PM)
+
+? Select safety policy mode:
+  1) autonomous (default) — Execute all operations independently within safety guardrails
+  2) supervised — Require human confirmation for state-changing commands
+  3) safe — Strictly read-only diagnostics (no filesystem/service modifications)
+  Select [1-3] [1]: 1
+
+? Configure advanced settings (retries, timeouts, tool restrictions, notifications)? (y/N): n
+
+┌────────────────────────────────────────────────────────┐
+│                   TASK CONFIGURATION                   │
+└────────────────────────────────────────────────────────┘
+  Name:        postgres-watchdog
+  Goal:        Supervise postgres database health and disk storage
+               - Target Port: 5432
+               - Disk Threshold: 80%
+               - Alert On Failure: true
+  Profile:     sre
+  Schedule:    every 5m
+  Policy Mode: autonomous
+  Timeout:     120s
+
+? What would you like to do with this task?
+  1) Save and Enable in Task Store (default)
+  2) Export as YAML Configuration File
+  3) Cancel and Exit
+  Select [1-3] [1]: 1
+
+✓ Task "postgres-watchdog" created and enabled (ID: a1b2c3d4-e5f6-7890)
+```
+
+---
+
+### How-To 2: High-Frequency Nginx Log Watchdog with Error Deduplication
+
+Monitor Nginx error logs every 30 seconds, automatically deduplicating repeated error lines and capturing 5 lines of surrounding context when error bursts occur.
+
+#### Command:
+```bash
+forge task create \
+  --name nginx-watchdog \
+  --profile sysadmin \
+  --every 30s \
+  --timeout 60 \
+  --policy autonomous \
+  --tools read,grep,wait_interval,send_notification \
+  --notify-email "sre-alerts@example.com" \
+  "Inspect /var/log/nginx/error.log for HTTP 500, upstream timed out, or connection refused errors. \
+   If more than 3 errors occur in the interval, capture 5 lines of context before and after the event, \
+   deduplicate identical stack traces, and email an incident root-cause report."
+```
+
+---
+
+### How-To 3: Automated Nightly Database Backup with Exponential Retries
+
+Schedule a nightly PostgreSQL backup at 02:00 UTC with gzip compression, SHA-256 integrity verification, 7-day retention rotation, and automated exponential backoff on failure.
+
+#### Command:
+```bash
+forge task create \
+  --name pg-nightly-backup \
+  --profile sre \
+  --cron "0 2 * * *" \
+  --timeout 600 \
+  --retries 2 \
+  --retry-delay 60 \
+  --retry-strategy exponential \
+  --notify-email "db-admins@example.com" \
+  "Run pg_dumpall with gzip compression into /var/backups/postgres/$(date +%Y%m%d_%H%M%S).sql.gz. \
+   Generate SHA-256 checksums and verify gzip integrity with gzip -t. \
+   Purge backups older than 7 days from /var/backups/postgres. Report total backup size and status."
+```
+
+---
+
+### How-To 4: Instant Instantiation from Curated Templates
+
+Forge includes 8 battle-tested production templates (`nginx-error-monitor`, `disk-space-cleaner`, `systemd-service-watchdog`, `memory-leak-detector`, `postgres-nightly-backup`, `ssl-cert-expiry-check`, `docker-unhealthy-pruner`, `security-port-auditor`).
+
+#### Steps:
+```bash
+# 1. View all available templates
+forge task template list
+
+# 2. Inspect a template's definition and default policy
+forge task template show ssl-cert-expiry-check
+
+# 3. Create a production task from the template with custom name and overrides
+forge task create \
+  --template ssl-cert-expiry-check \
+  --name prod-ssl-auditor \
+  --notify-email "security-oncall@example.com"
+```
+
+---
+
+### How-To 5: Explaining & Visualizing Execution Timelines
+
+Use `forge task explain` to convert cron syntax or intervals into plain English and visualize the exact local and UTC execution timestamps with countdown durations.
+
+#### Examples:
+```bash
+# Explain a 5-part UTC cron expression
+forge task explain "*/15 * * * *"
+```
+```text
+┌────────────────────────────────────────────────────────┐
+│             FORGE SCHEDULE EXPLAINER                   │
+└────────────────────────────────────────────────────────┘
+  Schedule:    */15 * * * *
+  Explanation: Every 15 minutes past the hour (UTC)
+
+  Upcoming Execution Timeline:
+  #   Local Time                 UTC Time                 Countdown
+  ───────────────────────────────────────────────────────────────────
+  1   8/27/2026, 2:30:00 PM      2026-08-27 09:00:00 UTC  in 14m
+  2   8/27/2026, 2:45:00 PM      2026-08-27 09:15:00 UTC  in 29m
+  3   8/27/2026, 3:00:00 PM      2026-08-27 09:30:00 UTC  in 44m
+  4   8/27/2026, 3:15:00 PM      2026-08-27 09:45:00 UTC  in 59m
+  5   8/27/2026, 3:30:00 PM      2026-08-27 10:00:00 UTC  in 1h 14m
+```
+
+```bash
+# Explain an interval or existing task
+forge task explain "every 1h"
+forge task explain pg-nightly-backup
+```
+
+---
+
+### How-To 6: Safe Dry-Run Testing & Verifying Tasks Before Enabling
+
+Always test newly defined tasks in safe mode (`PolicyMode.SAFE`) before scheduling them in production to verify tool invocations, token costs, and exit criteria without modifying system state.
+
+#### Examples:
+```bash
+# Test an existing configured task
+forge task test nginx-watchdog
+
+# Test a raw operational goal directly with a custom timeout
+forge task test "Inspect memory usage and top 5 processes by RSS" --timeout 30
+```
+```text
+┌────────────────────────────────────────────────────────┐
+│             FORGE TASK DRY-RUN SIMULATION              │
+│        Safe non-mutating diagnostic execution          │
+└────────────────────────────────────────────────────────┘
+  Task:    ephemeral-test
+  Goal:    Inspect memory usage and top 5 processes by RSS
+  Profile: default
+  Policy:  safe (read-only mode)
+
+  [agent] Creating agent session...
+  [agent] Executing diagnostic tools: ps, free...
+  [verify] Verifying exit criteria...
+
+✓ Simulation SUCCEEDED in 1.42s
+  Tokens: 780 in / 115 out | Tool Calls: 2
+```
+
+---
+
+### How-To 7: Declarative GitOps Workflow with YAML Configuration
+
+Manage task definitions in source control (e.g. in a Git repository under `tasks/`):
+
+#### 1. Define `tasks/disk-cleaner.yaml`:
+```yaml
+name: disk-pressure-cleaner
+goal: |
+  Inspect all mounted filesystems. If any mount point exceeds 85% capacity,
+  identify stale log archives in /var/log/*.gz and cache directories in /var/cache.
+  Perform a safe dry-run before deleting unneeded archives.
+profile: sre
+schedule:
+  type: interval
+  seconds: 3600
+execution:
+  overlap: skip
+  timeout: 180
+  retries: 1
+  retry_delay_seconds: 60
+  retry_strategy: fixed
+policy:
+  mode: autonomous
+```
+
+#### 2. Deploy or update task in SQLite store:
+```bash
+forge task create --from tasks/disk-cleaner.yaml
+```
+
+---
+
+### How-To 8: Daemon Operation & Systemd User Service Automation
+
+Run Forge unattended as a non-root background daemon managed by systemd:
+
+```bash
+# 1. Install and enable user service unit
+forge task service install
+forge task service start
+
+# 2. Check service status and live journal output
+forge task service status
+
+# 3. Ensure user service continues running across logouts:
+loginctl enable-linger $USER
+```
+
+---
+
+### How-To 9: Task Maintenance, Health Diagnostics & Lease Recovery
+
+If a task process was abruptly terminated (e.g. unexpected server reboot or kernel panic), use `doctor` to audit and release stale leases:
+
+```bash
+# Audit SQLite store for orphaned leases or stalled executions
+forge task doctor
+
+# Manually trigger a task on-demand
+forge task run nginx-watchdog
+
+# View recent execution run history
+forge task runs nginx-watchdog
+
+# View detailed audit logs for a task
+forge task logs nginx-watchdog
+
+# Clean up completed runs older than 14 days
+forge task cleanup --days 14
+```
+
+---
+
+## 6. Task YAML Configuration Specification
 
 Define declarative, version-controlled tasks using YAML:
 
@@ -416,7 +702,7 @@ forge task create --from tasks/nginx-error-monitor.yaml
 
 ---
 
-## 6. Agent Profiles & Personas
+## 7. Agent Profiles & Personas
 
 Forge includes 5 specialized operating personas:
 
@@ -430,7 +716,7 @@ Forge includes 5 specialized operating personas:
 
 ---
 
-## 7. Deterministic Processors & Checkpoints
+## 8. Deterministic Processors & Checkpoints
 
 Deterministic processors execute local computation **before** calling the LLM, reducing context tokens and eliminating noise:
 
@@ -449,7 +735,7 @@ Deterministic processors execute local computation **before** calling the LLM, r
 
 ---
 
-## 8. Policy Engine & Production Guardrails
+## 9. Policy Engine & Production Guardrails
 
 The Policy Engine evaluates operations independently of the LLM:
 
@@ -469,7 +755,7 @@ The Policy Engine evaluates operations independently of the LLM:
 
 ---
 
-## 9. Automated Verification Engine
+## 10. Automated Verification Engine
 
 Every modifying operational action triggers independent automated verification:
 
@@ -484,7 +770,7 @@ The agent is blocked from reporting success if verification fails.
 
 ---
 
-## 10. Model Context Protocol (MCP) Integration
+## 11. Model Context Protocol (MCP) Integration
 
 Forge supports external tools via MCP (Model Context Protocol).
 
@@ -515,7 +801,7 @@ Tools are automatically discovered and prefixed (e.g. `mcp_kubernetes_list_pods`
 
 ---
 
-## 11. systemd Background Daemon (`forge-taskd`)
+## 12. systemd Background Daemon (`forge-taskd`)
 
 Forge operates unattended in the background as a systemd **user service** without requiring root privileges.
 
@@ -563,7 +849,7 @@ WantedBy=default.target
 
 ---
 
-## 12. Notifications (Email & Webhook)
+## 13. Notifications (Email & Webhook)
 
 Dispatch status updates, error alerts, and periodic digests via Postfix SMTP or Webhooks:
 
@@ -580,7 +866,7 @@ export FORGE_NOTIFICATION_TO="hiren.dave@example.com"
 
 ---
 
-## 13. Model Providers & Custom OpenAI-Compatible Endpoints
+## 14. Model Providers & Custom OpenAI-Compatible Endpoints
 
 Forge supports 30+ LLM providers out of the box (Anthropic, OpenAI, Google Gemini, Groq, DeepSeek, Cerebras, xAI, OpenRouter, Mistral, etc.) as well as custom self-hosted or proxy OpenAI-compatible inference servers (such as Ollama, vLLM, forge-local, LocalAI, LM Studio, etc.).
 
@@ -642,7 +928,7 @@ You can also configure one or more custom OpenAI-compatible endpoints directly:
 
 ---
 
-## 14. Operational Skills Reference
+## 15. Operational Skills Reference
 
 Skills in `.forge/skills/` are loaded progressively on demand:
 
