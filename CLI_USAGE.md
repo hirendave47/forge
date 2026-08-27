@@ -432,7 +432,69 @@ export FORGE_NOTIFICATION_TO="hiren.dave@ibm.com"
 
 ---
 
-## 13. Operational Skills Reference
+## 13. Model Providers & Custom OpenAI-Compatible Endpoints
+
+Forge supports 30+ LLM providers out of the box (Anthropic, OpenAI, Google Gemini, Groq, DeepSeek, Cerebras, xAI, OpenRouter, Mistral, etc.) as well as custom self-hosted or proxy OpenAI-compatible inference servers (such as Ollama, vLLM, QForge, LocalAI, LM Studio, etc.).
+
+### Interactive Setup via `/login`
+Run `/login` in interactive mode and select **`Custom (OpenAI-compatible)`**:
+```bash
+/login
+```
+Forge will prompt you for:
+1. **Endpoint URL**: `http://127.0.0.1:8000/v1` (or your private inference endpoint)
+2. **API Token / Key**: (optional, press Enter if unauthenticated)
+3. **Model Name / ID**: `gemini-3.7-flash`, `qwen3-coder-next`, `llama3`, etc.
+4. **Custom Provider ID**: `qforge`, `ollama`, `custom`, etc.
+5. **Context Window Size**: `128000` (default) or `256000`
+
+The configuration is automatically persisted to `~/.forge/agent/models.json` and selected as the active model for immediate use.
+
+### Manual Configuration via `~/.forge/agent/models.json`
+You can also configure one or more custom OpenAI-compatible endpoints directly:
+
+```json
+{
+  "providers": {
+    "ollama": {
+      "baseUrl": "http://127.0.0.1:8000/v1",
+      "api": "openai-completions",
+      "apiKey": "llama",
+      "models": [
+        {
+          "id": "gemini-3.7-flash",
+          "name": "gemini-3.7-flash",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 256000,
+          "maxTokens": 256000,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
+    },
+    "qforge": {
+      "baseUrl": "http://127.0.0.1:8082/v1",
+      "api": "openai-completions",
+      "apiKey": "a313d06dbbe31d4c4dffa26f4f6097efe5f355a103e15c996f143c1da1fcf569",
+      "models": [
+        {
+          "id": "qwen3-coder-next",
+          "name": "qwen3-coder-next",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 128000,
+          "maxTokens": 128000,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
+## 14. Operational Skills Reference
 
 Skills in `.forge/skills/` are loaded progressively on demand:
 

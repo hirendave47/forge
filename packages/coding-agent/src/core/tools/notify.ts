@@ -33,7 +33,7 @@ function sendSmtpEmail(
 		const timer = setTimeout(() => {
 			client.destroy();
 			reject(new Error(`SMTP connection timed out to ${host}:${port}`));
-		}, 10000);
+		}, 2000);
 
 		client.connect(port, host, () => {});
 
@@ -116,7 +116,9 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 		label: "send_notification",
 		description: "Send progress reports, alerts, or task summaries to the user via email or webhook.",
 		promptSnippet: "Send progress updates and summaries via email or webhook",
-		promptGuidelines: [],
+		promptGuidelines: [
+			"If send_notification fails, report findings directly in your response and do not retry the notification.",
+		],
 		parameters: notifySchema,
 		async execute(_toolCallId, { subject, body, severity = "info", to, from }, _signal) {
 			const smtpHost = process.env.FORGE_SMTP_HOST || "localhost";
@@ -126,13 +128,15 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 			const webhookUrl = process.env.FORGE_NOTIFICATION_WEBHOOK;
 
 			const results: string[] = [];
+			let anyFailure = false;
 
 			// 1. Send via SMTP (Postfix)
 			try {
 				const smtpResult = await sendSmtpEmail(smtpHost, smtpPort, fromAddr, toAddr, subject, body, severity);
 				results.push(smtpResult);
 			} catch (err: any) {
-				results.push(`SMTP delivery notice: ${err?.message || err}`);
+				anyFailure = true;
+				results.push(`SMTP delivery failed: ${err?.message || err}`);
 			}
 
 			// 2. Webhook if configured
@@ -144,14 +148,17 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 						body: JSON.stringify({ subject, body, severity, timestamp: new Date().toISOString() }),
 					});
 					results.push("Webhook notification dispatched successfully");
+					anyFailure = false; // webhook succeeded — overall not a failure
 				} catch (err: any) {
-					results.push(`Webhook notice: ${err?.message || err}`);
+					anyFailure = anyFailure || true;
+					results.push(`Webhook delivery failed: ${err?.message || err}`);
 				}
 			}
 
 			return {
 				content: [{ type: "text", text: results.join("\n") }],
 				details: undefined,
+				isError: anyFailure && !webhookUrl,
 			};
 		},
 	};

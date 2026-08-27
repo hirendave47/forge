@@ -5594,18 +5594,30 @@ export class InteractiveMode {
 		let selectedModel: Model<any> | undefined;
 		let selectionError: string | undefined;
 		if (isUnknownModel(previousModel)) {
-			const availableModels = this.session.modelRuntime.getAvailableSnapshot();
-			const providerModels = availableModels.filter((model) => model.provider === providerId);
+			let availableModels = this.session.modelRuntime.getAvailableSnapshot();
+			let providerModels = availableModels.filter((model) => model.provider === providerId);
+			if (providerId === "custom-openai" && providerModels.length === 0) {
+				await this.session.modelRuntime.refresh();
+				availableModels = this.session.modelRuntime.getAvailableSnapshot();
+				providerModels = availableModels.filter((model) => model.provider === providerId);
+			}
 			// Matches LLAMA_PROVIDER_ID from extensions/llama/provider.ts; kept inline to avoid coupling interactive mode to the built-in extension.
 			if (providerId === "llama.cpp") {
 				selectionError = llamaCppPostLoginGuidance(actionLabel, providerModels.length);
-			} else if (!hasDefaultModelProvider(providerId)) {
-				selectionError = `${actionLabel}, but no default model is configured for provider "${providerId}". Use /model to select a model.`;
 			} else if (providerModels.length === 0) {
 				selectionError = `${actionLabel}, but no models are available for that provider. Use /model to select a model.`;
+			} else if (!hasDefaultModelProvider(providerId)) {
+				selectedModel = providerModels[0];
+				try {
+					await this.session.setModel(selectedModel, { persist: true });
+				} catch (error: unknown) {
+					selectedModel = undefined;
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					selectionError = `${actionLabel}, but selecting model "${providerModels[0]?.id}" failed: ${errorMessage}. Use /model to select a model.`;
+				}
 			} else {
 				const defaultModelId = defaultModelPerProvider[providerId];
-				selectedModel = providerModels.find((model) => model.id === defaultModelId);
+				selectedModel = providerModels.find((model) => model.id === defaultModelId) ?? providerModels[0];
 				if (!selectedModel) {
 					selectionError = `${actionLabel}, but its default model "${defaultModelId}" is not available. Use /model to select a model.`;
 				} else {

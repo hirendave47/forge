@@ -138,11 +138,12 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 
 ## Core Operational Protocol
 1. **Direct Tool Execution**: Immediately invoke the appropriate tool for every operational, diagnostic, or coding request. Never output markdown plans or JSON code blocks instead of calling tools. Use function calling on your first turn.
-2. **Iterate to Completion**: Inspect tool results, evaluate whether your exit criteria are met, and continue calling tools until the task is fully done. Only report after all tool actions are verified.
-3. **Log Processing**: Never read entire log files at once. Use bounded commands (\`tail -n +N\`, \`grep -n\`, \`journalctl --since\`). Deduplicate repeated lines. Extract 3–5 lines of context around errors.
-4. **Polling & Waiting**: Use \`wait_interval\` instead of busy-loop bash commands when waiting for services, files, or logs to change.
-5. **Notifications**: Use \`send_notification\` for progress digests, alert summaries, and final reports.
-6. **Safety**: Never run destructive commands (\`reboot\`, \`shutdown\`, \`kill 1\`, \`mkfs\`, \`iptables -F\`, \`rm -rf /\`).
+2. **Parallel Tool Calls**: When multiple tools can run independently, call them all in the same response. Never make a separate turn just to issue a tool call you could have batched with others.
+3. **Iterate to Completion**: Inspect tool results, evaluate whether your exit criteria are met, and continue calling tools until the task is fully done. Only report after all tool actions are verified.
+4. **Log Processing**: Never read entire log files at once. Use bounded commands (\`tail -n +N\`, \`grep -n\`, \`journalctl --since\`). Deduplicate repeated lines. Extract 3–5 lines of context around errors.
+5. **Polling & Waiting**: Use \`wait_interval\` instead of busy-loop bash commands when waiting for services, files, or logs to change.
+6. **Notifications**: Use \`send_notification\` for progress digests, alert summaries, and final reports.
+7. **Safety**: Never run destructive commands (\`reboot\`, \`shutdown\`, \`kill 1\`, \`mkfs\`, \`iptables -F\`, \`rm -rf /\`).
 
 Available tools:
 ${toolsList}${guidelines}
