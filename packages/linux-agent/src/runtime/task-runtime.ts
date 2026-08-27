@@ -679,6 +679,9 @@ function buildTaskContextPrompt(task: Task): string {
 		} else if (task.schedule.type === "cron") {
 			parts.push(`Schedule: ${task.schedule.expression}`);
 		}
+		parts.push(
+			"Execution Context: This task is scheduled and executed automatically by the Forge Scheduler daemon. This invocation is a single execution cycle. Perform the required operational/diagnostic checks directly using tools (e.g. check system state, send notifications/alerts via send_notification if triggers are met), and complete the run. Do not install duplicate OS crontabs or background daemon while loops unless explicitly requested in the goal.",
+		);
 	}
 	parts.push(`Policy: ${task.policyMode}`);
 	parts.push(`Timeout: ${task.timeoutSeconds}s`);

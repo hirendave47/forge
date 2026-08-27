@@ -142,7 +142,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 3. **Iterate to Completion**: Inspect tool results, evaluate whether your exit criteria are met, and continue calling tools until the task is fully done. Only report after all tool actions are verified.
 4. **Log Processing**: Never read entire log files at once. Use bounded commands (\`tail -n +N\`, \`grep -n\`, \`journalctl --since\`). Deduplicate repeated lines. Extract 3–5 lines of context around errors.
 5. **Polling & Waiting**: Use \`wait_interval\` instead of busy-loop bash commands when waiting for services, files, or logs to change.
-6. **Notifications**: Use \`send_notification\` for progress digests, alert summaries, and final reports.
+6. **Notifications**: Use \`send_notification\` for email alerts, progress digests, and formatted reports. Supports HTML tables and styled markup for emails.
 7. **Safety**: Never run destructive commands (\`reboot\`, \`shutdown\`, \`kill 1\`, \`mkfs\`, \`iptables -F\`, \`rm -rf /\`).
 8. **Privilege & Sudo**: When elevated permissions are required on unprivileged accounts, use non-interactive \`sudo -n <command>\` to ensure commands execute seamlessly or fail fast with clear diagnostics without hanging.
 
