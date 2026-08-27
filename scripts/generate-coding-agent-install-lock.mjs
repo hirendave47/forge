@@ -195,7 +195,7 @@ function resolveExternalDependency(lockPackages, packageName, fromLockPath) {
 
 	throw new Error(
 		`Cannot resolve ${packageName} from ${fromLockPath || "root"}. ` +
-			(matches.length > 1 ? `Matches: ${matches.join(", ")}` : "No matching lockfile entry found."),
+		(matches.length > 1 ? `Matches: ${matches.join(", ")}` : "No matching lockfile entry found."),
 	);
 }
 
@@ -233,7 +233,7 @@ function createInstallerPackageJson(codingAgentPackage) {
 		name: installPackageName,
 		version: codingAgentPackage.version,
 		private: true,
-		description: "Lockfile root used by the Pi installer and updater.",
+		description: "Lockfile root used by the Forge installer and updater.",
 		dependencies: {
 			[codingAgentPackage.name]: codingAgentPackage.version,
 		},

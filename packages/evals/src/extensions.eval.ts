@@ -44,13 +44,13 @@ function createExtensionAuthoringHarness(name: string, transformSystemPrompt?: (
 
 function excludeGuidelinesAndDocumentation(defaultPrompt: string): string {
 	const guidelinesStart = defaultPrompt.indexOf("\nGuidelines:\n");
-	if (guidelinesStart === -1) throw new Error("Default Pi system prompt has no Guidelines section.");
+	if (guidelinesStart === -1) throw new Error("Default Forge system prompt has no Guidelines section.");
 	return defaultPrompt.slice(0, guidelinesStart);
 }
 
 function prepareDefaultPromptOverride(defaultPrompt: string): string {
 	const cwdStart = defaultPrompt.lastIndexOf("\nCurrent working directory: ");
-	if (cwdStart === -1) throw new Error("Default Pi system prompt has no working-directory section.");
+	if (cwdStart === -1) throw new Error("Default Forge system prompt has no working-directory section.");
 	return defaultPrompt.slice(0, cwdStart);
 }
 
@@ -116,7 +116,7 @@ describe.for(extensionHarnessTable)("$name", ({ harness }) => {
 					{
 						type: "prompt",
 						content:
-							"Create a Pi extension with a hello tool that takes a name and returns a greeting. For example, passing Bob should return `Hello, Bob!`.",
+							"Create a Forge extension with a hello tool that takes a name and returns a greeting. For example, passing Bob should return `Hello, Bob!`.",
 					},
 					{ type: "reload" },
 					{

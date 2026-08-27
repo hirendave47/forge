@@ -2,14 +2,14 @@
  * Custom Header Extension
  *
  * Demonstrates ctx.ui.setHeader() for replacing the built-in header
- * (logo + keybinding hints) with a custom component showing the pi mascot.
+ * (logo + keybinding hints) with a custom component showing the forge mascot.
  */
 
 import type { ExtensionAPI, Theme } from "@earendil-works/forge-coding-agent";
 import { VERSION } from "@earendil-works/forge-coding-agent";
 
 // --- PI MASCOT ---
-// Based on pi_mascot.ts - the pi agent character
+// Based on pi_mascot.ts - the forge agent character
 function getPiMascot(theme: Theme): string[] {
 	// --- COLORS ---
 	// 3b1b Blue: R=80, G=180, B=230
@@ -56,7 +56,7 @@ export default function (pi: ExtensionAPI) {
 						const subtitle = `${theme.fg("muted", "   shitty coding agent")}${theme.fg("dim", ` v${VERSION}`)}`;
 						return [...mascotLines, subtitle];
 					},
-					invalidate() {},
+					invalidate() { },
 				};
 			});
 		}

@@ -143,43 +143,43 @@ export function parseSkillBlock(text: string): ParsedSkillBlock | null {
 export type AgentSessionEvent =
 	| Exclude<AgentEvent, { type: "agent_end" }>
 	| {
-			type: "agent_end";
-			messages: AgentMessage[];
-			willRetry: boolean;
-	  }
+		type: "agent_end";
+		messages: AgentMessage[];
+		willRetry: boolean;
+	}
 	| { type: "agent_settled" }
 	| {
-			type: "queue_update";
-			steering: readonly string[];
-			followUp: readonly string[];
-	  }
+		type: "queue_update";
+		steering: readonly string[];
+		followUp: readonly string[];
+	}
 	| { type: "compaction_start"; reason: "manual" | "threshold" | "overflow" }
 	| { type: "entry_appended"; entry: SessionEntry }
 	| { type: "session_info_changed"; name: string | undefined }
 	| { type: "thinking_level_changed"; level: ThinkingLevel }
 	| {
-			type: "compaction_end";
-			reason: "manual" | "threshold" | "overflow";
-			result: CompactionResult | undefined;
-			aborted: boolean;
-			willRetry: boolean;
-			errorMessage?: string;
-	  }
+		type: "compaction_end";
+		reason: "manual" | "threshold" | "overflow";
+		result: CompactionResult | undefined;
+		aborted: boolean;
+		willRetry: boolean;
+		errorMessage?: string;
+	}
 	| { type: "auto_retry_start"; attempt: number; maxAttempts: number; delayMs: number; errorMessage: string }
 	| { type: "auto_retry_end"; success: boolean; attempt: number; finalError?: string }
 	| {
-			type: "summarization_retry_scheduled";
-			attempt: number;
-			maxAttempts: number;
-			delayMs: number;
-			errorMessage: string;
-	  }
+		type: "summarization_retry_scheduled";
+		attempt: number;
+		maxAttempts: number;
+		delayMs: number;
+		errorMessage: string;
+	}
 	| { type: "summarization_retry_attempt_start"; source: "branchSummary" }
 	| {
-			type: "summarization_retry_attempt_start";
-			source: "compaction";
-			reason: "manual" | "threshold" | "overflow";
-	  }
+		type: "summarization_retry_attempt_start";
+		source: "compaction";
+		reason: "manual" | "threshold" | "overflow";
+	}
 	| { type: "summarization_retry_finished" }
 	| { type: "auto_retry_end"; success: boolean; attempt: number; finalError?: string }
 	| { type: "bash_execution_update"; id?: string; delta: string };
@@ -443,8 +443,8 @@ export class AgentSession {
 		if (isOAuth) {
 			throw new Error(
 				`Authentication failed for "${model.provider}". ` +
-					`Credentials may have expired or network is unavailable. ` +
-					`Run '/login ${model.provider}' to re-authenticate.`,
+				`Credentials may have expired or network is unavailable. ` +
+				`Run '/login ${model.provider}' to re-authenticate.`,
 			);
 		}
 		throw new Error(formatNoApiKeyFoundMessage(model.provider));
@@ -509,15 +509,15 @@ export class AgentSession {
 			const runner = this._extensionRunner;
 			const hookResult = runner.hasHandlers("tool_result")
 				? await runner.emitToolResult({
-						type: "tool_result",
-						toolName: toolCall.name,
-						toolCallId: toolCall.id,
-						input: args as Record<string, unknown>,
-						content: result.content,
-						details: result.details,
-						isError,
-						usage: result.usage,
-					})
+					type: "tool_result",
+					toolName: toolCall.name,
+					toolCallId: toolCall.id,
+					input: args as Record<string, unknown>,
+					content: result.content,
+					details: result.details,
+					isError,
+					usage: result.usage,
+				})
 				: undefined;
 
 			const content = hookResult?.content ?? result.content ?? [];
@@ -795,7 +795,7 @@ export class AgentSession {
 						replacement.role === "assistant" ||
 						replacement.role === "toolResult" ||
 						replacement.role === "custom") &&
-					replacement.content == null
+						replacement.content == null
 						? ({ ...replacement, content: [] } as AgentMessage)
 						: replacement;
 				this._replaceMessageInPlace(event.message, normalized);
@@ -870,7 +870,7 @@ export class AgentSession {
 		}
 
 		this._extensionRunner.invalidate(
-			"This extension ctx is stale after session replacement or reload. Do not use a captured pi or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+			"This extension ctx is stale after session replacement or reload. Do not use a captured forge or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
 		);
 		this._disconnectFromAgent();
 		this._eventListeners = [];
@@ -1219,8 +1219,8 @@ export class AgentSession {
 				if (isOAuth) {
 					throw new Error(
 						`Authentication failed for "${this.model.provider}". ` +
-							`Credentials may have expired or network is unavailable. ` +
-							`Run '/login ${this.model.provider}' to re-authenticate.`,
+						`Credentials may have expired or network is unavailable. ` +
+						`Run '/login ${this.model.provider}' to re-authenticate.`,
 					);
 				}
 				throw new Error(formatNoApiKeyFoundMessage(this.model.provider));
@@ -2743,15 +2743,15 @@ export class AgentSession {
 		const shellPath = this.settingsManager.getShellPath();
 		const baseToolDefinitions = this._baseToolsOverride
 			? Object.fromEntries(
-					Object.entries(this._baseToolsOverride).map(([name, tool]) => [
-						name,
-						createToolDefinitionFromAgentTool(tool),
-					]),
-				)
+				Object.entries(this._baseToolsOverride).map(([name, tool]) => [
+					name,
+					createToolDefinitionFromAgentTool(tool),
+				]),
+			)
 			: createAllToolDefinitions(this._cwd, {
-					read: { autoResizeImages },
-					bash: { commandPrefix: shellCommandPrefix, shellPath },
-				});
+				read: { autoResizeImages },
+				bash: { commandPrefix: shellCommandPrefix, shellPath },
+			});
 
 		this._baseToolDefinitions = new Map(
 			Object.entries(baseToolDefinitions).map(([name, tool]) => [name, tool as ToolDefinition]),

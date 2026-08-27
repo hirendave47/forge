@@ -109,7 +109,7 @@ describe.skipIf(!oauthToken)("Anthropic OAuth tool name normalization", () => {
 	});
 
 	it("should NOT map find to Glob - find is not a CC tool name", async () => {
-		// Pi has a "find" tool, CC has "Glob" - these are DIFFERENT tools
+		// Forge has a "find" tool, CC has "Glob" - these are DIFFERENT tools
 		// The old code incorrectly mapped find -> Glob, which broke the round-trip
 		// because there's no tool named "glob" in context.tools
 		const findTool: Tool = {

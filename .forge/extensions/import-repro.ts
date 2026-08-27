@@ -1,5 +1,5 @@
 /**
- * Import a pi session shared as a gist by the issue-analysis CI workflow
+ * Import a forge session shared as a gist by the issue-analysis CI workflow
  * (.github/workflows/issue-analysis.yml) and switch to it.
  *
  * The CI job runs in a high-entropy checkout directory; this command rewrites
@@ -12,7 +12,7 @@
  *   /ir https://pi.dev/session/#b4d100022aefb12f25dd2d8485e0a82a
  *   /ir https://github.com/earendil-works/pi/issues/123
  *
- *   pi "/ir <gist-id>"
+ *   forge "/ir <gist-id>"
  */
 
 import { Buffer } from "node:buffer";
@@ -95,22 +95,22 @@ function parseSessionJsonl(raw: string): { header: SessionHeader; jsonl: string 
 
 function decodeExportedHtml(html: string): { header: SessionHeader; jsonl: string } {
 	const match = html.match(SESSION_DATA_RE);
-	if (!match) throw new Error("HTML does not contain embedded pi session data");
+	if (!match) throw new Error("HTML does not contain embedded forge session data");
 
 	let data: unknown;
 	try {
 		data = JSON.parse(Buffer.from(match[1], "base64").toString("utf8"));
 	} catch {
-		throw new Error("embedded pi session data is not valid JSON");
+		throw new Error("embedded forge session data is not valid JSON");
 	}
 
 	const sessionData = data as Partial<ExportedSessionData>;
 	const header = sessionData.header;
 	if (!header || header.type !== "session" || typeof header.id !== "string" || typeof header.cwd !== "string") {
-		throw new Error("embedded pi session data has no valid session header");
+		throw new Error("embedded forge session data has no valid session header");
 	}
 	if (!Array.isArray(sessionData.entries)) {
-		throw new Error("embedded pi session data has no entries array");
+		throw new Error("embedded forge session data has no entries array");
 	}
 
 	const lines = [header, ...sessionData.entries].map((entry) => JSON.stringify(entry));

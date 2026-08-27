@@ -338,7 +338,7 @@ export interface ExtensionContext {
 	abort(): void;
 	/** Whether there are queued messages waiting */
 	hasPendingMessages(): boolean;
-	/** Gracefully shutdown pi and exit. Available in all contexts. */
+	/** Gracefully shutdown forge and exit. Available in all contexts. */
 	shutdown(): void;
 	/** Get current context usage for the active model. */
 	getContextUsage(): ContextUsage | undefined;
@@ -722,7 +722,7 @@ export interface BeforeAgentStartEvent {
 	images?: ImageContent[];
 	/** The fully assembled system prompt string. */
 	systemPrompt: string;
-	/** Structured options used to build the system prompt. Extensions can inspect this to understand what Pi loaded without re-discovering resources. */
+	/** Structured options used to build the system prompt. Extensions can inspect this to understand what Forge loaded without re-discovering resources. */
 	systemPromptOptions: BuildSystemPromptOptions;
 }
 
@@ -1308,15 +1308,15 @@ export interface ExtensionAPI {
 		name: string,
 		options:
 			| {
-					description?: string;
-					type: "boolean";
-					default?: boolean;
-			  }
+				description?: string;
+				type: "boolean";
+				default?: boolean;
+			}
 			| {
-					description?: string;
-					type: "string";
-					default?: string;
-			  },
+				description?: string;
+				type: "string";
+				default?: string;
+			},
 	): void;
 
 	/** Get the value of a registered CLI flag. */
@@ -1329,7 +1329,7 @@ export interface ExtensionAPI {
 	/** Register a custom renderer for CustomMessageEntry. */
 	registerMessageRenderer<T = unknown>(customType: string, renderer: MessageRenderer<T>): void;
 
-	/** Register a transformer for user and assistant Markdown before Pi renders it in the interactive transcript. */
+	/** Register a transformer for user and assistant Markdown before Forge renders it in the interactive transcript. */
 	registerMarkdownTransformer(transformer: MarkdownTransformer): void;
 
 	/** Register a custom renderer for CustomEntry. Custom entries do not participate in LLM context. */
@@ -1540,7 +1540,7 @@ export interface ProviderModelConfig {
 	baseUrl?: string;
 	/** Whether the model supports extended thinking. */
 	reasoning: boolean;
-	/** Maps pi thinking levels to provider/model-specific values; null marks a level unsupported. */
+	/** Maps forge thinking levels to provider/model-specific values; null marks a level unsupported. */
 	thinkingLevelMap?: Model<Api>["thinkingLevelMap"];
 	/** Supported input types. */
 	input: ("text" | "image")[];
@@ -1562,12 +1562,12 @@ export type ExtensionFactory = (pi: ExtensionAPI) => void | Promise<void>;
 export type InlineExtension =
 	| ExtensionFactory
 	| {
-			/** Display name shown as `<inline:name>` in the startup Extensions list. */
-			name: string;
-			factory: ExtensionFactory;
-			/** Omit this extension from the startup Extensions list. */
-			hidden?: boolean;
-	  };
+		/** Display name shown as `<inline:name>` in the startup Extensions list. */
+		name: string;
+		factory: ExtensionFactory;
+		/** Omit this extension from the startup Extensions list. */
+		hidden?: boolean;
+	};
 
 // ============================================================================
 // Loaded Extension Types
@@ -1731,7 +1731,7 @@ export interface ExtensionCommandContextActions {
  * Full runtime = state + actions.
  * Created by loader with throwing action stubs, completed by runner.initialize().
  */
-export interface ExtensionRuntime extends ExtensionRuntimeState, ExtensionActions {}
+export interface ExtensionRuntime extends ExtensionRuntimeState, ExtensionActions { }
 
 /** Loaded extension with all registered items. */
 export interface Extension {

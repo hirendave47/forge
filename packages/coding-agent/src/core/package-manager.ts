@@ -268,7 +268,7 @@ function addIgnoreRules(ig: IgnoreMatcher, dir: string, rootDir: string): void {
 			if (patterns.length > 0) {
 				ig.add(patterns);
 			}
-		} catch {}
+		} catch { }
 	}
 }
 
@@ -1146,7 +1146,7 @@ export class DefaultPackageManager implements PackageManager {
 						await this.updateGit(entry.parsed, entry.scope);
 					}),
 			);
-			tasks.push(this.runWithConcurrency(gitTasks, GIT_UPDATE_CONCURRENCY).then(() => {}));
+			tasks.push(this.runWithConcurrency(gitTasks, GIT_UPDATE_CONCURRENCY).then(() => { }));
 		}
 
 		await Promise.all(tasks);
@@ -1601,7 +1601,7 @@ export class DefaultPackageManager implements PackageManager {
 				],
 			};
 		} catch {
-			await this.runCommand("git", ["remote", "set-head", "origin", "-a"], { cwd: installedPath }).catch(() => {});
+			await this.runCommand("git", ["remote", "set-head", "origin", "-a"], { cwd: installedPath }).catch(() => { });
 			const head = await this.runCommandCapture("git", ["rev-parse", "origin/HEAD"], {
 				cwd: installedPath,
 				timeoutMs: NETWORK_TIMEOUT_MS,
@@ -1789,10 +1789,10 @@ export class DefaultPackageManager implements PackageManager {
 
 	private getNpmInstallArgs(specs: string[], installRoot: string): string[] {
 		const packageManagerName = this.getPackageManagerName();
-		// Extension packages run inside pi and resolve pi APIs through loader aliases/virtual modules.
+		// Extension packages run inside forge and resolve forge APIs through loader aliases/virtual modules.
 		// Disable peer dependency resolution for managed installs (npm's --legacy-peer-deps, and
 		// equivalent bun/pnpm settings) so package managers do not install or solve host-provided
-		// @earendil-works/forge-* peers. Stale auto-installed pi peers can otherwise block updates.
+		// @earendil-works/forge-* peers. Stale auto-installed forge peers can otherwise block updates.
 		if (packageManagerName === "bun") {
 			return ["install", ...specs, "--cwd", installRoot, "--omit=peer"];
 		}
@@ -1923,7 +1923,7 @@ export class DefaultPackageManager implements PackageManager {
 		try {
 			await this.runCommand("git", ["clean", "-fdx"], { cwd: targetDir });
 		} catch (error) {
-			await this.repairMissingGitDependencies(targetDir).catch(() => {});
+			await this.repairMissingGitDependencies(targetDir).catch(() => { });
 			throw error;
 		}
 
@@ -2650,9 +2650,9 @@ export class DefaultPackageManager implements PackageManager {
 			const timeout =
 				typeof options?.timeoutMs === "number"
 					? setTimeout(() => {
-							timedOut = true;
-							child.kill();
-						}, options.timeoutMs)
+						timedOut = true;
+						child.kill();
+					}, options.timeoutMs)
 					: undefined;
 
 			child.stdout?.on("data", (data) => {

@@ -12,7 +12,7 @@
  *
  * Usage:
  *   cd /path/to/project
- *   pi -e /path/to/pi/packages/coding-agent/examples/extensions/gondolin
+ *   forge -e /path/to/pi/packages/coding-agent/examples/extensions/gondolin
  *
  * Requirements:
  *   - Node.js >= 23.6.0 for @earendil-works/gondolin
@@ -334,9 +334,9 @@ function createGondolinBashOps(vm: VM, localCwd: string, shellPath: string): Bas
 			const timer =
 				timeout && timeout > 0
 					? setTimeout(() => {
-							timedOut = true;
-							controller.abort();
-						}, timeout * 1000)
+						timedOut = true;
+						controller.abort();
+					}, timeout * 1000)
 					: undefined;
 
 			try {

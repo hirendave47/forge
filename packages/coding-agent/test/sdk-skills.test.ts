@@ -17,7 +17,7 @@ describe("createAgentSession skills option", () => {
 		skillsDir = join(tempDir, "skills", "test-skill");
 		mkdirSync(skillsDir, { recursive: true });
 
-		// Create a test skill in the pi skills directory
+		// Create a test skill in the forge skills directory
 		writeFileSync(
 			join(skillsDir, "SKILL.md"),
 			`---
@@ -61,8 +61,8 @@ This is a test skill.
 			getSystemPromptSource: () => undefined,
 			getAppendSystemPrompt: () => [],
 			getAppendSystemPromptSources: () => [],
-			extendResources: () => {},
-			reload: async () => {},
+			extendResources: () => { },
+			reload: async () => { },
 		};
 
 		const { session } = await createAgentSession({
@@ -96,8 +96,8 @@ This is a test skill.
 			getSystemPromptSource: () => undefined,
 			getAppendSystemPrompt: () => [],
 			getAppendSystemPromptSources: () => [],
-			extendResources: () => {},
-			reload: async () => {},
+			extendResources: () => { },
+			reload: async () => { },
 		};
 
 		const { session } = await createAgentSession({

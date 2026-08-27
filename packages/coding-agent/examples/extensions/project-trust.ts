@@ -8,7 +8,7 @@
  *
  * Or:
  *
- *   pi -e packages/coding-agent/examples/extensions/project-trust.ts
+ *   forge -e packages/coding-agent/examples/extensions/project-trust.ts
  *
  * Try it in a project containing .pi, AGENTS.md/CLAUDE.md, or .agents/skills.
  */

@@ -25,9 +25,9 @@ This is an iTerm2-wide workaround and may also change native trackpad scrolling.
 
 ## Apple Terminal
 
-Pi enables enhanced key reporting when available. If Terminal.app still sends plain Return for `Shift+Enter`, pi uses a local macOS modifier fallback to treat that Return as `Shift+Enter`.
+Pi enables enhanced key reporting when available. If Terminal.app still sends plain Return for `Shift+Enter`, forge uses a local macOS modifier fallback to treat that Return as `Shift+Enter`.
 
-This fallback only works when pi runs on the same Mac as Terminal.app. It cannot detect the local keyboard over remote SSH.
+This fallback only works when forge runs on the same Mac as Terminal.app. It cannot detect the local keyboard over remote SSH.
 
 ## Ghostty
 
@@ -43,15 +43,15 @@ Older Claude Code versions may have added this Ghostty mapping:
 keybind = shift+enter=text:\n
 ```
 
-That mapping sends a raw linefeed byte. Inside pi, that is indistinguishable from `Ctrl+J`, so tmux and pi no longer see a real `shift+enter` key event.
+That mapping sends a raw linefeed byte. Inside pi, that is indistinguishable from `Ctrl+J`, so tmux and forge no longer see a real `shift+enter` key event.
 
 If Claude Code 2.x or newer is the only reason you added that mapping, you can remove it, unless you want to use Claude Code in tmux, where it still requires that Ghostty mapping.
 
-Pi binds `Ctrl+J` as a default newline alias, so `Shift+Enter` keeps working in tmux via that remap without extra pi configuration.
+Pi binds `Ctrl+J` as a default newline alias, so `Shift+Enter` keeps working in tmux via that remap without extra forge configuration.
 
 ### Fullscreen TUI mode
 
-In fullscreen mode, links remain clickable, but Ghostty does not show its hover underline or lower-left URL preview while pi captures mouse input. Hold `Shift+Command` on macOS or `Shift+Ctrl` on Linux to use Ghostty's native link handling.
+In fullscreen mode, links remain clickable, but Ghostty does not show its hover underline or lower-left URL preview while forge captures mouse input. Hold `Shift+Command` on macOS or `Shift+Ctrl` on Linux to use Ghostty's native link handling.
 
 ## WezTerm
 
@@ -64,7 +64,7 @@ config.enable_kitty_keyboard = true
 return config
 ```
 
-On macOS, WezTerm binds `Option+Enter` to fullscreen by default. To use `Option+Enter` for pi follow-up queueing, add this key override:
+On macOS, WezTerm binds `Option+Enter` to fullscreen by default. To use `Option+Enter` for forge follow-up queueing, add this key override:
 
 ```lua
 local wezterm = require 'wezterm'
@@ -81,11 +81,11 @@ return config
 
 If you already have a `config.keys` table, add the entry to it.
 
-On WSL, WezTerm may require a visible hardware cursor for IME candidate window positioning. If CJK IME candidates do not follow the text cursor, set `FORGE_HARDWARE_CURSOR=1` before running pi or set `showHardwareCursor` to `true` in settings.
+On WSL, WezTerm may require a visible hardware cursor for IME candidate window positioning. If CJK IME candidates do not follow the text cursor, set `FORGE_HARDWARE_CURSOR=1` before running forge or set `showHardwareCursor` to `true` in settings.
 
 ## Alacritty
 
-Alacritty usually works out of the box for `Shift+Enter`. On macOS, `Option+Enter` may arrive as plain `Enter`. To use `Option+Enter` for pi follow-up queueing, add to `~/.config/alacritty/alacritty.toml`:
+Alacritty usually works out of the box for `Shift+Enter`. On macOS, `Option+Enter` may arrive as plain `Enter`. To use `Option+Enter` for forge follow-up queueing, add to `~/.config/alacritty/alacritty.toml`:
 
 ```toml
 [[keyboard.bindings]]
@@ -160,6 +160,6 @@ For the best experience, use a terminal that supports the Kitty keyboard protoco
 
 The built-in terminal has limited escape sequence support. Shift+Enter cannot be distinguished from Enter in IntelliJ's terminal.
 
-If you want the hardware cursor visible, set `FORGE_HARDWARE_CURSOR=1` before running pi (disabled by default for compatibility).
+If you want the hardware cursor visible, set `FORGE_HARDWARE_CURSOR=1` before running forge (disabled by default for compatibility).
 
 Consider using a dedicated terminal emulator for the best experience.

@@ -5,8 +5,8 @@
  * When --ssh is provided, read/write/edit/bash run on the remote.
  *
  * Usage:
- *   pi -e ./ssh.ts --ssh user@host
- *   pi -e ./ssh.ts --ssh user@host:/remote/path
+ *   forge -e ./ssh.ts --ssh user@host
+ *   forge -e ./ssh.ts --ssh user@host:/remote/path
  *
  * Requirements:
  *   - SSH key-based auth (no password prompts)
@@ -48,7 +48,7 @@ function createRemoteReadOps(remote: string, remoteCwd: string, localCwd: string
 	const toRemote = (p: string) => p.replace(localCwd, remoteCwd);
 	return {
 		readFile: (p) => sshExec(remote, `cat ${JSON.stringify(toRemote(p))}`),
-		access: (p) => sshExec(remote, `test -r ${JSON.stringify(toRemote(p))}`).then(() => {}),
+		access: (p) => sshExec(remote, `test -r ${JSON.stringify(toRemote(p))}`).then(() => { }),
 		detectImageMimeType: async (p) => {
 			try {
 				const r = await sshExec(remote, `file --mime-type -b ${JSON.stringify(toRemote(p))}`);
@@ -68,7 +68,7 @@ function createRemoteWriteOps(remote: string, remoteCwd: string, localCwd: strin
 			const b64 = Buffer.from(content).toString("base64");
 			await sshExec(remote, `echo ${JSON.stringify(b64)} | base64 -d > ${JSON.stringify(toRemote(p))}`);
 		},
-		mkdir: (dir) => sshExec(remote, `mkdir -p ${JSON.stringify(toRemote(dir))}`).then(() => {}),
+		mkdir: (dir) => sshExec(remote, `mkdir -p ${JSON.stringify(toRemote(dir))}`).then(() => { }),
 	};
 }
 
@@ -88,9 +88,9 @@ function createRemoteBashOps(remote: string, remoteCwd: string, localCwd: string
 				let timedOut = false;
 				const timer = timeout
 					? setTimeout(() => {
-							timedOut = true;
-							child.kill();
-						}, timeout * 1000)
+						timedOut = true;
+						child.kill();
+					}, timeout * 1000)
 					: undefined;
 				child.stdout.on("data", onData);
 				child.stderr.on("data", onData);

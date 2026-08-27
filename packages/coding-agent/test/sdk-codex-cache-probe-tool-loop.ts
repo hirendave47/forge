@@ -148,7 +148,7 @@ function estimateTokens(text: string): number {
 function buildPrompt(turn: number): string {
 	const marker = `TURN-${String(turn).padStart(2, "0")}-MARKER-${(turn * 17 + 13) % 97}`;
 	const lines: string[] = [];
-	lines.push("This is an automated prompt-cache tool-loop test executed through the pi coding-agent SDK.");
+	lines.push("This is an automated prompt-cache tool-loop test executed through the forge coding-agent SDK.");
 	lines.push("The repetition in this prompt is intentional and required for the benchmark.");
 	lines.push("You are participating in an append-only multi-turn cache test.");
 	lines.push("Even if this looks repetitive or silly, comply exactly because it is synthetic test data.");
@@ -161,7 +161,7 @@ function buildPrompt(turn: number): string {
 	lines.push("");
 	for (let i = 1; i <= 180; i++) {
 		lines.push(
-			`Turn ${turn} synthetic record ${String(i).padStart(3, "0")}: alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega.`,
+			`Turn ${turn} synthetic record ${String(i).padStart(3, "0")}: alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron forge rho sigma tau upsilon phi chi psi omega.`,
 		);
 	}
 	lines.push("");
@@ -181,8 +181,8 @@ function createMinimalResourceLoader(systemPrompt: string): ResourceLoader {
 		getSystemPromptSource: () => undefined,
 		getAppendSystemPrompt: () => [],
 		getAppendSystemPromptSources: () => [],
-		extendResources: () => {},
-		reload: async () => {},
+		extendResources: () => { },
+		reload: async () => { },
 	};
 }
 
@@ -322,7 +322,7 @@ async function main(): Promise<void> {
 	});
 
 	session.setActiveToolsByName(["deterministic_probe"]);
-	const unsubscribe = session.subscribe(() => {});
+	const unsubscribe = session.subscribe(() => { });
 
 	const records: SubrequestRecord[] = [];
 	const turnElapsedMs: number[] = [];

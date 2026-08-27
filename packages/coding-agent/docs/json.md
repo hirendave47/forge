@@ -4,7 +4,7 @@
 pi --mode json "Your prompt"
 ```
 
-Outputs all session events as JSON lines to stdout. Useful for integrating pi into other tools or custom UIs.
+Outputs all session events as JSON lines to stdout. Useful for integrating forge into other tools or custom UIs.
 
 ## Event Types
 

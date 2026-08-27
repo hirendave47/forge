@@ -79,12 +79,12 @@ describe("formatResumeCommand", () => {
 		const sessionManager = createSessionManager({
 			sessionFile,
 			sessionId: "test-session",
-			sessionDir: "/tmp/custom pi sessions",
+			sessionDir: "/tmp/custom forge sessions",
 			usesDefaultSessionDir: false,
 		});
 
 		expect(formatResumeCommand(sessionManager)).toBe(
-			`${APP_NAME} --session-dir '/tmp/custom pi sessions' --session test-session`,
+			`${APP_NAME} --session-dir '/tmp/custom forge sessions' --session test-session`,
 		);
 	});
 

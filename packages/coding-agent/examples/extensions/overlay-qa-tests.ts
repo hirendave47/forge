@@ -1,7 +1,7 @@
 /**
  * Overlay QA Tests - comprehensive overlay positioning and edge case tests
  *
- * Usage: pi --extension ./examples/extensions/overlay-qa-tests.ts
+ * Usage: forge --extension ./examples/extensions/overlay-qa-tests.ts
  *
  * Commands:
  *   /overlay-animation  - Real-time animation demo (~30 FPS, proves DOOM-like rendering works)
@@ -328,8 +328,8 @@ abstract class BaseOverlay {
 		return result;
 	}
 
-	invalidate(): void {}
-	dispose(): void {}
+	invalidate(): void { }
+	dispose(): void { }
 }
 
 // Anchor position test
@@ -1230,10 +1230,10 @@ class FocusPanel extends BaseOverlay {
 		lines.push(border(`╭${"─".repeat(innerW)}╮`));
 		lines.push(
 			border("│") +
-				padLine(
-					` ${th.fg(this.color, this.label)} ${this.focused ? th.fg("success", "FOCUSED") : th.fg("dim", "visible")}`,
-				) +
-				border("│"),
+			padLine(
+				` ${th.fg(this.color, this.label)} ${this.focused ? th.fg("success", "FOCUSED") : th.fg("dim", "visible")}`,
+			) +
+			border("│"),
 		);
 		lines.push(border("│") + padLine("") + border("│"));
 		lines.push(border("│") + padLine(` Input: ${inputLine}`) + border("│"));
@@ -1446,5 +1446,5 @@ class StreamingInputPanel implements Component {
 		return lines;
 	}
 
-	invalidate(): void {}
+	invalidate(): void { }
 }

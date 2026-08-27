@@ -1,4 +1,4 @@
-> pi can create themes. Ask it to build one for your setup.
+> forge can create themes. Ask it to build one for your setup.
 
 # Themes
 
@@ -37,7 +37,7 @@ Select a theme via `/settings` or in `settings.json`:
 }
 ```
 
-On first run, pi detects your terminal background and defaults to `dark` or `light`.
+On first run, forge detects your terminal background and defaults to `dark` or `light`.
 
 ### Initial Theme
 
@@ -137,7 +137,7 @@ vim ~/.pi/agent/themes/my-theme.json
 
 3. Select the theme via `/settings`.
 
-**Hot reload:** When you edit the currently active custom theme file, pi reloads it automatically for immediate visual feedback.
+**Hot reload:** When you edit the currently active custom theme file, forge reloads it automatically for immediate visual feedback.
 
 ## Theme Format
 
@@ -293,7 +293,7 @@ Four formats are supported:
 
 ### Terminal Compatibility
 
-Pi uses 24-bit RGB colors. Most modern terminals support this (iTerm2, Kitty, WezTerm, Windows Terminal, VS Code). For older terminals with only 256-color support, pi falls back to the nearest approximation.
+Pi uses 24-bit RGB colors. Most modern terminals support this (iTerm2, Kitty, WezTerm, Windows Terminal, VS Code). For older terminals with only 256-color support, forge falls back to the nearest approximation.
 
 Check truecolor support:
 

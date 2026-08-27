@@ -8,8 +8,8 @@
  * with file, line range, and ours/theirs sections so it can resolve them.
  * Also re-sends unresolved conflicts from a previous incomplete merge.
  *
- * Start pi with this extension:
- *   pi -e ./examples/extensions/git-merge-and-resolve.ts
+ * Start forge with this extension:
+ *   forge -e ./examples/extensions/git-merge-and-resolve.ts
  */
 import { createReadStream } from "node:fs";
 import { join } from "node:path";
@@ -48,7 +48,7 @@ async function findConflicts(pi: ExtensionAPI, cwd: string): Promise<ConflictBlo
 					separatorLine = undefined;
 				}
 			}
-		} catch {}
+		} catch { }
 	}
 	return blocks;
 }

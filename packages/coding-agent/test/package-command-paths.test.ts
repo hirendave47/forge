@@ -219,7 +219,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	it("skips untrusted project package settings", async () => {
 		mkdirSync(join(projectDir, ".pi"), { recursive: true });
 		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(main(["list"])).resolves.toBeUndefined();
@@ -236,7 +236,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		mkdirSync(join(projectDir, ".pi"), { recursive: true });
 		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		new ProjectTrustStore(agentDir).set(projectDir, true);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(main(["list"])).resolves.toBeUndefined();
@@ -255,7 +255,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		mkdirSync(join(projectDir, ".pi"), { recursive: true });
 		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		new ProjectTrustStore(agentDir).set(projectDir, true);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(main(["list", "--no-approve"])).resolves.toBeUndefined();
@@ -272,7 +272,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	it("approves project trust for list with --approve", async () => {
 		mkdirSync(join(projectDir, ".pi"), { recursive: true });
 		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(main(["list", "--approve"])).resolves.toBeUndefined();
@@ -291,7 +291,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		mkdirSync(join(projectDir, ".pi"), { recursive: true });
 		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
 		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(main(["list"])).resolves.toBeUndefined();
@@ -309,7 +309,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	it("uses project_trust extensions for package commands", async () => {
 		mkdirSync(join(projectDir, ".pi"), { recursive: true });
 		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(
@@ -346,7 +346,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			JSON.stringify({ packages: ["npm:fake-package"], npmCommand: [originalExecPath, fakeNpmPath] }),
 		);
 		let projectTrustCalled = false;
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(
@@ -383,7 +383,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			JSON.stringify({ packages: ["npm:fake-package"], npmCommand: [originalExecPath, fakeNpmPath] }),
 		);
 		new ProjectTrustStore(agentDir).set(projectDir, true);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(main(["update", "--extensions"])).resolves.toBeUndefined();
@@ -400,7 +400,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
 		writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ packages: ["npm:@project/pkg"] }));
 		new ProjectTrustStore(agentDir).set(projectDir, false);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(main(["list"])).resolves.toBeUndefined();
@@ -417,7 +417,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	it("blocks local package changes when project is untrusted", async () => {
 		mkdirSync(join(projectDir, ".pi"), { recursive: true });
 		writeFileSync(join(projectDir, ".pi", "settings.json"), "{}");
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(main(["install", "-l", "./local-package"])).resolves.toBeUndefined();
@@ -442,8 +442,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("shows install subcommand help", async () => {
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(main(["install", "--help"])).resolves.toBeUndefined();
@@ -462,8 +462,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	it("refreshes only model catalogs with update --models", async () => {
 		const refresh = vi.fn(async () => ({ aborted: false, errors: new Map<string, Error>() }));
 		const create = vi.spyOn(ModelRuntime, "create").mockResolvedValue({ refresh } as unknown as ModelRuntime);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		await expect(runPackageCommandDirectly(["update", "--models"])).resolves.toBeUndefined();
 
@@ -485,7 +485,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 
 	it("rejects update --models combined with another update target", async () => {
 		const create = vi.spyOn(ModelRuntime, "create");
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		await expect(runPackageCommandDirectly(["update", "--models", "--self"])).resolves.toBeUndefined();
 
@@ -506,9 +506,9 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			settingsManager,
 			projectDir,
 			agentDir,
-			() => {},
-			() => {},
-			() => {},
+			() => { },
+			() => { },
+			() => { },
 			24,
 			"project",
 		);
@@ -528,7 +528,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("shows a friendly error for unknown install options", async () => {
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(main(["install", "--unknown"])).resolves.toBeUndefined();
@@ -545,7 +545,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 	});
 
 	it("shows a friendly error for missing install source", async () => {
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(main(["install"])).resolves.toBeUndefined();
@@ -565,8 +565,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		process.env.FORGE_SKIP_VERSION_CHECK = "1";
 		const fetchMock = vi.fn(async () => Response.json({ version: VERSION }));
 		vi.stubGlobal("fetch", fetchMock);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
@@ -595,8 +595,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 			.mockRejectedValueOnce(new Error("fetch failed"))
 			.mockResolvedValueOnce(Response.json({ version: VERSION }));
 		vi.stubGlobal("fetch", fetchMock);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
@@ -610,7 +610,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		}
 	});
 
-	it("updates installer-managed Pi through a staged immutable release", async () => {
+	it("updates installer-managed Forge through a staged immutable release", async () => {
 		const targetVersion = getNewerPatchVersion();
 		const { managedRoot, npmRecordPath } = prepareManagedInstall(targetVersion);
 		const abandonedStage = join(managedRoot, "staging", "update-abandoned");
@@ -620,8 +620,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		mkdirSync(abandonedLock);
 		utimesSync(abandonedLock, new Date(0), new Date(0));
 		mockManagedUpdate(targetVersion);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
 
@@ -645,8 +645,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		const { managedRoot, npmRecordPath } = prepareManagedInstall(targetVersion);
 		const releaseLock = await lockfile.lock(join(managedRoot, "update"), { realpath: false });
 		mockManagedUpdate(targetVersion);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
@@ -658,7 +658,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		expect(existsSync(npmRecordPath)).toBe(false);
 		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toMatch(/Updated (pi|forge) from/);
 		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
-			"Another managed Pi update is already running.",
+			"Another managed Forge update is already running.",
 		);
 		expect(process.exitCode).toBe(1);
 	});
@@ -668,7 +668,7 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		const { npmRecordPath } = prepareManagedInstall(targetVersion);
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		await expect(runPackageCommandDirectly(["update", "--self", "--force"])).resolves.toBeUndefined();
 
@@ -684,8 +684,8 @@ for (const b of ["${APP_NAME}", "pi", "forge"]) {
 		const targetVersion = getNewerPatchVersion();
 		const { managedRoot } = prepareManagedInstall(targetVersion, 23);
 		mockManagedUpdate(targetVersion);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
 
@@ -735,8 +735,8 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 		const fetchMock = vi.fn(async () => Response.json({ version: VERSION }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self", "--force"])).resolves.toBeUndefined();
@@ -784,8 +784,8 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 		const fetchMock = vi.fn(async () => Response.json({ version: targetVersion }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
@@ -838,8 +838,8 @@ else {
 			vi.fn(async () => Response.json({ packageName: activePackageName, version: "0.73.0" })),
 		);
 
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
@@ -882,8 +882,8 @@ else {
 			vi.fn(async () => Response.json({ version: getNewerPatchVersion() })),
 		);
 
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
@@ -935,8 +935,8 @@ if(args.includes("install")) process.exit(23);
 			vi.fn(async () => Response.json({ packageName: activePackageName, version: "0.73.0" })),
 		);
 
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
@@ -961,8 +961,8 @@ if(args.includes("install")) process.exit(23);
 		const settingsPath = join(agentDir, "settings.json");
 		writeFileSync(settingsPath, JSON.stringify({ packages: ["npm:pi-formatter"] }, null, 2));
 
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => { });
 
 		try {
 			await expect(main(["update", "pi-formatter"])).resolves.toBeUndefined();

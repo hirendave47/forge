@@ -13,7 +13,7 @@ export interface AuthCommand {
 	minExpiryMs?: number;
 }
 
-export class AuthCommandError extends Error {}
+export class AuthCommandError extends Error { }
 
 const AUTH_COMMAND_USAGE: Record<AuthCommandKind, string> = {
 	check: `${APP_NAME} auth check --provider <provider> [--json] [--credentials] [--no-refresh]`,
@@ -38,9 +38,9 @@ export function isAuthCommandHelp(args: string[]): boolean {
 
 export function printAuthCommandHelp(): void {
 	console.log(`Usage:
-  pi auth print-api-key [--provider <provider>] [--model <model>]
-  pi auth print-bearer-token [--provider <provider>] [--model <model>] [--min-expiry <duration>]
-  pi auth check [--provider <provider>] [--model <model>] [--json] [--credentials] [--no-refresh]
+  forge auth print-api-key [--provider <provider>] [--model <model>]
+  forge auth print-bearer-token [--provider <provider>] [--model <model>] [--min-expiry <duration>]
+  forge auth check [--provider <provider>] [--model <model>] [--json] [--credentials] [--no-refresh]
 
 Auth commands require at least one of --provider or --model. Checks refresh expired OAuth credentials by default; --no-refresh prevents this. --credentials emits the credential, or includes it in JSON output.`);
 }

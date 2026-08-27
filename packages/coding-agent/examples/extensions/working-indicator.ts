@@ -2,10 +2,10 @@
  * Working Indicator Extension
  *
  * Demonstrates `ctx.ui.setWorkingIndicator()` for customizing the inline
- * working indicator shown while pi is streaming a response.
+ * working indicator shown while forge is streaming a response.
  *
  * Usage:
- *   pi --extension examples/extensions/working-indicator.ts
+ *   forge --extension examples/extensions/working-indicator.ts
  *
  * Commands:
  *   /working-indicator           Show current mode

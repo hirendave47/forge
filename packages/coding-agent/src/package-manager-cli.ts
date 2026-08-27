@@ -58,7 +58,7 @@ function getActiveManagedInstallRoot(): string | undefined {
 	const managedRoot = resolve(configuredRoot);
 	const releasesDir = canonicalizePath(join(managedRoot, "releases"));
 	// The launcher environment is inherited by child processes. Do not classify a
-	// source checkout or another Pi installation launched from managed Pi as managed.
+	// source checkout or another Forge installation launched from managed Forge as managed.
 	if (getCwdRelativePath(canonicalizePath(getPackageDir()), releasesDir) === undefined) return undefined;
 
 	const markerPath = join(managedRoot, MANAGED_INSTALL_MARKER);
@@ -115,11 +115,11 @@ function verifyManagedRelease(releaseDir: string, expectedVersion: string): void
 	});
 	if (result.error || result.status !== 0) {
 		const reason = result.error?.message || result.stderr.trim() || `exit code ${result.status ?? "unknown"}`;
-		throw new Error(`Could not verify managed Pi ${expectedVersion}: ${reason}`);
+		throw new Error(`Could not verify managed Forge ${expectedVersion}: ${reason}`);
 	}
 	const installedVersion = result.stdout.trim();
 	if (installedVersion !== expectedVersion) {
-		throw new Error(`Managed Pi smoke test returned version ${installedVersion}; expected ${expectedVersion}.`);
+		throw new Error(`Managed Forge smoke test returned version ${installedVersion}; expected ${expectedVersion}.`);
 	}
 }
 
@@ -178,7 +178,7 @@ async function runManagedSelfUpdate(managedRoot: string, version: string): Promi
 		releaseLock = await lockfile.lock(join(managedRoot, "update"), { realpath: false });
 	} catch (error: unknown) {
 		if (error instanceof Error && "code" in error && error.code === "ELOCKED") {
-			throw new Error("Another managed Pi update is already running.");
+			throw new Error("Another managed Forge update is already running.");
 		}
 		throw error;
 	}
@@ -340,21 +340,21 @@ Examples:
 Update pi, installed packages, or model catalogs.
 
 Options:
-  --self                  Update pi only (default when no target is given)
+  --self                  Update forge only (default when no target is given)
   --extensions            Update installed packages only
   --models                Refresh model catalogs only
-  --all                   Update pi and installed packages
+  --all                   Update forge and installed packages
   --extension <source>    Update one package only
   -a, --approve           Trust project-local files for this command
   -na, --no-approve       Ignore project-local files for this command
-  --force                 Reinstall pi even if the current version is latest
+  --force                 Reinstall forge even if the current version is latest
 
 Short forms:
-  ${APP_NAME} update                Update pi only
-  ${APP_NAME} update --all          Update pi and all extensions
+  ${APP_NAME} update                Update forge only
+  ${APP_NAME} update --all          Update forge and all extensions
   ${APP_NAME} update --models       Refresh model catalogs only
   ${APP_NAME} update <source>       Update one package
-  ${APP_NAME} update pi             Update pi only (self works as alias to pi)
+  ${APP_NAME} update forge             Update forge only (self works as alias to pi)
 `);
 			return;
 
@@ -760,11 +760,11 @@ async function createCommandSettingsManager(options: {
 	const extensionsResult =
 		options.projectTrustOverride === undefined && hasTrustRequiringProjectResources(options.cwd)
 			? await new DefaultResourceLoader({
-					cwd: options.cwd,
-					agentDir: options.agentDir,
-					settingsManager,
-					extensionFactories: options.extensionFactories,
-				}).loadProjectTrustExtensions()
+				cwd: options.cwd,
+				agentDir: options.agentDir,
+				settingsManager,
+				extensionFactories: options.extensionFactories,
+			}).loadProjectTrustExtensions()
 			: undefined;
 	for (const error of extensionsResult?.errors ?? []) {
 		projectTrustWarnings.push(`Failed to load extension "${error.path}": ${error.error}`);

@@ -60,4 +60,4 @@ This affects the default keybindings (`Enter` to submit, `Shift+Enter` for newli
 - tmux 3.5 or later for `extended-keys-format csi-u` (run `tmux -V` to check)
 - A terminal emulator that supports extended keys (Ghostty, Kitty, iTerm2, WezTerm, Windows Terminal)
 
-With tmux 3.2 through 3.4, omit `extended-keys-format csi-u`; Pi still supports tmux's default xterm `modifyOtherKeys` format.
+With tmux 3.2 through 3.4, omit `extended-keys-format csi-u`; Forge still supports tmux's default xterm `modifyOtherKeys` format.

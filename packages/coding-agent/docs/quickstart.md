@@ -1,6 +1,6 @@
 # Quickstart
 
-This page gets you from install to a useful first pi session.
+This page gets you from install to a useful first forge session.
 
 ## Install
 
@@ -10,7 +10,7 @@ Pi is distributed as an npm package:
 npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 ```
 
-`--ignore-scripts` disables dependency lifecycle scripts during install. Pi does not require install scripts for normal npm installs.
+`--ignore-scripts` disables dependency lifecycle scripts during install. Forge does not require install scripts for normal npm installs.
 
 ### Uninstall
 
@@ -30,9 +30,9 @@ yarn global remove @earendil-works/pi-coding-agent
 bun uninstall -g @earendil-works/pi-coding-agent
 ```
 
-Uninstalling pi leaves settings, credentials, sessions, and installed pi packages in `~/.pi/agent/`.
+Uninstalling forge leaves settings, credentials, sessions, and installed forge packages in `~/.pi/agent/`.
 
-Then start pi in the project directory you want it to work on:
+Then start forge in the project directory you want it to work on:
 
 ```bash
 cd /path/to/project
@@ -45,7 +45,7 @@ Pi can use subscription providers through `/login`, or API-key providers through
 
 ### Option 1: subscription login
 
-Start pi and run:
+Start forge and run:
 
 ```text
 /login
@@ -68,22 +68,22 @@ See [Providers](providers.md) for all supported providers, environment variables
 
 ## First session
 
-Once pi starts, type a request and press Enter:
+Once forge starts, type a request and press Enter:
 
 ```text
 Summarize this repository and tell me how to run its checks.
 ```
 
-By default, pi gives the model four tools:
+By default, forge gives the model four tools:
 
 - `read` - read files
 - `write` - create or overwrite files
 - `edit` - patch files
 - `bash` - run shell commands
 
-Additional built-in read-only tools (`grep`, `find`, `ls`) are available through tool options. Pi runs in your current working directory and can modify files there. Use git or another checkpointing workflow if you want easy rollback.
+Additional built-in read-only tools (`grep`, `find`, `ls`) are available through tool options. Forge runs in your current working directory and can modify files there. Use git or another checkpointing workflow if you want easy rollback.
 
-## Give pi project instructions
+## Give forge project instructions
 
 Pi loads context files at startup. Add an `AGENTS.md` file to tell it how to work in a project:
 
@@ -100,7 +100,7 @@ Pi loads:
 - `~/.pi/agent/AGENTS.md` for global instructions
 - `AGENTS.md` or `CLAUDE.md` from parent directories and the current directory
 
-If a directory contains `AGENTS.override.md`, Pi loads it instead of `AGENTS.md` or `CLAUDE.md` from that directory.
+If a directory contains `AGENTS.override.md`, Forge loads it instead of `AGENTS.md` or `CLAUDE.md` from that directory.
 
 Restart pi, or run `/reload`, after changing context files.
 
@@ -150,7 +150,7 @@ For one-shot prompts:
 
 ```bash
 pi -p "Summarize this codebase"
-cat README.md | pi -p "Summarize this text"
+cat README.md | forge -p "Summarize this text"
 pi -p @screenshot.png "What's in this image?"
 ```
 

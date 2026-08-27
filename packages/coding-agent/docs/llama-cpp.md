@@ -45,7 +45,7 @@ Restart the router after manually adding files. For per-model context sizes and 
 
 ## Configure Pi
 
-Start Pi and configure the provider:
+Start Forge and configure the provider:
 
 ```text
 /login llama.cpp
@@ -78,11 +78,11 @@ Run:
 - Select **Download model…**, search Hugging Face, then choose a repository and quantization. Exact `owner/repository[:quant]` values also work.
 - Press Escape during a load or download to confirm cancellation.
 
-Hugging Face search uses `HF_TOKEN` when set, then checks `$HF_TOKEN_PATH`, `$HF_HOME/token`, `$XDG_CACHE_HOME/huggingface/token`, and `~/.cache/huggingface/token`. Search also works without authentication, subject to lower rate limits. Pi warns before downloading gated repositories and links to their access page. The llama.cpp server performs the download, so its process must also have `HF_TOKEN` when the selected repository requires access.
+Hugging Face search uses `HF_TOKEN` when set, then checks `$HF_TOKEN_PATH`, `$HF_HOME/token`, `$XDG_CACHE_HOME/huggingface/token`, and `~/.cache/huggingface/token`. Search also works without authentication, subject to lower rate limits. Forge warns before downloading gated repositories and links to their access page. The llama.cpp server performs the download, so its process must also have `HF_TOKEN` when the selected repository requires access.
 
-If other models are loaded, Pi asks whether to unload them first or keep them loaded. Pi does not silently unload models and never deletes model files. The router may be shared with other clients, so `/llama` always displays the router's current state.
+If other models are loaded, Forge asks whether to unload them first or keep them loaded. Forge does not silently unload models and never deletes model files. The router may be shared with other clients, so `/llama` always displays the router's current state.
 
-Only loaded models appear in `/model`. After loading a model, run `/model` to select it for the current Pi session.
+Only loaded models appear in `/model`. After loading a model, run `/model` to select it for the current Forge session.
 
 If the router disconnects, `/llama` shows **Retry** and **Close**. Retry reconnects and refreshes model state without replaying the interrupted operation.
 

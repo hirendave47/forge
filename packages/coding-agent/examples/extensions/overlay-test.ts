@@ -1,7 +1,7 @@
 /**
  * Overlay Test - validates overlay compositing with inline text inputs
  *
- * Usage: pi --extension ./examples/extensions/overlay-test.ts
+ * Usage: forge --extension ./examples/extensions/overlay-test.ts
  *
  * Run /overlay-test to show a floating overlay with:
  * - Inline text inputs within menu items
@@ -148,6 +148,6 @@ class OverlayTestComponent implements Focusable {
 		return lines;
 	}
 
-	invalidate(): void {}
-	dispose(): void {}
+	invalidate(): void { }
+	dispose(): void { }
 }

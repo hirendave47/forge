@@ -43,7 +43,7 @@ describe("version checks", () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
-	it("uses the pi.dev version check api with a pi user agent", async () => {
+	it("uses the pi.dev version check api with a forge user agent", async () => {
 		const fetchMock = vi.fn(async () => Response.json({ version: "1.2.4" }));
 		vi.stubGlobal("fetch", fetchMock);
 

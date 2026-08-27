@@ -63,7 +63,7 @@ Thumbs.db
 *.swo
 *~
 
-# Pi CLI local / runtime data
+# Forge CLI local / runtime data
 .npm/
 .pi_config/
 .opencode/

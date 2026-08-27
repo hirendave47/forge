@@ -5,7 +5,7 @@
  * Delegates to pi-ai's built-in Anthropic and OpenAI streaming implementations.
  *
  * Usage:
- *   pi -e ./packages/coding-agent/examples/extensions/custom-provider-gitlab-duo
+ *   forge -e ./packages/coding-agent/examples/extensions/custom-provider-gitlab-duo
  *   # Then /login gitlab-duo, or set GITLAB_TOKEN=glpat-...
  */
 
@@ -327,21 +327,21 @@ export function streamGitLabDuo(
 			const innerStream =
 				cfg.backend === "anthropic"
 					? anthropicMessagesApi().streamSimple(
-							{
-								...(modelWithBaseUrl as Model<"anthropic-messages">),
-								compat: {
-									...(modelWithBaseUrl as Model<"anthropic-messages">).compat,
-									forceAdaptiveThinking: true,
-								},
+						{
+							...(modelWithBaseUrl as Model<"anthropic-messages">),
+							compat: {
+								...(modelWithBaseUrl as Model<"anthropic-messages">).compat,
+								forceAdaptiveThinking: true,
 							},
-							context,
-							streamOptions,
-						)
+						},
+						context,
+						streamOptions,
+					)
 					: openAIResponsesApi().streamSimple(
-							modelWithBaseUrl as Model<"openai-responses">,
-							context,
-							streamOptions,
-						);
+						modelWithBaseUrl as Model<"openai-responses">,
+						context,
+						streamOptions,
+					);
 
 			for await (const event of innerStream) stream.push(event);
 			stream.end();

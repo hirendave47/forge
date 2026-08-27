@@ -1,4 +1,4 @@
-> pi can create TUI components. Ask it to build one for your use case.
+> forge can create TUI components. Ask it to build one for your use case.
 
 # TUI Components
 
@@ -761,7 +761,7 @@ ctx.ui.setStatus("my-ext", undefined);
 
 ### Pattern 4b: Working Indicator Customization
 
-Customize the inline working indicator shown while pi is streaming a response.
+Customize the inline working indicator shown while forge is streaming a response.
 
 ```typescript
 // Static indicator

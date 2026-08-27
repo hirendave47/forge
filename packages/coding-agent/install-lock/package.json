@@ -2,7 +2,7 @@
 	"name": "@earendil-works/forge-coding-agent-install",
 	"version": "0.84.3",
 	"private": true,
-	"description": "Lockfile root used by the Pi installer and updater.",
+	"description": "Lockfile root used by the Forge installer and updater.",
 	"dependencies": {
 		"@earendil-works/forge-coding-agent": "0.84.3"
 	},

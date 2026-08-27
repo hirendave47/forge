@@ -1555,7 +1555,7 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 				}
 
 				// models.dev reports Vertex cache_read/cache_write values for Gemini 2.5 Flash that
-				// do not match the official Gemini API standard pricing table. pi only accounts
+				// do not match the official Gemini API standard pricing table. forge only accounts
 				// cachedContentTokenCount as cacheRead.
 				const cacheRead = modelId === "gemini-2.5-flash" ? 0.03 : source.cost?.cache_read || 0;
 				models.push({
@@ -2303,7 +2303,7 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 		// Process Alibaba Cloud Model Studio Token Plan models. International and
 		// China use separate endpoints and API keys (sk-sp- prefix). The Individual
 		// provider reuses the international source and endpoint with a narrower catalog.
-		// models.dev keys are "alibaba-token-plan[-cn]"; pi exposes them as
+		// models.dev keys are "alibaba-token-plan[-cn]"; forge exposes them as
 		// "qwen-token-plan[-cn]" plus the Individual catalog view.
 		const qwenTokenPlanCompat: OpenAICompletionsCompat = {
 			thinkingFormat: "qwen",
@@ -2354,11 +2354,11 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 						: { ...qwenTokenPlanCompat, supportsReasoningEffort: false },
 					...(supportsReasoningEffort
 						? {
-								thinkingLevelMap:
-									modelId === "qwen3.8-max"
-										? QWEN_TOKEN_PLAN_QWEN38_THINKING_LEVEL_MAP
-										: QWEN_TOKEN_PLAN_HIGH_MAX_THINKING_LEVEL_MAP,
-							}
+							thinkingLevelMap:
+								modelId === "qwen3.8-max"
+									? QWEN_TOKEN_PLAN_QWEN38_THINKING_LEVEL_MAP
+									: QWEN_TOKEN_PLAN_HIGH_MAX_THINKING_LEVEL_MAP,
+						}
 						: {}),
 					reasoning: m.reasoning === true,
 					input: m.modalities?.input?.includes("image") ? ["text", "image"] : ["text"],
@@ -2667,9 +2667,9 @@ async function generateModels() {
 				...candidate.compat,
 				...(preservesNativeReasoningEffort
 					? {
-							requiresReasoningContentOnAssistantMessages:
-								deepseekCompat.requiresReasoningContentOnAssistantMessages,
-						}
+						requiresReasoningContentOnAssistantMessages:
+							deepseekCompat.requiresReasoningContentOnAssistantMessages,
+					}
 					: deepseekCompat),
 			};
 		}
@@ -2817,10 +2817,10 @@ async function generateModels() {
 			cost: {
 				// we dont know about the costs because OpenRouter auto routes to different models
 				// and then charges you for the underlying used model
-				input:0,
-				output:0,
-				cacheRead:0,
-				cacheWrite:0,
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
 			},
 			contextWindow: 2000000,
 			maxTokens: 30000,

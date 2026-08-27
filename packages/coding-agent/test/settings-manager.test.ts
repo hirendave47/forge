@@ -38,7 +38,7 @@ describe("SettingsManager", () => {
 				}),
 			);
 
-			// Create SettingsManager (simulates pi starting up)
+			// Create SettingsManager (simulates forge starting up)
 			const manager = SettingsManager.create(projectDir, agentDir);
 
 			// Simulate user editing settings.json externally to add enabledModels
