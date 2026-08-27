@@ -34,8 +34,8 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@earendil-works/forge-ai": "^0.84.3",
-		"@earendil-works/forge-agent-core": "^0.84.3"
+		"@earendil-works/forge-ai": "^1.0.0",
+		"@earendil-works/forge-agent-core": "^1.0.0"
 	},
 	"devDependencies": {
 		"@vitest/coverage-v8": "4.1.9",

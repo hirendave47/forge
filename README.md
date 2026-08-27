@@ -91,11 +91,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [AGENTS.m
 
 ## Disclosure & Attribution
 
-This repository was cloned from the original [`hirendave47/forge`](https://github.com/hirendave47/forge) repository and customized for specific autonomous Linux systems engineering, DevOps, SRE, and operational automation purposes.
+This repository was cloned from the original [`earendil-works/pi`](https://github.com/earendil-works/pi) repository and customized for specific autonomous Linux systems engineering, DevOps, SRE, and operational automation purposes.
 
 ---
 
 ## License
 
-[MIT](LICENSE) © 2025-2026 [Hiren Dave](https://github.com/hirendave47) (originally derived from [hirendave47/forge](https://github.com/hirendave47/forge))
+[MIT](LICENSE) © 2025-2026 [Hiren Dave](https://github.com/hirendave47) (originally derived from [earendil-works/pi](https://github.com/earendil-works/pi))
 
