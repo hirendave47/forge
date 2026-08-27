@@ -1070,7 +1070,9 @@ async function handleService(args: string[]): Promise<void> {
 		const status = getServiceStatus();
 		console.log(status);
 	} else {
-		console.error(chalk.red(`Unknown service action: ${action}. Use: install, uninstall, start, stop, restart, status`));
+		console.error(
+			chalk.red(`Unknown service action: ${action}. Use: install, uninstall, start, stop, restart, status`),
+		);
 	}
 }
 

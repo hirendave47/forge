@@ -24,11 +24,26 @@ function loadNotificationDefaults(): NotificationSettings {
 	return {};
 }
 
+function isHtmlContent(content: string): boolean {
+	const trimmed = content.trim();
+	if (/^<!DOCTYPE/i.test(trimmed) || /^<html/i.test(trimmed)) {
+		return true;
+	}
+	return /<(html|head|body|div|p|span|table|tr|td|th|h[1-6]|ul|ol|li|strong|em|pre|code|style|br\s*\/?)[\s>]/i.test(
+		trimmed,
+	);
+}
+
 const notifySchema = Type.Object({
 	subject: Type.String({ description: "Notification subject line" }),
-	body: Type.String({ description: "Message body or progress report" }),
+	body: Type.String({ description: "Message body or progress report (can be plain text or HTML)" }),
 	severity: Type.Optional(
 		Type.String({ description: "Severity: 'info', 'warning', 'critical', or 'summary'. Default: 'info'" }),
+	),
+	format: Type.Optional(
+		Type.String({
+			description: "Body format: 'html' or 'plain' (auto-detected if body contains HTML tags). Default: auto",
+		}),
 	),
 	to: Type.Optional(Type.String({ description: "Recipient email override" })),
 	from: Type.Optional(Type.String({ description: "Sender email override" })),
@@ -44,6 +59,7 @@ function sendSmtpEmail(
 	subject: string,
 	body: string,
 	severity = "info",
+	format?: string,
 ): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const client = new net.Socket();
@@ -96,6 +112,12 @@ function sendSmtpEmail(
 					}
 					step = 5;
 					const now = new Date().toUTCString();
+					const isHtml = format === "html" || (format !== "plain" && isHtmlContent(body));
+					const contentType = isHtml ? "text/html; charset=utf-8" : "text/plain; charset=utf-8";
+
+					// Ensure dot-stuffing for SMTP transparency (RFC 5321 §4.5.2)
+					const safeBody = body.replace(/(^|\r?\n)\./g, "$1..");
+
 					const message =
 						`From: ${from}\r\n` +
 						`To: ${to}\r\n` +
@@ -103,8 +125,8 @@ function sendSmtpEmail(
 						`Subject: [${severity.toUpperCase()}] ${subject}\r\n` +
 						`X-Severity: ${severity}\r\n` +
 						`MIME-Version: 1.0\r\n` +
-						`Content-Type: text/plain; charset=utf-8\r\n\r\n` +
-						`${body}\r\n.\r\n`;
+						`Content-Type: ${contentType}\r\n\r\n` +
+						`${safeBody}\r\n.\r\n`;
 					client.write(message);
 				} else if (step === 5) {
 					if (!lastLine.startsWith("250")) {
@@ -140,7 +162,7 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 			"If send_notification fails, report findings directly in your response and do not retry the notification.",
 		],
 		parameters: notifySchema,
-		async execute(_toolCallId, { subject, body, severity = "info", to, from }, _signal) {
+		async execute(_toolCallId, { subject, body, severity = "info", format, to, from }, _signal) {
 			const saved = loadNotificationDefaults();
 			const smtpHost = process.env.FORGE_SMTP_HOST || saved.smtpHost || "localhost";
 			const smtpPort = parseInt(process.env.FORGE_SMTP_PORT || String(saved.smtpPort ?? 25), 10);
@@ -160,7 +182,16 @@ export function createNotifyToolDefinition(): ToolDefinition<typeof notifySchema
 				);
 			} else {
 				try {
-					const smtpResult = await sendSmtpEmail(smtpHost, smtpPort, fromAddr, toAddr, subject, body, severity);
+					const smtpResult = await sendSmtpEmail(
+						smtpHost,
+						smtpPort,
+						fromAddr,
+						toAddr,
+						subject,
+						body,
+						severity,
+						format,
+					);
 					results.push(smtpResult);
 				} catch (err: any) {
 					anyFailure = true;
