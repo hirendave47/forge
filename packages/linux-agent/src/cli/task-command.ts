@@ -715,6 +715,10 @@ function handleStatus(args: string[]): void {
 
 		console.log(chalk.bold(`Status: ${task.name}`));
 		console.log(`  Enabled:    ${task.enabled ? chalk.green("yes") : chalk.yellow("no")}`);
+		console.log(`  Schedule:   ${task.schedule ? formatSchedule(task.schedule) : "manual"}`);
+		console.log(`  Next Run:   ${task.nextRunAt ? chalk.cyan(task.nextRunAt) : chalk.dim("none")}`);
+		console.log(`  Last Run:   ${task.lastRunAt ? chalk.cyan(task.lastRunAt) : chalk.dim("never")}`);
+		console.log(`  Privilege:  ${task.elevated ? chalk.red("elevated (sudo)") : chalk.green("standard")}`);
 		console.log(
 			`  Active Run: ${activeRun ? `${chalk.cyan(activeRun.id.slice(0, 8))} (${activeRun.status})` : chalk.dim("none")}`,
 		);

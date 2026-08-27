@@ -122,7 +122,22 @@ export class TaskScheduler {
 			const now = new Date();
 
 			for (const task of tasks) {
-				if (!task.enabled || !task.schedule || !task.nextRunAt) {
+				if (!task.enabled || !task.schedule) {
+					continue;
+				}
+
+				// If nextRunAt is missing (e.g. created while daemon was running), initialize it
+				if (!task.nextRunAt) {
+					const next = computeNextRun(task.schedule, now);
+					const nextIso = next ? next.toISOString() : null;
+					this.store.updateTaskNextRun(task.id, nextIso);
+					task.nextRunAt = nextIso ?? undefined;
+					if (nextIso) {
+						this.logger("debug", `Initialized schedule for "${task.name}": next run at ${nextIso}`);
+					}
+				}
+
+				if (!task.nextRunAt) {
 					continue;
 				}
 

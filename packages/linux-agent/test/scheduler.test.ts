@@ -212,4 +212,51 @@ describe("TaskScheduler", () => {
 
 		await scheduler.stop();
 	});
+
+	it("should automatically schedule and trigger tasks created dynamically while scheduler is running", async () => {
+		const executedTasks: string[] = [];
+		const mockRuntime = {
+			executeTask: vi.fn().mockImplementation(async (taskId: string) => {
+				executedTasks.push(taskId);
+				return {
+					runId: `run-${taskId}`,
+					taskId,
+					status: "SUCCEEDED",
+					durationMs: 10,
+					inputTokens: 0,
+					outputTokens: 0,
+					toolCalls: 0,
+				} as ExecutionResult;
+			}),
+			close: vi.fn(),
+		} as unknown as TaskRuntime;
+
+		const scheduler = new TaskScheduler({
+			dbPath,
+			pollIntervalMs: 50,
+			runtime: mockRuntime,
+		});
+
+		await scheduler.start();
+
+		// Create a task dynamically AFTER scheduler has already started
+		const dynamicTask = store.createTask({
+			name: "dynamic-task",
+			goal: "Execute dynamically created task",
+			schedule: { type: "interval", seconds: 1 },
+			enabled: true,
+		});
+
+		// Task created with schedule should have nextRunAt populated
+		expect(dynamicTask.nextRunAt).toBeDefined();
+
+		// Make it immediately due
+		store.updateTaskNextRun(dynamicTask.id, new Date(Date.now() - 100).toISOString());
+
+		await scheduler.tick();
+		await new Promise((r) => setTimeout(r, 50));
+
+		expect(executedTasks).toContain(dynamicTask.id);
+		await scheduler.stop();
+	});
 });

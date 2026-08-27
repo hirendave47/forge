@@ -28,6 +28,7 @@ import {
 	type TaskState,
 	type TaskStepLog,
 } from "../runtime/task-model.ts";
+import { computeNextRun } from "../scheduler/cron.ts";
 import { CREATE_TABLES_SQL, SCHEMA_VERSION } from "./schema.ts";
 
 // ============================================================
@@ -232,19 +233,23 @@ export class TaskStore {
 			strategy: input.retryPolicy?.strategy ?? DEFAULT_RETRY_POLICY.strategy,
 		};
 
+		const isEnabled = input.enabled ?? true;
+		const nextRunAt =
+			isEnabled && input.schedule ? (computeNextRun(input.schedule, new Date(now))?.toISOString() ?? null) : null;
+
 		const stmt = this.db.prepare(`
 			INSERT INTO tasks (
 				id, name, goal, profile, schedule_type, schedule_value,
 				enabled, overlap_policy, timeout_seconds,
 				retry_max, retry_delay_seconds, retry_strategy,
 				policy_mode, tools_allow, tools_deny, skills,
-				model_tier, elevated, notifications, created_at, updated_at
+				model_tier, elevated, notifications, next_run_at, created_at, updated_at
 			) VALUES (
 				?, ?, ?, ?, ?, ?,
 				?, ?, ?,
 				?, ?, ?,
 				?, ?, ?, ?,
-				?, ?, ?, ?, ?
+				?, ?, ?, ?, ?, ?
 			)
 		`);
 
@@ -255,7 +260,7 @@ export class TaskStore {
 			input.profile ?? null,
 			input.schedule?.type ?? null,
 			input.schedule ? serializeScheduleValue(input.schedule) : null,
-			(input.enabled ?? true) ? 1 : 0,
+			isEnabled ? 1 : 0,
 			input.overlapPolicy ?? DEFAULT_OVERLAP_POLICY,
 			input.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS,
 			retryPolicy.maxRetries,
@@ -268,11 +273,12 @@ export class TaskStore {
 			input.modelTier ?? null,
 			input.elevated ? 1 : 0,
 			input.notifications ? JSON.stringify(input.notifications) : null,
+			nextRunAt,
 			now,
 			now,
 		);
 
-		this.recordEvent(id, undefined, "task_created", { name: input.name });
+		this.recordEvent(id, undefined, "task_created", { name: input.name, nextRunAt });
 
 		return this.getTask(id)!;
 	}
@@ -294,8 +300,23 @@ export class TaskStore {
 
 	updateTaskEnabled(id: string, enabled: boolean): void {
 		const now = new Date().toISOString();
-		this.db.prepare("UPDATE tasks SET enabled = ?, updated_at = ? WHERE id = ?").run(enabled ? 1 : 0, now, id);
-		this.recordEvent(id, undefined, enabled ? "task_enabled" : "task_disabled");
+		const task = this.getTask(id);
+		let nextRunAt: string | null | undefined;
+
+		if (enabled && task?.schedule && !task.nextRunAt) {
+			const next = computeNextRun(task.schedule, new Date());
+			nextRunAt = next ? next.toISOString() : null;
+		}
+
+		if (nextRunAt !== undefined) {
+			this.db
+				.prepare("UPDATE tasks SET enabled = ?, next_run_at = ?, updated_at = ? WHERE id = ?")
+				.run(enabled ? 1 : 0, nextRunAt, now, id);
+		} else {
+			this.db.prepare("UPDATE tasks SET enabled = ?, updated_at = ? WHERE id = ?").run(enabled ? 1 : 0, now, id);
+		}
+
+		this.recordEvent(id, undefined, enabled ? "task_enabled" : "task_disabled", { nextRunAt });
 	}
 
 	updateTaskNextRun(id: string, nextRunAt: string | null): void {
