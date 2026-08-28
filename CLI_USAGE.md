@@ -7,6 +7,9 @@ Forge is a lightweight, ultra-fast, and modular general-purpose autonomous AI Ag
 ## Table of Contents
 
 1. [Overview & Core Architecture](#1-overview--core-architecture)
+   - [1.1. Design Philosophy: Scripting vs. AI Agent vs. Hybrid](#11-design-philosophy-deterministic-scripting-vs-ai-agent-vs-hybrid)
+   - [1.2. The Three Operational Paradigms](#12-the-three-operational-paradigms)
+   - [1.3. Checkpoints & Historical Context Across Task Runs](#13-checkpoints--historical-context-across-task-runs)
 2. [Installation & Quick Start](#2-installation--quick-start)
 3. [One-Shot Tasks (`forge run`)](#3-one-shot-tasks-forge-run)
 4. [Persistent Scheduled Tasks (`forge task`)](#4-persistent-scheduled-tasks-forge-task)
@@ -55,6 +58,7 @@ Forge bridges conversational LLMs with deterministic Linux operational engineeri
               │     TaskRuntime Pipeline    │
               │  - Lease acquisition        │
               │  - Incremental Checkpoints  │
+              │  - Historical Run Context   │
               │  - Deterministic Processors │
               │  - Policy Engine Check      │
               │  - Automated Verification   │
@@ -71,6 +75,86 @@ Forge bridges conversational LLMs with deterministic Linux operational engineeri
               │  (Anthropic, OpenAI, etc.)  │
               └─────────────────────────────┘
 ```
+
+### 1.1. Design Philosophy: Deterministic Scripting vs. AI Agent vs. Hybrid
+
+A common architectural question in autonomous systems is: **"If a task can be solved with a 10-line Bash script, why use an AI Agent?"**
+
+The answer is that **simple, predictable tasks *should* be done by deterministic scripts or low-cost pre-processors**, while the **AI Agent is reserved for tasks requiring logical reasoning, multi-system correlation, hypothesis testing, code analysis, and adaptive remediation.**
+
+| Dimension | Deterministic Script / Cron | Hybrid Probe + AI Escalation | Autonomous AI Agent (`forge run` / `forge task`) |
+|---|---|---|---|
+| **Problem Scope** | Known signatures, fixed regex, predictable thresholds (e.g. `df > 85%`, `systemctl restart nginx`). | Deterministic filter handles 99.9% of normal checks; escalates to AI only on unknown anomalies. | Unknown root causes, multi-service outage cascades, forensic investigation, code/config drift. |
+| **Logic Type** | Rigid, static branching (`if/else`). Breaks on unexpected log formats or cascading dependencies. | Fast deterministic filtering with intelligent adaptive fallback. | Goal-driven reasoning loop (`observe → formulate hypothesis → test with tools → verify → remediate`). |
+| **Token Cost** | $0 (0 LLM tokens, microseconds). | Near $0 on healthy runs; tokens spent only when anomalies occur. | Token usage proportional to diagnostic complexity and tool execution steps. |
+| **Execution Ownership** | **Script / OS Crontab / systemd**. | **Fast Script/Processor filters**; **AI Agent steps in on anomaly**. | **AI Agent** controls tool selection, diagnosis, and remediation. |
+
+---
+
+### 1.2. The Three Operational Paradigms
+
+Forge supports three distinct operational models depending on cost, frequency, and cognitive complexity:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              FORGE OPERATIONAL EXECUTION PARADIGMS                          │
+├────────────────────────────────┬────────────────────────────┬───────────────────────────────┤
+│ 1. Cognitive Reasoning Agent   │ 2. AI as Script Author     │ 3. Hybrid Filter + Escalation │
+│ (Dynamic Root-Cause Analysis)  │ (Generate & Install Script)│ (Zero-Token Polling Fast-Path)│
+├────────────────────────────────┼────────────────────────────┼───────────────────────────────┤
+│ • Cross-service crash analysis │ • User prompts Forge once  │ • Fast local script/processor │
+│ • Diagnosing unknown stacktraces│ • AI inspects host env     │   checks line offsets & regex │
+│ • Git bisect & code regression │ • AI writes robust script  │ • If healthy (99%): exit in   │
+│ • Forensic security timeline   │ • AI configures systemd    │   10ms with 0 tokens          │
+│ • Multi-step safe remediation  │ • Zero recurring LLM cost  │ • If anomaly: summon AI Agent │
+└────────────────────────────────┴────────────────────────────┴───────────────────────────────┘
+```
+
+#### Paradigm 1: Cognitive Reasoning Agent (`mode: agent`)
+* **When to use**: High-complexity diagnostic tasks where a static script cannot know what to inspect in advance.
+* **Examples**: 
+  - Correlating reverse proxy HTTP 502s with upstream Go worker pool lock contention and PostgreSQL unindexed query spikes.
+  - Analyzing Linux kernel OOM killer events and adjusting JVM heap parameters safely.
+  - Investigating anomalous SSH brute-force attempts, correlating with open listening sockets and crontabs, and constructing an attacker timeline.
+
+#### Paradigm 2: AI as Script Author (`forge run "Write a hardened script..."`)
+* **When to use**: You want high-quality automation for recurring checks without paying recurring token costs.
+* **Workflow**:
+  1. Tell Forge: `"Inspect my system, write a hardened Python/Bash script with file locking and log rotation to monitor postgres health, test it with dry-run, and install a systemd service + timer."`
+  2. Forge explores the host, tests commands, writes the script, checks syntax, and configures the native Linux scheduler.
+  3. All future executions run 100% natively in sub-milliseconds with zero API costs.
+
+#### Paradigm 3: Hybrid Deterministic Pre-Filtering + AI Escalation
+* **When to use**: High-frequency monitoring (e.g. every 15s or 30s) where 99.9% of cycles have no errors.
+* **Workflow**:
+  1. Deterministic Pre-LLM Processors (e.g. `LogReaderProcessor`, `LogDeduplicatorProcessor`, `SystemHealthProcessor`) read byte offsets and SHA-256 hashes in SQLite.
+  2. If no anomalies exist, the task completes in 5ms with **0 input/output tokens**.
+  3. If an anomaly threshold is breached or an unknown error pattern emerges, the AI Agent is activated with the exact contextual window to troubleshoot and remediate.
+
+---
+
+### 1.3. Checkpoints & Historical Context Across Task Runs
+
+When an AI Agent is invoked repeatedly on a schedule, it requires **temporal awareness** to avoid repeating failed attempts, track trends over time, and evaluate whether previous remediations held.
+
+Forge implements stateful continuity using SQLite:
+
+1. **Incremental Checkpoints (`task_checkpoints`)**:
+   - Stores `(task_id, checkpoint_key, byte_offset, line_offset, inode, last_hash)`.
+   - Ensures the agent never re-reads already processed log bytes and automatically detects file rotation or truncation.
+
+2. **Historical Run Context (`task_runs` & `task_step_logs`)**:
+   - Before each run, `TaskRuntime` retrieves the last 3 runs from SQLite.
+   - Injects previous statuses, error messages, and execution summaries into the agent's prompt:
+     ```markdown
+     ## Historical Execution Context (Previous Runs)
+     - Run 8f1b2c34 (2026-08-27 22:45:00 UTC): Status=FAILED
+       Summary: Detected high disk pressure on /var. Attempted journalctl vacuum.
+       Error: Command timed out.
+     - Run 7a4d9e12 (2026-08-27 22:40:00 UTC): Status=SUCCEEDED
+       Summary: Disk utilization was 74%. All health checks passed.
+     ```
+   - **Benefit**: The agent recognizes that its previous vacuum attempt failed, preventing duplicate failing loops and guiding it toward alternative remediations (e.g., checking Docker container overlay storage).
 
 ---
 
@@ -471,28 +555,97 @@ forge task wizard --smart
 
 ---
 
-### How-To 2: High-Frequency Nginx Log Watchdog with Error Deduplication
+### How-To 2: Cascading Multi-Service Incident Diagnosis & Root-Cause Triage (Cognitive Reasoning)
 
-Monitor Nginx error logs every 30 seconds, automatically deduplicating repeated error lines and capturing 5 lines of surrounding context when error bursts occur.
+When a customer outage occurs, a static script cannot deduce why reverse proxy 502s are occurring across distributed components. The AI Agent acts as an on-call SRE: formulating hypotheses, inspecting logs, tracing network sockets, analyzing database locks, and synthesizing root-cause post-mortems.
 
 #### Command:
 ```bash
-forge task create \
-  --name nginx-watchdog \
-  --profile sysadmin \
-  --every 30s \
-  --timeout 60 \
-  --policy autonomous \
-  --tools read,grep,wait_interval,send_notification \
-  --notify-email "sre-alerts@example.com" \
-  "Inspect /var/log/nginx/error.log for HTTP 500, upstream timed out, or connection refused errors. \
-   If more than 3 errors occur in the interval, capture 5 lines of context before and after the event, \
-   deduplicate identical stack traces, and email an incident root-cause report."
+forge run --profile sre "An outage was reported: Nginx is returning HTTP 502 Bad Gateway. \
+  1. Inspect /var/log/nginx/error.log to identify failing upstream socket addresses. \
+  2. Check status and journalctl logs of upstream backend services (e.g. api-server, node, go). \
+  3. If backends are hung, inspect process socket queues using 'ss -s' and 'lsof' to check for connection exhaustion. \
+  4. Query PostgreSQL pg_stat_activity to check for long-running unindexed locks or connection pool saturation. \
+  5. Formulate a root cause hypothesis, verify service restoration, and synthesize a chronological incident post-mortem."
 ```
 
 ---
 
-### How-To 3: Automated Nightly Database Backup with Exponential Retries
+### How-To 3: AI as Script Author — Generate, Test & Install Zero-Token Automation
+
+Instead of paying recurring LLM tokens on high-frequency cron jobs, let the AI Agent inspect your machine once, write a hardened native Bash/Python script with lockfiles and log rotation, test it, and install a native systemd timer.
+
+#### Command:
+```bash
+forge run --profile devops "Inspect the local system environment and create a production-grade automated monitoring script: \
+  1. Detect all active log files under /var/log/nginx and /var/log/apps. \
+  2. Write a hardened, POSIX-compliant Bash script at /usr/local/bin/fast-log-watchdog.sh that uses lockfiles (flock), \
+     traps for SIGINT/SIGTERM, performs zero-overhead bounded tailing with inode-rotation detection, and writes alerts to /var/log/watchdog-alerts.log. \
+  3. Validate syntax using 'bash -n' and perform a safe dry-run test execution. \
+  4. Generate and install a systemd user service and timer unit at ~/.config/systemd/user/log-watchdog.timer scheduled to run every 1 minute. \
+  5. Enable and start the timer using systemctl --user."
+```
+
+> [!TIP]
+> **Zero Recurring Cost**: Once Forge completes this one-shot task, your scheduled monitoring runs in microseconds with zero token costs and zero external API dependencies.
+
+---
+
+### How-To 4: Forensic Security Intrusion & Anomaly Timeline Construction
+
+Investigate anomalous authentication spikes, audit open sockets, scan persistence vectors, and construct a forensic incident report.
+
+#### Command:
+```bash
+forge run --profile security --timeout 300 "Conduct an emergency security audit: \
+  1. Parse /var/log/auth.log for failed SSH password bursts, invalid users, and root escalation attempts. \
+  2. Cross-reference source IP addresses against active listening sockets using 'ss -tulpn'. \
+  3. Inspect cron persistence vectors: /etc/cron*, /var/spool/cron/crontabs, and systemd timers. \
+  4. Check for anomalous world-writable executables in /tmp and /dev/shm. \
+  5. Compile a chronological security incident timeline detailing source IPs, attempted usernames, and hardening recommendations."
+```
+
+---
+
+### How-To 5: Stateful Memory Trend Diagnosis & Leak Detection Across Runs
+
+Scheduled tasks in Forge automatically leverage historical SQLite context (`task_runs`) to compare current process metrics against previous runs, identifying slow memory degradation before the Linux OOM killer triggers.
+
+#### Command:
+```bash
+forge task create \
+  --name memory-trend-watchdog \
+  --profile sre \
+  --every 10m \
+  --timeout 120 \
+  --policy autonomous \
+  --tools read,grep,bash,send_notification \
+  --notify-email "sre-oncall@example.com" \
+  "Inspect top 5 processes by resident set size (RSS). \
+   Compare current memory consumption against previous run history in SQLite context. \
+   If any service exhibits continuous RSS growth over the last 3 consecutive runs exceeding 15% delta, \
+   capture thread counts from /proc/<pid>/status, take a thread dump or diagnostic snapshot, \
+   and notify the on-call engineer before OOM threshold is reached."
+```
+
+---
+
+### How-To 6: Automated Git Bisect & Regression Debugging
+
+When a build or test suite breaks unexpectedly in staging, Forge navigates the git history, executes bisect iterations, locates the breaking commit diff, and generates a hotfix patch.
+
+#### Command:
+```bash
+forge run --profile software-engineer "A regression was detected in the test suite: \
+  1. Run the test suite to confirm the failing test case. \
+  2. Initiate 'git bisect' between HEAD and origin/main to find the culprit commit. \
+  3. Analyze the offending commit diff and explain the exact logical bug introduced. \
+  4. Draft and apply a surgical code fix, rerun the tests to verify 100% pass rate, and output the git diff patch."
+```
+
+---
+
+### How-To 7: Automated Nightly Database Backup with Integrity Verification
 
 Schedule a nightly PostgreSQL backup at 02:00 UTC with gzip compression, SHA-256 integrity verification, 7-day retention rotation, and automated exponential backoff on failure.
 
@@ -514,7 +667,7 @@ forge task create \
 
 ---
 
-### How-To 4: Instant Instantiation from Curated Templates
+### How-To 8: Instant Instantiation from Curated Templates
 
 Forge includes 8 battle-tested production templates (`nginx-error-monitor`, `disk-space-cleaner`, `systemd-service-watchdog`, `memory-leak-detector`, `postgres-nightly-backup`, `ssl-cert-expiry-check`, `docker-unhealthy-pruner`, `security-port-auditor`).
 
@@ -535,7 +688,7 @@ forge task create \
 
 ---
 
-### How-To 5: Explaining & Visualizing Execution Timelines
+### How-To 9: Explaining & Visualizing Execution Timelines
 
 Use `forge task explain` to convert cron syntax or intervals into plain English and visualize the exact local and UTC execution timestamps with countdown durations.
 
@@ -569,14 +722,14 @@ forge task explain pg-nightly-backup
 
 ---
 
-### How-To 6: Safe Dry-Run Testing & Verifying Tasks Before Enabling
+### How-To 10: Safe Dry-Run Testing & Verifying Tasks Before Enabling
 
 Always test newly defined tasks in safe mode (`PolicyMode.SAFE`) before scheduling them in production to verify tool invocations, token costs, and exit criteria without modifying system state.
 
 #### Examples:
 ```bash
 # Test an existing configured task
-forge task test nginx-watchdog
+forge task test memory-trend-watchdog
 
 # Test a raw operational goal directly with a custom timeout
 forge task test "Inspect memory usage and top 5 processes by RSS" --timeout 30
@@ -601,7 +754,7 @@ forge task test "Inspect memory usage and top 5 processes by RSS" --timeout 30
 
 ---
 
-### How-To 7: Declarative GitOps Workflow with YAML Configuration
+### How-To 11: Declarative GitOps Workflow with YAML Configuration
 
 Manage task definitions in source control (e.g. in a Git repository under `tasks/`):
 
@@ -633,7 +786,7 @@ forge task create --from tasks/disk-cleaner.yaml
 
 ---
 
-### How-To 8: Daemon Operation & Systemd User Service Automation
+### How-To 12: Daemon Operation & Systemd User Service Automation
 
 Run Forge unattended as a non-root background daemon managed by systemd:
 
@@ -651,7 +804,7 @@ loginctl enable-linger $USER
 
 ---
 
-### How-To 9: Task Maintenance, Health Diagnostics & Lease Recovery
+### How-To 13: Task Maintenance, Health Diagnostics & Lease Recovery
 
 If a task process was abruptly terminated (e.g. unexpected server reboot or kernel panic), use `doctor` to audit and release stale leases:
 
@@ -660,13 +813,13 @@ If a task process was abruptly terminated (e.g. unexpected server reboot or kern
 forge task doctor
 
 # Manually trigger a task on-demand
-forge task run nginx-watchdog
+forge task run memory-trend-watchdog
 
 # View recent execution run history
-forge task runs nginx-watchdog
+forge task runs memory-trend-watchdog
 
 # View detailed audit logs for a task
-forge task logs nginx-watchdog
+forge task logs memory-trend-watchdog
 
 # Clean up completed runs older than 14 days
 forge task cleanup --days 14

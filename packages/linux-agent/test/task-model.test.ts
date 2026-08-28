@@ -147,4 +147,80 @@ describe("Task Model", () => {
 			expect(DEFAULT_RETRY_POLICY.strategy).toBe("fixed");
 		});
 	});
+
+	describe("buildTaskContextPrompt", () => {
+		it("should render task context without previous runs", async () => {
+			const { buildTaskContextPrompt } = await import("../src/runtime/task-runtime.ts");
+			const task = {
+				id: "t123-uuid",
+				name: "sample-task",
+				goal: "Investigate database query latency",
+				policyMode: "autonomous" as const,
+				timeoutSeconds: 120,
+				schedule: { type: "interval" as const, seconds: 60 },
+				enabled: true,
+				overlapPolicy: "skip" as const,
+				retryPolicy: { maxRetries: 0, delaySeconds: 30, strategy: "fixed" as const },
+				createdAt: "2026-08-27T00:00:00Z",
+				updatedAt: "2026-08-27T00:00:00Z",
+			};
+
+			const prompt = buildTaskContextPrompt(task);
+			expect(prompt).toContain("Task: sample-task (t123-uuid)");
+			expect(prompt).toContain("Schedule: every 60s");
+			expect(prompt).toContain("Goal:\nInvestigate database query latency");
+			expect(prompt).not.toContain("Historical Execution Context");
+		});
+
+		it("should render historical execution context when previous runs are supplied", async () => {
+			const { buildTaskContextPrompt } = await import("../src/runtime/task-runtime.ts");
+			const task = {
+				id: "t123-uuid",
+				name: "sample-task",
+				goal: "Investigate database query latency",
+				policyMode: "autonomous" as const,
+				timeoutSeconds: 120,
+				schedule: { type: "interval" as const, seconds: 60 },
+				enabled: true,
+				overlapPolicy: "skip" as const,
+				retryPolicy: { maxRetries: 0, delaySeconds: 30, strategy: "fixed" as const },
+				createdAt: "2026-08-27T00:00:00Z",
+				updatedAt: "2026-08-27T00:00:00Z",
+			};
+
+			const previousRuns = [
+				{
+					id: "run-aaa-1111",
+					taskId: "t123-uuid",
+					status: "SUCCEEDED" as const,
+					triggerType: "schedule" as const,
+					startedAt: "2026-08-27T10:00:00Z",
+					finishedAt: "2026-08-27T10:00:15Z",
+					resultSummary: "Executed EXPLAIN ANALYZE on users table. Created index on email column.",
+					inputTokens: 100,
+					outputTokens: 50,
+					toolCalls: 2,
+				},
+				{
+					id: "run-bbb-2222",
+					taskId: "t123-uuid",
+					status: "FAILED" as const,
+					triggerType: "schedule" as const,
+					startedAt: "2026-08-27T09:55:00Z",
+					finishedAt: "2026-08-27T09:55:20Z",
+					error: "Database connection pool timeout",
+					inputTokens: 50,
+					outputTokens: 20,
+					toolCalls: 1,
+				},
+			];
+
+			const prompt = buildTaskContextPrompt(task, previousRuns);
+			expect(prompt).toContain("Historical Execution Context (Previous Runs)");
+			expect(prompt).toContain("Run run-aaa- (2026-08-27T10:00:15Z): Status=SUCCEEDED");
+			expect(prompt).toContain("Summary: Executed EXPLAIN ANALYZE on users table. Created index on email column.");
+			expect(prompt).toContain("Run run-bbb- (2026-08-27T09:55:20Z): Status=FAILED");
+			expect(prompt).toContain("Error: Database connection pool timeout");
+		});
+	});
 });

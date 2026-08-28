@@ -11,7 +11,7 @@
 
 import { hostname } from "node:os";
 import { getDefaultTaskDbPath, TaskStore } from "../store/task-store.ts";
-import type { Task, TaskState } from "./task-model.ts";
+import type { Task, TaskRun, TaskState } from "./task-model.ts";
 
 // ============================================================
 // Execution result
@@ -387,6 +387,15 @@ export class TaskRuntime {
 			this.emitProgress("checkpoint", "Loading checkpoint...");
 			// Checkpoints are loaded by processors — the runtime just provides access
 
+			// Load previous runs for historical execution context
+			const previousRuns = this.store
+				.listRuns(taskId, 4)
+				.filter(
+					(r) =>
+						r.id !== run.id && (r.status === "SUCCEEDED" || r.status === "FAILED" || r.status === "TIMED_OUT"),
+				)
+				.slice(0, 3);
+
 			// Load profile
 			this.emitProgress("profile", "Loading profile...");
 			const profilePrompt = task.profile ? buildProfilePrompt(task.profile) : undefined;
@@ -397,7 +406,10 @@ export class TaskRuntime {
 				"@earendil-works/forge-coding-agent"
 			);
 
-			const appendSystemPrompt = [...(profilePrompt ? [profilePrompt] : []), buildTaskContextPrompt(task)];
+			const appendSystemPrompt = [
+				...(profilePrompt ? [profilePrompt] : []),
+				buildTaskContextPrompt(task, previousRuns),
+			];
 
 			const sessionManager = SessionManager.inMemory(this.cwd);
 			const resourceLoader = new DefaultResourceLoader({
@@ -669,7 +681,7 @@ function buildProfilePrompt(profileName: string): string | undefined {
 	return BUILTIN_PROFILES[profileName.toLowerCase()];
 }
 
-function buildTaskContextPrompt(task: Task): string {
+export function buildTaskContextPrompt(task: Task, previousRuns: TaskRun[] = []): string {
 	const parts: string[] = [];
 	parts.push(`\n## Persistent Task Context`);
 	parts.push(`Task: ${task.name} (${task.id})`);
@@ -685,6 +697,29 @@ function buildTaskContextPrompt(task: Task): string {
 	}
 	parts.push(`Policy: ${task.policyMode}`);
 	parts.push(`Timeout: ${task.timeoutSeconds}s`);
+
+	if (previousRuns.length > 0) {
+		parts.push(`\n### Historical Execution Context (Previous Runs)`);
+		parts.push(
+			"The following is the recent execution history for this task from the SQLite store. Use this context to track persistent trends, evaluate whether previous remediations succeeded, and avoid repeating failing steps:",
+		);
+		for (const prev of previousRuns) {
+			const time = prev.finishedAt || prev.startedAt;
+			let details = `- Run ${prev.id.slice(0, 8)} (${time}): Status=${prev.status}`;
+			if (prev.resultSummary) {
+				const summarySnippet =
+					prev.resultSummary.length > 300
+						? `${prev.resultSummary.slice(0, 300).replace(/\n+/g, " ")}...`
+						: prev.resultSummary.replace(/\n+/g, " ");
+				details += `\n  Summary: ${summarySnippet}`;
+			}
+			if (prev.error) {
+				details += `\n  Error: ${prev.error}`;
+			}
+			parts.push(details);
+		}
+	}
+
 	parts.push(`\nGoal:\n${task.goal}`);
 	return parts.join("\n");
 }
