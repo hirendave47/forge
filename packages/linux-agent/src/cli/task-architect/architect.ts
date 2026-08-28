@@ -112,10 +112,8 @@ export async function runTaskArchitect(options: TaskArchitectOptions = {}): Prom
 				try {
 					action = await callArchitectModel(modelRuntime, model, session);
 				} catch (err: unknown) {
-					const msg = err instanceof Error ? err.message : String(err);
-					prompt.writeLine(
-						chalk.yellow(`  ⚠️  AI Architect unavailable (${msg}). Falling back to heuristic wizard.`),
-					);
+					const msg = err instanceof Error ? err.stack : String(err);
+					prompt.writeLine(chalk.yellow(`  ⚠️  AI Architect unavailable (${msg}). Falling back to heuristic wizard.`));
 					// Fall through to heuristic
 				}
 			}
@@ -451,16 +449,25 @@ async function resolveModel(options: TaskArchitectOptions): Promise<{ modelRunti
 
 	try {
 		const { ModelRuntime, SettingsManager, getAgentDir } = await import("@earendil-works/forge-coding-agent");
+		const { join } = await import("node:path");
 		const cwd = process.cwd();
 		const agentDir = getAgentDir();
 		const settingsManager = SettingsManager.create(cwd, agentDir);
 
+		const authPath = join(agentDir, "auth.json");
+		const modelsPath = join(agentDir, "models.json");
 		const modelRuntime =
-			options.modelRuntime ?? (await ModelRuntime.create({ allowModelNetwork: false, refreshOnCreate: false }));
+			options.modelRuntime ?? (await ModelRuntime.create({ authPath, modelsPath }));
 		const savedProvider = settingsManager.getDefaultProvider();
 		const savedModelId = settingsManager.getDefaultModel();
 
 		let model = savedProvider && savedModelId ? modelRuntime.getModel(savedProvider, savedModelId) : undefined;
+		
+		// Ensure the model actually has configured auth before using it
+		if (model && !modelRuntime.hasConfiguredAuth(model.provider)) {
+			model = undefined;
+		}
+
 		if (!model) {
 			const available = modelRuntime.getAvailableSnapshot();
 			model = available[0] ?? modelRuntime.getModels()[0];
@@ -491,8 +498,8 @@ async function callArchitectModel(
 	const response = await modelRuntime.completeSimple(
 		model,
 		{
+			systemPrompt: TASK_ARCHITECT_SYSTEM_PROMPT,
 			messages: [
-				{ role: "system", content: TASK_ARCHITECT_SYSTEM_PROMPT },
 				{ role: "user", content: userPrompt },
 			],
 		},
