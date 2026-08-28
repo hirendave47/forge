@@ -1403,9 +1403,12 @@ ${chalk.bold("Task references:")}
   Tasks can be referenced by name, full UUID, or UUID prefix.
 
 ${chalk.bold("Examples:")}
+  forge task ai-wizard "Monitor PostgreSQL and diagnose failures"
+  forge task refine nginx-monitor
   forge task wizard
   forge task top
   forge task template list
+  forge task create --ai "Supervise Redis memory usage"
   forge task create --template nginx-error-monitor
   forge task explain "*/15 * * * *"
   forge task test "Check memory usage"
@@ -1414,6 +1417,7 @@ ${chalk.bold("Examples:")}
   forge task create --name nginx-monitor --every 30s "Monitor nginx error log"
   forge task create --name db-vacuum --cron "0 2 * * *" "Vacuum database"
   forge task list
+  forge task show nginx-monitor
   forge task status nginx-monitor
   forge task doctor`);
 }

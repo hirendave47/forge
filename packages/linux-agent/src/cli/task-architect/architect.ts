@@ -112,10 +112,10 @@ export async function runTaskArchitect(options: TaskArchitectOptions = {}): Prom
 				try {
 					action = await callArchitectModel(modelRuntime, model, session);
 				} catch (err: unknown) {
-					if (options.debug) {
-						const msg = err instanceof Error ? err.message : String(err);
-						prompt.writeLine(chalk.yellow(`  [Debug] LLM call failed: ${msg}. Using fallback.`));
-					}
+					const msg = err instanceof Error ? err.message : String(err);
+					prompt.writeLine(
+						chalk.yellow(`  ⚠️  AI Architect unavailable (${msg}). Falling back to heuristic wizard.`),
+					);
 					// Fall through to heuristic
 				}
 			}
@@ -466,8 +466,17 @@ async function resolveModel(options: TaskArchitectOptions): Promise<{ modelRunti
 			model = available[0] ?? modelRuntime.getModels()[0];
 		}
 
+		if (options.debug) {
+			console.log(
+				`[Debug] resolveModel success. provider: ${savedProvider}, model: ${savedModelId}, found: ${!!model}`,
+			);
+		}
+
 		return { modelRuntime, model };
-	} catch {
+	} catch (err: unknown) {
+		if (options.debug) {
+			console.log(`[Debug] resolveModel failed: ${err instanceof Error ? err.message : String(err)}`);
+		}
 		return { modelRuntime: options.modelRuntime, model: options.model };
 	}
 }
@@ -489,6 +498,10 @@ async function callArchitectModel(
 		},
 		{ maxTokens: 1500 },
 	);
+
+	if (response.stopReason === "error") {
+		throw new Error(response.errorMessage ?? "LLM returned an error");
+	}
 
 	const text =
 		response.content
