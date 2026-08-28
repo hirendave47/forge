@@ -121,7 +121,13 @@ export function generateFastPathScriptContent(plan: TaskPlan): string {
 		lines.push("");
 		lines.push('echo "[OK] PostgreSQL service and port 5432 are healthy"');
 		lines.push("exit 0");
-	} else if (goalLower.includes("nginx") || goalLower.includes("http") || goalLower.includes("web")) {
+	} else if (
+		goalLower.includes("nginx") ||
+		goalLower.includes("apache") ||
+		goalLower.includes("caddy") ||
+		goalLower.includes("httpd") ||
+		(goalLower.includes("web server") && !goalLower.includes("http://") && !goalLower.includes("https://"))
+	) {
 		lines.push("# 1. Check web service status");
 		lines.push("if ! systemctl is-active --quiet nginx 2>/dev/null; then");
 		lines.push('  echo "[ANOMALY] nginx.service is not active" >&2');
@@ -134,7 +140,7 @@ export function generateFastPathScriptContent(plan: TaskPlan): string {
 		lines.push("  exit 2");
 		lines.push("fi");
 		lines.push("");
-		lines.push('echo "[OK] Nginx service and web ports are healthy"');
+		lines.push('echo "[OK] Web service and ports are healthy"');
 		lines.push("exit 0");
 	} else if (goalLower.includes("disk") || goalLower.includes("space") || goalLower.includes("mount")) {
 		lines.push("# Check root filesystem usage threshold (85%)");
@@ -178,25 +184,25 @@ export function generateVerificationScriptContent(plan: TaskPlan): string {
 	const lines: string[] = ["#!/usr/bin/env bash", "set -euo pipefail", ""];
 
 	lines.push(`# Verification script for: ${plan.name}`);
+	lines.push(`# Goal: ${plan.goal}`);
 	lines.push("");
 
 	if (plan.verification && plan.verification.length > 0) {
 		for (const check of plan.verification) {
-			lines.push(`echo "Checking: ${check}"`);
-			lines.push(`if ${check}; then`);
-			lines.push('  echo "  ✓ PASS"');
-			lines.push("else");
-			lines.push('  echo "  ✗ FAIL" >&2');
+			lines.push(`if ! ${check}; then`);
+			lines.push(`  echo "[FAIL] Verification check failed: ${check}" >&2`);
 			lines.push("  exit 1");
 			lines.push("fi");
-			lines.push("");
 		}
 	} else {
-		lines.push('echo "No custom verification rules defined; default pass."');
+		lines.push("# Default exit 0 verification");
+		lines.push("exit 0");
 	}
 
-	lines.push('echo "All verification checks passed."');
+	lines.push("");
+	lines.push('echo "[PASS] All post-remediation verification checks succeeded"');
 	lines.push("exit 0");
+
 	return lines.join("\n");
 }
 
@@ -249,12 +255,15 @@ export function writeTaskBundle(plan: TaskPlan, baseDir?: string): TaskBundle {
 					plan.explanation?.estimatedAiUsage ?? (plan.executionStrategy === "deterministic" ? "Zero" : "Low"),
 			},
 		},
-		fast_path: {
-			type: "bash",
-			script_path: scriptPath,
-			timeout_seconds: 15,
-			escalate_on: "non_zero_exit",
-		},
+		fast_path:
+			plan.executionStrategy === "ai_agent"
+				? undefined
+				: {
+						type: "bash",
+						script_path: scriptPath,
+						timeout_seconds: 15,
+						escalate_on: "non_zero_exit",
+					},
 		verification: plan.verification,
 		profile: plan.profile,
 		policy_mode: plan.policyMode,

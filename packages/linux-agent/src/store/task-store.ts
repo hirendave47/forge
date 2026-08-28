@@ -511,8 +511,14 @@ export class TaskStore {
 	}
 
 	getRun(id: string): TaskRun | undefined {
-		const row = this.db.prepare("SELECT * FROM task_runs WHERE id = ?").get(id) as RunRow | undefined;
-		return row ? rowToRun(row) : undefined;
+		const trimmed = id.trim();
+		const exact = this.db.prepare("SELECT * FROM task_runs WHERE id = ?").get(trimmed) as RunRow | undefined;
+		if (exact) return rowToRun(exact);
+
+		const prefix = this.db
+			.prepare("SELECT * FROM task_runs WHERE id LIKE ? || '%' ORDER BY started_at DESC LIMIT 1")
+			.get(trimmed) as RunRow | undefined;
+		return prefix ? rowToRun(prefix) : undefined;
 	}
 
 	listRuns(taskId: string, limit = 50): TaskRun[] {

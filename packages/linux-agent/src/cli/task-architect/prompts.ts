@@ -22,9 +22,9 @@ RULES:
    - Prefer concrete multiple-choice options with sensible defaults over open-ended questions.
 
 EXECUTION STRATEGY CRITERIA:
-- "deterministic": Use when rules are fixed, predictable, thresholds are static, or recurring token cost is unnecessary (e.g. disk threshold check, log rotation, simple service restart).
-- "ai_agent": Use when root cause is unknown, log anomalies require adaptive reasoning, or multi-system troubleshooting is required (e.g. diagnosing HTTP 502, investigating intermittent latency spikes).
-- "hybrid": Use when tasks run frequently (every 30s-5m) with a lightweight deterministic fast-path probe, escalating to the AI agent only when an anomaly is detected.
+- "ai_agent": Use for active tasks that require autonomous reasoning, fetching external data, web scraping, log analysis, summarization, sending emails/notifications, multi-step investigation, or complex automation workflows where the agent must perform work on every execution (e.g., "scrape latest 2 articles from URL every 2h and email them", "audit and report security posture").
+- "deterministic": Use when fixed, predictable shell scripts or commands exist with no AI reasoning needed (e.g. disk threshold check, log rotation, simple service restart).
+- "hybrid": Use ONLY for passive health/service monitoring tasks where a fast-path probe checks if a local service/resource is healthy (exit 0 = healthy, do nothing; exit >0 = anomaly detected, escalate to AI agent for diagnosis/remediation). NEVER use hybrid for active tasks (like scraping, emailing, reporting, data processing) because a healthy probe would skip the actual work!
 
 SCHEDULER CRITERIA:
 - "forge_sqlite": Recommended when AI agent execution, historical checkpointing, leases, and Forge notification hooks are needed.
@@ -81,7 +81,7 @@ You MUST respond with a single valid JSON object adhering to ONE of these action
   "plan": {
     "name": "unique-task-name",
     "goal": "Enriched operational goal description",
-    "executionStrategy": "hybrid",
+    "executionStrategy": "ai_agent",
     "scheduler": "forge_sqlite",
     "profile": "sre",
     "modelTier": "default",
@@ -104,9 +104,9 @@ You MUST respond with a single valid JSON object adhering to ONE of these action
     ],
     "explanation": {
       "summary": "Continuous health monitoring with AI root-cause escalation",
-      "whyStrategy": "Fast deterministic check saves tokens; AI provides deep analysis on failure",
+      "whyStrategy": "Active task requires AI reasoning and web/notification tool orchestration",
       "whyScheduler": "Forge scheduler provides run audit logs and notification dispatches",
-      "estimatedAiUsage": "Low (< 500 tokens/day unless errors occur)"
+      "estimatedAiUsage": "Moderate (~1.5k tokens/run)"
     },
     "confidence": 0.95
   }
@@ -121,7 +121,7 @@ export function generateHeuristicPlan(goal: string, _hostInfo?: HostInfo): TaskP
 	const lower = goal.toLowerCase();
 	const name = generateSlug(goal);
 
-	let strategy: "deterministic" | "ai_agent" | "hybrid" = "hybrid";
+	let strategy: "deterministic" | "ai_agent" | "hybrid" = "ai_agent";
 	let profile = "sysadmin";
 	let scheduler: "forge_sqlite" | "systemd_timer" | "native_cron" | "manual" = "forge_sqlite";
 	let intervalSeconds = 300;
@@ -129,7 +129,34 @@ export function generateHeuristicPlan(goal: string, _hostInfo?: HostInfo): TaskP
 	let elevated = false;
 	let policyMode: "safe" | "supervised" | "autonomous" = "autonomous";
 
-	if (lower.includes("clean") || lower.includes("delete") || lower.includes("disk") || lower.includes("space")) {
+	if (
+		lower.includes("scrape") ||
+		lower.includes("fetch") ||
+		lower.includes("article") ||
+		lower.includes("email") ||
+		lower.includes("mail") ||
+		lower.includes("notify") ||
+		lower.includes("send") ||
+		lower.includes("report") ||
+		lower.includes("summarize") ||
+		lower.includes("summary") ||
+		((lower.includes("check") || lower.includes("monitor")) &&
+			(lower.includes("http") ||
+				lower.includes("url") ||
+				lower.includes("site") ||
+				lower.includes(".com") ||
+				lower.includes(".org")))
+	) {
+		strategy = "ai_agent";
+		profile = "sre";
+		intervalSeconds = 7200;
+		intervalHuman = "2h";
+	} else if (
+		lower.includes("clean") ||
+		lower.includes("delete") ||
+		lower.includes("disk") ||
+		lower.includes("space")
+	) {
 		strategy = "deterministic";
 		profile = "sysadmin";
 		intervalSeconds = 3600;

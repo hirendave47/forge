@@ -113,7 +113,9 @@ export async function runTaskArchitect(options: TaskArchitectOptions = {}): Prom
 					action = await callArchitectModel(modelRuntime, model, session);
 				} catch (err: unknown) {
 					const msg = err instanceof Error ? err.stack : String(err);
-					prompt.writeLine(chalk.yellow(`  ⚠️  AI Architect unavailable (${msg}). Falling back to heuristic wizard.`));
+					prompt.writeLine(
+						chalk.yellow(`  ⚠️  AI Architect unavailable (${msg}). Falling back to heuristic wizard.`),
+					);
 					// Fall through to heuristic
 				}
 			}
@@ -456,13 +458,12 @@ async function resolveModel(options: TaskArchitectOptions): Promise<{ modelRunti
 
 		const authPath = join(agentDir, "auth.json");
 		const modelsPath = join(agentDir, "models.json");
-		const modelRuntime =
-			options.modelRuntime ?? (await ModelRuntime.create({ authPath, modelsPath }));
+		const modelRuntime = options.modelRuntime ?? (await ModelRuntime.create({ authPath, modelsPath }));
 		const savedProvider = settingsManager.getDefaultProvider();
 		const savedModelId = settingsManager.getDefaultModel();
 
 		let model = savedProvider && savedModelId ? modelRuntime.getModel(savedProvider, savedModelId) : undefined;
-		
+
 		// Ensure the model actually has configured auth before using it
 		if (model && !modelRuntime.hasConfiguredAuth(model.provider)) {
 			model = undefined;
@@ -499,9 +500,7 @@ async function callArchitectModel(
 		model,
 		{
 			systemPrompt: TASK_ARCHITECT_SYSTEM_PROMPT,
-			messages: [
-				{ role: "user", content: userPrompt },
-			],
+			messages: [{ role: "user", content: userPrompt }],
 		},
 		{ maxTokens: 1500 },
 	);
