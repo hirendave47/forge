@@ -369,6 +369,98 @@ export class TaskStore {
 		}
 	}
 
+	updateTask(id: string, updates: Partial<CreateTaskInput>): Task {
+		const existing = this.getTask(id);
+		if (!existing) {
+			throw new Error(`Task not found: ${id}`);
+		}
+
+		const now = new Date().toISOString();
+		const goal = updates.goal ?? existing.goal;
+		const profile = updates.profile !== undefined ? updates.profile : existing.profile;
+		const schedule = updates.schedule !== undefined ? updates.schedule : existing.schedule;
+		const overlapPolicy = updates.overlapPolicy ?? existing.overlapPolicy;
+		const timeoutSeconds = updates.timeoutSeconds ?? existing.timeoutSeconds;
+		const retryPolicy = updates.retryPolicy
+			? { ...existing.retryPolicy, ...updates.retryPolicy }
+			: existing.retryPolicy;
+		const policyMode = updates.policyMode ?? existing.policyMode;
+		const toolsAllow = updates.toolsAllow !== undefined ? updates.toolsAllow : existing.toolsAllow;
+		const toolsDeny = updates.toolsDeny !== undefined ? updates.toolsDeny : existing.toolsDeny;
+		const skills = updates.skills !== undefined ? updates.skills : existing.skills;
+		const modelTier = updates.modelTier !== undefined ? updates.modelTier : existing.modelTier;
+		const elevated = updates.elevated !== undefined ? updates.elevated : existing.elevated;
+		const notifications = updates.notifications !== undefined ? updates.notifications : existing.notifications;
+
+		let scheduleType: string | null = null;
+		let scheduleValue: string | null = null;
+		let nextRunAt: string | null = existing.nextRunAt ?? null;
+
+		if (schedule) {
+			scheduleType = schedule.type;
+			if (schedule.type === "interval") {
+				scheduleValue = String(schedule.seconds);
+				nextRunAt = computeNextRun(schedule, new Date())?.toISOString() ?? null;
+			} else if (schedule.type === "cron") {
+				scheduleValue = schedule.expression;
+				nextRunAt = computeNextRun(schedule, new Date())?.toISOString() ?? null;
+			} else if (schedule.type === "once") {
+				scheduleValue = schedule.at;
+				nextRunAt = schedule.at;
+			}
+		} else if (updates.schedule === null) {
+			nextRunAt = null;
+		}
+
+		this.db
+			.prepare(
+				`UPDATE tasks SET
+					goal = ?,
+					profile = ?,
+					schedule_type = ?,
+					schedule_value = ?,
+					overlap_policy = ?,
+					timeout_seconds = ?,
+					retry_max = ?,
+					retry_delay_seconds = ?,
+					retry_strategy = ?,
+					policy_mode = ?,
+					tools_allow = ?,
+					tools_deny = ?,
+					skills = ?,
+					model_tier = ?,
+					elevated = ?,
+					notifications = ?,
+					next_run_at = ?,
+					updated_at = ?
+				WHERE id = ?`,
+			)
+			.run(
+				goal,
+				profile ?? null,
+				scheduleType,
+				scheduleValue,
+				overlapPolicy,
+				timeoutSeconds,
+				retryPolicy.maxRetries,
+				retryPolicy.delaySeconds,
+				retryPolicy.strategy,
+				policyMode,
+				toolsAllow ? JSON.stringify(toolsAllow) : null,
+				toolsDeny ? JSON.stringify(toolsDeny) : null,
+				skills ? JSON.stringify(skills) : null,
+				modelTier ?? null,
+				elevated ? 1 : 0,
+				notifications ? JSON.stringify(notifications) : null,
+				nextRunAt,
+				now,
+				id,
+			);
+
+		this.recordEvent(id, undefined, "task_updated", { updates });
+		return this.getTask(id)!;
+	}
+
 	deleteTask(id: string): boolean {
 		const result = this.db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
 		return result.changes > 0;

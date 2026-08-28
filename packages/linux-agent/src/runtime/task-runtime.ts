@@ -396,6 +396,87 @@ export class TaskRuntime {
 				)
 				.slice(0, 3);
 
+			// Check for fast-path deterministic script probe (Hybrid / Deterministic execution)
+			const { loadTaskBundle } = await import("../cli/task-architect/index.ts");
+			const bundle = loadTaskBundle(task.name);
+			let fastPathAnomalyContext: string | undefined;
+
+			if (bundle?.scriptPath) {
+				const { existsSync } = await import("node:fs");
+				if (existsSync(bundle.scriptPath)) {
+					this.emitProgress("processor", "Executing deterministic fast-path probe...");
+					const fastStartTime = Date.now();
+					let fastExitCode = 0;
+					let fastStdout = "";
+					let fastStderr = "";
+
+					try {
+						const { execFileSync } = await import("node:child_process");
+						const stdoutBuf = execFileSync(bundle.scriptPath, {
+							timeout: (bundle.manifest?.fast_path?.timeout_seconds ?? 15) * 1000,
+							encoding: "utf-8",
+							stdio: ["ignore", "pipe", "pipe"],
+						});
+						fastStdout = String(stdoutBuf).trim();
+					} catch (fastErr: any) {
+						fastExitCode = fastErr.status ?? 1;
+						fastStdout = String(fastErr.stdout ?? "").trim();
+						fastStderr = String(fastErr.stderr ?? "").trim();
+					}
+
+					const fastDurationMs = Date.now() - fastStartTime;
+					const isDeterministic = bundle.manifest?.architecture?.strategy === "deterministic";
+					const isHybrid = bundle.manifest?.architecture?.strategy === "hybrid";
+
+					if (fastExitCode === 0 && (isDeterministic || isHybrid)) {
+						// Fast path succeeded with no anomaly!
+						this.emitProgress("complete", `Fast path succeeded in ${fastDurationMs}ms (0 tokens used)`);
+						const finishedAt = new Date().toISOString();
+						const totalDurationMs = Date.now() - startTime;
+						this.store.updateRunStatus(run.id, "SUCCEEDED", {
+							finishedAt,
+							durationMs: totalDurationMs,
+							resultSummary: fastStdout || "Fast-path check succeeded — all conditions healthy.",
+							inputTokens: 0,
+							outputTokens: 0,
+							toolCalls: 0,
+						});
+						this.store.updateTaskLastRun(taskId, finishedAt, true);
+						this.store.recordEvent(taskId, run.id, "run_completed", {
+							durationMs: totalDurationMs,
+							fastPath: true,
+							exitCode: 0,
+						});
+
+						return {
+							runId: run.id,
+							taskId,
+							status: "SUCCEEDED",
+							resultSummary: fastStdout || "Fast-path check succeeded — all conditions healthy.",
+							durationMs: totalDurationMs,
+							inputTokens: 0,
+							outputTokens: 0,
+							toolCalls: 0,
+						};
+					}
+
+					// If non-zero exit, record anomaly context for AI escalation
+					if (fastExitCode !== 0) {
+						this.emitProgress(
+							"processor",
+							`Fast path detected anomaly (exit ${fastExitCode}). Escalating to AI agent...`,
+						);
+						this.store.recordEvent(taskId, run.id, "processor_completed", {
+							escalated: true,
+							exitCode: fastExitCode,
+							stdout: fastStdout,
+							stderr: fastStderr,
+						});
+						fastPathAnomalyContext = `\n## Fast-Path Anomaly Diagnostic\nThe fast-path health check script (${bundle.scriptPath}) detected an anomaly and exited with code ${fastExitCode}:\nOutput:\n${fastStdout}\nError:\n${fastStderr}\n\nDiagnose the root cause of this anomaly using your tools and verify resolution before completing.\n`;
+					}
+				}
+			}
+
 			// Load profile
 			this.emitProgress("profile", "Loading profile...");
 			const profilePrompt = task.profile ? buildProfilePrompt(task.profile) : undefined;
@@ -409,6 +490,7 @@ export class TaskRuntime {
 			const appendSystemPrompt = [
 				...(profilePrompt ? [profilePrompt] : []),
 				buildTaskContextPrompt(task, previousRuns),
+				...(fastPathAnomalyContext ? [fastPathAnomalyContext] : []),
 			];
 
 			const sessionManager = SessionManager.inMemory(this.cwd);

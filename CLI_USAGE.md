@@ -275,6 +275,8 @@ forge task <command> [options]
 
 | Subcommand | Description | Example |
 |---|---|---|
+| `ai-wizard [goal]` | Interactive AI Task Architect to design & configure tasks | `forge task ai-wizard "Monitor PostgreSQL"` |
+| `refine <task>` | Evolve & refine an existing task configuration with AI | `forge task refine nginx-monitor` |
 | `wizard` | Launch interactive guided task creation wizard | `forge task wizard` |
 | `template [list|show]` | Browse & inspect curated production templates | `forge task template list` |
 | `sudoers [show|install|check]` | Configure & audit non-interactive sudoers rules | `forge task sudoers show` |
@@ -416,9 +418,56 @@ forge task audit export nginx-error-monitor --format json > audit.json
 
 ---
 
+### AI Task Architect (`forge task ai-wizard` / `forge task ai` / `forge task create --ai`)
+
+Forge includes a genuinely AI-driven **Task Architect** session where the LLM dynamically evaluates missing information, requests safe progressive host inspection, asks structured operational questions, recommends optimal execution strategies (Deterministic Script, Autonomous AI Agent, or Hybrid), and configures schedulers, policies, and notifications.
+
+```bash
+# Launch AI Task Architect
+forge task ai-wizard
+
+# Launch AI Task Architect with initial goal
+forge task ai-wizard "Keep PostgreSQL healthy and alert me on failures"
+
+# Aliases
+forge task ai "Monitor disk usage and alert when /var exceeds 90%"
+forge task create --ai "Inspect nginx 502 error spikes"
+forge task wizard --ai "Audit ssh security and open ports"
+```
+
+**Architect Features & Workflow:**
+1. **Goal Formulation**: Specify the high-level operational objective.
+2. **Progressive Host Discovery**: The AI evaluates the host context and requests safe, non-destructive discovery checks (`service`, `port`, `log`, `disk`, `process`, `command`).
+3. **Dynamic Structured Questioning**: The LLM asks only the minimal questions necessary to eliminate ambiguity and choose remediation rules.
+4. **Execution Strategy Selection**:
+   - `Deterministic Script`: Fixed thresholds and rules, zero recurring AI token cost.
+   - `AI Agent`: Root cause diagnosis and adaptive multi-step troubleshooting.
+   - `Hybrid`: High-frequency local probe + AI escalation on anomalies.
+5. **Scheduler Recommendation**: Automatically selects `forge_sqlite`, `systemd_timer`, `native_cron`, or `manual`.
+6. **Mandatory User Review**: Presents a complete architecture preview with rationale before task materialization.
+7. **Materialization & Fast-Path Bundle**: Saves task to SQLite store, creates standalone bundle in `~/.forge/agent/tasks/<name>/` (`script.sh`, `manifest.json`, `verification.sh`, `README.md`), or exports to declarative YAML.
+
+---
+
+### Task Refinement & Evolution (`forge task refine <task>` / `forge task ai-edit <task>`)
+
+Operators can refine existing tasks through a conversational AI session that loads the current configuration, recent run history, and architecture metadata:
+
+```bash
+# Evolve an existing task
+forge task refine nginx-monitor
+
+# Alias
+forge task ai-edit db-vacuum
+```
+
+The AI Task Architect interprets requests like *"change the schedule from 1m to 5m"*, *"require human approval before restarting services"*, or *"tune the fast-path anomaly threshold"*, presents a preview diff, and atomically updates the task in the database and script bundle.
+
+---
+
 ### Interactive Task Wizard (`forge task wizard` / `forge task create -i`)
 
-Forge includes a terminal wizard that guides you step-by-step through configuring tasks with automated host discovery and dynamic follow-up questions:
+Forge also includes a classic guided wizard for manual step-by-step configuration:
 
 ```bash
 # Launch interactive wizard
@@ -427,7 +476,7 @@ forge task wizard
 # Launch wizard with an initial goal
 forge task wizard "Monitor disk usage and alert when full"
 
-# Launch wizard with instant smart AI follow-up refinement
+# Launch wizard with smart heuristic follow-up questions
 forge task wizard --smart "Supervise postgres health"
 ```
 

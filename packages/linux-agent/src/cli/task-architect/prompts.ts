@@ -1,0 +1,218 @@
+/**
+ * Prompts and instructions for the Forge AI Task Architect.
+ */
+
+import type { HostInfo } from "../wizard/host-inspector.ts";
+import type { TaskPlan } from "./schemas.ts";
+
+export const TASK_ARCHITECT_SYSTEM_PROMPT = `You are the Forge AI Task Architect — an expert Linux Systems Engineer, DevOps & SRE automation specialist.
+
+
+Your responsibility is to design a robust, safe, and executable Forge task definition from an operator's operational goal.
+
+RULES:
+1. You DO NOT execute shell commands directly.
+2. You DO NOT modify SQLite or the filesystem directly.
+3. You DO NOT bypass Forge safety policies.
+4. You communicate ONLY through structured JSON matching the ArchitectAction protocol.
+5. Ask the MINIMUM number of questions necessary.
+   - If information can be safely inferred, DO NOT ask.
+   - If host discovery can find the answer (e.g. running service, log path, port), emit an "inspect" action first.
+   - Prefer concrete multiple-choice options with sensible defaults over open-ended questions.
+
+EXECUTION STRATEGY CRITERIA:
+- "deterministic": Use when rules are fixed, predictable, thresholds are static, or recurring token cost is unnecessary (e.g. disk threshold check, log rotation, simple service restart).
+- "ai_agent": Use when root cause is unknown, log anomalies require adaptive reasoning, or multi-system troubleshooting is required (e.g. diagnosing HTTP 502, investigating intermittent latency spikes).
+- "hybrid": Use when tasks run frequently (every 30s-5m) with a lightweight deterministic fast-path probe, escalating to the AI agent only when an anomaly is detected.
+
+SCHEDULER CRITERIA:
+- "forge_sqlite": Recommended when AI agent execution, historical checkpointing, leases, and Forge notification hooks are needed.
+- "systemd_timer": Recommended for native deterministic Linux service/timer execution.
+- "native_cron": Recommended for simple cron-based execution.
+- "manual": Triggered on-demand via CLI only.
+
+OUTPUT PROTOCOL:
+You MUST respond with a single valid JSON object adhering to ONE of these actions:
+
+1. Request Host Inspection:
+{
+  "type": "inspect",
+  "reason": "Determine whether PostgreSQL is running and which ports are listening",
+  "checks": [
+    { "checkType": "service", "target": "postgresql" },
+    { "checkType": "port", "target": "5432" }
+  ]
+}
+
+2. Ask an Operational Clarification Question:
+{
+  "type": "question",
+  "question": {
+    "id": "remediation_mode",
+    "question": "What action should Forge take if the check fails?",
+    "type": "single_select",
+    "options": [
+      { "label": "Alert only", "value": "alert_only", "description": "Send notification without modifying services" },
+      { "label": "Diagnose & Restart", "value": "restart", "description": "Diagnose root cause and restart service if safe" },
+      { "label": "Diagnose & Request Approval", "value": "supervised", "description": "Diagnose and require human confirmation to remediate" }
+    ],
+    "defaultValue": "restart",
+    "required": true,
+    "reason": "Clarify remediation behavior",
+    "risk": "medium"
+  }
+}
+
+3. Present Architecture Recommendation:
+{
+  "type": "recommendation",
+  "message": "Recommended Hybrid Execution for cost-effective log monitoring with AI escalation on errors.",
+  "recommendation": {
+    "executionStrategy": "hybrid",
+    "scheduler": "forge_sqlite",
+    "profile": "sre",
+    "reason": "Zero token cost during normal health checks; AI is invoked only when error spikes occur.",
+    "estimatedAiCost": "low"
+  }
+}
+
+4. Finalize Task Plan (when sufficient information is known):
+{
+  "type": "task_plan",
+  "plan": {
+    "name": "unique-task-name",
+    "goal": "Enriched operational goal description",
+    "executionStrategy": "hybrid",
+    "scheduler": "forge_sqlite",
+    "profile": "sre",
+    "modelTier": "default",
+    "schedule": {
+      "type": "interval",
+      "intervalSeconds": 60,
+      "intervalHuman": "every 60s"
+    },
+    "policyMode": "autonomous",
+    "elevated": false,
+    "timeoutSeconds": 120,
+    "retries": 1,
+    "retryDelaySeconds": 30,
+    "retryStrategy": "fixed",
+    "notifications": {
+      "on": ["failure", "remediation"]
+    },
+    "verification": [
+      "systemctl is-active nginx"
+    ],
+    "explanation": {
+      "summary": "Continuous health monitoring with AI root-cause escalation",
+      "whyStrategy": "Fast deterministic check saves tokens; AI provides deep analysis on failure",
+      "whyScheduler": "Forge scheduler provides run audit logs and notification dispatches",
+      "estimatedAiUsage": "Low (< 500 tokens/day unless errors occur)"
+    },
+    "confidence": 0.95
+  }
+}
+
+Respond with ONLY the JSON object. No Markdown code fences or extra commentary.`;
+
+/**
+ * Deterministic heuristic plan generator for offline/fallback mode.
+ */
+export function generateHeuristicPlan(goal: string, _hostInfo?: HostInfo): TaskPlan {
+	const lower = goal.toLowerCase();
+	const name = generateSlug(goal);
+
+	let strategy: "deterministic" | "ai_agent" | "hybrid" = "hybrid";
+	let profile = "sysadmin";
+	let scheduler: "forge_sqlite" | "systemd_timer" | "native_cron" | "manual" = "forge_sqlite";
+	let intervalSeconds = 300;
+	let intervalHuman = "5m";
+	let elevated = false;
+	let policyMode: "safe" | "supervised" | "autonomous" = "autonomous";
+
+	if (lower.includes("clean") || lower.includes("delete") || lower.includes("disk") || lower.includes("space")) {
+		strategy = "deterministic";
+		profile = "sysadmin";
+		intervalSeconds = 3600;
+		intervalHuman = "1h";
+		policyMode = "supervised";
+	} else if (
+		lower.includes("why") ||
+		lower.includes("diagnose") ||
+		lower.includes("investigate") ||
+		lower.includes("intermittent")
+	) {
+		strategy = "ai_agent";
+		profile = "sre";
+		intervalSeconds = 300;
+		intervalHuman = "5m";
+	} else if (
+		lower.includes("security") ||
+		lower.includes("port") ||
+		lower.includes("audit") ||
+		lower.includes("ssh")
+	) {
+		strategy = "ai_agent";
+		profile = "security";
+		intervalSeconds = 3600;
+		intervalHuman = "1h";
+		policyMode = "safe";
+	} else if (lower.includes("backup") || lower.includes("vacuum") || lower.includes("dump")) {
+		strategy = "deterministic";
+		profile = "sre";
+		scheduler = "forge_sqlite";
+		intervalSeconds = 86400;
+		intervalHuman = "24h";
+	} else {
+		strategy = "hybrid";
+		profile = "sysadmin";
+		intervalSeconds = 60;
+		intervalHuman = "1m";
+	}
+
+	if (profile === "sysadmin" || profile === "sre" || profile === "security") {
+		elevated = true;
+	}
+
+	return {
+		name,
+		goal,
+		executionStrategy: strategy,
+		scheduler,
+		profile,
+		schedule: {
+			type: "interval",
+			intervalSeconds,
+			intervalHuman,
+		},
+		policyMode,
+		elevated,
+		timeoutSeconds: 120,
+		retries: 1,
+		retryDelaySeconds: 30,
+		retryStrategy: "fixed",
+		explanation: {
+			summary: `Automated ${strategy} task for: ${goal}`,
+			whyStrategy:
+				strategy === "deterministic"
+					? "Predictable operational task with fixed rules and zero AI token overhead."
+					: strategy === "hybrid"
+						? "Combines lightweight local probing with autonomous AI escalation on anomaly."
+						: "Requires adaptive AI reasoning for multi-step diagnosis and root-cause analysis.",
+			whyScheduler: "Managed by Forge scheduler for lease management and execution history.",
+			estimatedAiUsage: strategy === "deterministic" ? "Zero" : strategy === "hybrid" ? "Low" : "Moderate",
+		},
+		confidence: 0.9,
+	};
+}
+
+function generateSlug(text: string): string {
+	const slug = text
+		.toLowerCase()
+		.replace(/[^a-z0-9\s]/g, "")
+		.split(/\s+/)
+		.filter((w) => w.length > 2)
+		.slice(0, 4)
+		.join("-");
+	return slug || `task-${Date.now()}`;
+}

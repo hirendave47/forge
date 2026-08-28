@@ -18,6 +18,7 @@
 export { handleAuditCommand } from "./cli/audit-command.ts";
 export { handleRunCommand } from "./cli/run-command.ts";
 export { calculateTimeline, explainSchedule, formatTimelineTable, handleExplain } from "./cli/schedule-explainer.ts";
+export * from "./cli/task-architect/index.ts";
 export { handleTaskCommand } from "./cli/task-command.ts";
 export { handleTest, testTask } from "./cli/task-tester.ts";
 export * from "./cli/wizard/index.ts";

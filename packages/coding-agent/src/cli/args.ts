@@ -276,7 +276,9 @@ ${chalk.bold("Usage:")}
 ${chalk.bold("Commands:")}
   ${APP_NAME} run "<goal>"              Run a one-shot autonomous task
   ${APP_NAME} run --profile sysadmin "<goal>"  Run with a specific agent profile (sysadmin, devops, sre, security)
-  ${APP_NAME} task wizard               Interactive step-by-step wizard to create tasks
+  ${APP_NAME} task ai-wizard [goal]     Design and configure tasks with the AI Task Architect
+  ${APP_NAME} task refine <task>        Refine and evolve an existing task with AI
+  ${APP_NAME} task wizard               Interactive step-by-step wizard to create tasks (--ai for AI mode)
   ${APP_NAME} task top / monitor        Live real-time dashboard of daemon, cron schedules, and active tasks
   ${APP_NAME} task create "<goal>"      Create a persistent scheduled task (--every, --cron, --at)
   ${APP_NAME} task list                 List all registered tasks and their schedules
