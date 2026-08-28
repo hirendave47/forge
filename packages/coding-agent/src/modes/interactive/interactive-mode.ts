@@ -10,6 +10,7 @@ import * as path from "node:path";
 import type { AgentMessage, ThinkingLevel } from "@earendil-works/forge-agent-core";
 import type { AuthEvent, AuthPrompt } from "@earendil-works/forge-ai";
 import type { AssistantMessage, ImageContent, Message, Model, Usage } from "@earendil-works/forge-ai/compat";
+import { getDefaultTaskDbPath, listTaskTemplates, TaskStore } from "@earendil-works/forge-linux-agent";
 import type {
 	AutocompleteItem,
 	AutocompleteProvider,
@@ -142,6 +143,7 @@ import {
 	type StatusIndicator,
 	WorkingStatusIndicator,
 } from "./components/status-indicator.ts";
+import { TaskSelectorComponent } from "./components/task-selector.ts";
 import { ThinkingSelectorComponent } from "./components/thinking-selector.ts";
 import { ToolExecutionComponent } from "./components/tool-execution.ts";
 import { TreeSelectorComponent } from "./components/tree-selector.ts";
@@ -725,6 +727,120 @@ export class InteractiveMode {
 					label: provider.id,
 					description: formatLoginProviderCompletionDescription(provider),
 				}));
+			};
+		}
+
+		const taskCommand = slashCommands.find((command) => command.name === "task");
+		if (taskCommand) {
+			const subcommands = [
+				{ name: "list", description: "List all persistent tasks and schedules" },
+				{ name: "show", description: "Show detailed configuration of a task", hint: "<task>" },
+				{ name: "status", description: "Show live status, active lease, and recent runs", hint: "<task>" },
+				{ name: "runs", description: "View execution history for a task", hint: "<task>" },
+				{ name: "logs", description: "View event audit log and tool step traces", hint: "<task>" },
+				{ name: "run", description: "Trigger immediate execution of a task", hint: "<task>" },
+				{ name: "pause", description: "Pause/disable scheduled executions of a task", hint: "<task>" },
+				{ name: "resume", description: "Resume/enable scheduled executions of a task", hint: "<task>" },
+				{ name: "cancel", description: "Cancel currently active execution or lease", hint: "<task>" },
+				{ name: "delete", description: "Delete a persistent task", hint: "<task>" },
+				{ name: "doctor", description: "Health check on database, scheduler, daemon, and permissions" },
+				{ name: "wizard", description: "Launch interactive guided task creation wizard" },
+				{ name: "template", description: "Browse & inspect curated task templates", hint: "[list|show <name>]" },
+				{ name: "explain", description: "Explain cron or interval schedule in plain English", hint: "<schedule>" },
+				{ name: "test", description: "Safe dry-run task simulation", hint: "<task|goal>" },
+				{ name: "audit", description: "Forensic execution trace and tool step inspection", hint: "<task|run-id>" },
+				{
+					name: "sudoers",
+					description: "Configure and audit non-interactive sudoers rules",
+					hint: "[show|install|check]",
+				},
+				{ name: "cleanup", description: "Clean up old run records and audit logs", hint: "[days]" },
+				{ name: "create", description: "Create a new scheduled or one-time task", hint: '"[goal]" [options]' },
+			];
+
+			taskCommand.getArgumentCompletions = (prefix: string): AutocompleteItem[] | null => {
+				const trimmed = prefix.trimStart();
+				const parts = trimmed.split(/\s+/);
+				const sub = parts[0]?.toLowerCase();
+
+				if (
+					parts.length > 1 &&
+					[
+						"show",
+						"status",
+						"runs",
+						"logs",
+						"run",
+						"pause",
+						"resume",
+						"cancel",
+						"delete",
+						"rm",
+						"audit",
+						"test",
+					].includes(sub)
+				) {
+					const taskQuery = parts.slice(1).join(" ");
+					try {
+						const store = new TaskStore(getDefaultTaskDbPath());
+						const tasks = store.listTasks();
+						store.close();
+						return createFuzzyAutocompleteItems(
+							tasks,
+							taskQuery,
+							(t) => `${t.name} ${t.id}`,
+							(t) => ({
+								value: `${sub} ${t.name}`,
+								label: t.name,
+								description: `[${t.enabled ? "active" : "paused"}] ${t.goal.split("\n")[0]?.slice(0, 40) ?? ""}`,
+							}),
+						);
+					} catch {
+						return null;
+					}
+				}
+
+				if (parts.length > 1 && sub === "template") {
+					const tmplSub = parts[1]?.toLowerCase();
+					if (tmplSub === "show" && parts.length > 2) {
+						const tmplQuery = parts.slice(2).join(" ");
+						const templates = listTaskTemplates();
+						return createFuzzyAutocompleteItems(
+							templates,
+							tmplQuery,
+							(t) => `${t.id} ${t.title}`,
+							(t) => ({
+								value: `template show ${t.id}`,
+								label: t.id,
+								description: t.title,
+							}),
+						);
+					}
+					return createFuzzyAutocompleteItems(
+						[
+							{ name: "list", description: "List all curated task templates" },
+							{ name: "show", description: "Show details for a template", hint: "<name>" },
+						],
+						parts.slice(1).join(" "),
+						(s) => s.name,
+						(s) => ({
+							value: `template ${s.name}`,
+							label: s.name,
+							description: s.description,
+						}),
+					);
+				}
+
+				return createFuzzyAutocompleteItems(
+					subcommands,
+					trimmed,
+					(s) => s.name,
+					(s) => ({
+						value: s.name,
+						label: s.name,
+						description: s.description,
+					}),
+				);
 			};
 		}
 
@@ -2987,6 +3103,17 @@ export class InteractiveMode {
 			if (text === "/session") {
 				this.handleSessionCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/task" || text === "/tasks") {
+				this.editor.setText("");
+				this.showTaskSelector();
+				return;
+			}
+			if (text.startsWith("/task ") || text.startsWith("/tasks ")) {
+				const commandText = text.startsWith("/tasks ") ? text.slice(7).trim() : text.slice(6).trim();
+				this.editor.setText("");
+				await this.handleTaskCommand(commandText);
 				return;
 			}
 			if (text === "/changelog") {
@@ -5262,6 +5389,26 @@ export class InteractiveMode {
 		});
 	}
 
+	private showTaskSelector(): void {
+		this.showSelector((done) => {
+			const selector = new TaskSelectorComponent({
+				onClose: () => {
+					done();
+					this.ui.requestRender();
+				},
+				onRequestRender: () => {
+					this.ui.requestRender();
+				},
+				onLaunchWizard: async () => {
+					done();
+					this.ui.requestRender();
+					await this.handleTaskCommand("wizard");
+				},
+			});
+			return { component: selector, focus: selector };
+		});
+	}
+
 	private showSessionSelector(): void {
 		this.showSelector((done) => {
 			const selector = new SessionSelectorComponent(
@@ -6163,6 +6310,79 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Text(info, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private async handleTaskCommand(commandText: string): Promise<void> {
+		const trimmed = commandText.trim();
+		if (!trimmed) {
+			this.showTaskSelector();
+			return;
+		}
+
+		// Parse arguments handling quotes
+		const rawArgs = trimmed.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+		const args = rawArgs.map((arg) => {
+			if ((arg.startsWith('"') && arg.endsWith('"')) || (arg.startsWith("'") && arg.endsWith("'"))) {
+				return arg.slice(1, -1);
+			}
+			return arg;
+		});
+
+		const subcommand = args[0]?.toLowerCase();
+
+		// If user requested interactive selector UI
+		if (
+			subcommand === "ui" ||
+			subcommand === "gui" ||
+			subcommand === "interactive" ||
+			subcommand === "selector" ||
+			subcommand === "manager"
+		) {
+			this.showTaskSelector();
+			return;
+		}
+
+		const outputLines: string[] = [];
+		const originalLog = console.log;
+		const originalError = console.error;
+		const originalWarn = console.warn;
+		const originalInfo = console.info;
+
+		const capture = (...params: any[]) => {
+			const formatted = params.map((p) => (typeof p === "string" ? p : String(p))).join(" ");
+			outputLines.push(formatted);
+		};
+
+		console.log = capture;
+		console.error = capture;
+		console.warn = capture;
+		console.info = capture;
+
+		try {
+			const { handleTaskCommand } = await import("@earendil-works/forge-linux-agent/cli");
+			await handleTaskCommand(args);
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : String(err);
+			outputLines.push(chalk.red(`Error executing task command: ${msg}`));
+		} finally {
+			console.log = originalLog;
+			console.error = originalError;
+			console.warn = originalWarn;
+			console.info = originalInfo;
+		}
+
+		const output = outputLines.join("\n").trim();
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.chatContainer.addChild(new Text(theme.bold(theme.fg("accent", `forge task ${args.join(" ")}`)), 1, 0));
+		this.chatContainer.addChild(new Spacer(1));
+		if (output) {
+			this.chatContainer.addChild(new Text(output, 1, 0));
+		} else {
+			this.chatContainer.addChild(new Text(theme.fg("dim", "Command completed with no output."), 1, 0));
+		}
+		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
 	}
 

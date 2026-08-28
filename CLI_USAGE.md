@@ -302,6 +302,38 @@ forge task <command> [options]
 | `daemon` | Run task scheduler in foreground | `forge task daemon` |
 | `service <action>` | Manage systemd service (install, start, stop, status) | `forge task service install` |
 
+### Interactive Task Management in Forge TUI (`/task`)
+
+You can manage, inspect, and trigger tasks directly inside the Forge interactive TUI session using the `/task` (or `/tasks`) command:
+
+* **Interactive Task Manager**: Type `/task` (without arguments) to open the full interactive Task Selector UI:
+  - **Fuzzy Search**: Filter tasks dynamically by name, goal, profile, or schedule.
+  - **Run Now (`Enter` / `r`)**: Trigger immediate manual execution with live status and duration feedback.
+  - **Pause / Resume (`Space` / `p`)**: Toggle task schedule enabled/disabled state instantly.
+  - **Template Browser (`t`)**: Browse curated production templates and instantiate new persistent tasks directly from the TUI.
+  - **Run History (`h`)**: View execution history, token consumption, and result summaries for the selected task.
+  - **Tool Step Logs (`l`)**: View forensic tool execution traces and error logs.
+  - **Delete Task (`d`)**: Safely delete a task with confirmation.
+  - **Close (`Esc` / `q`)**: Return back to the chat prompt.
+
+* **Slash Subcommands with Autocomplete**: Execute any task subcommand directly from the input prompt:
+  ```bash
+  /task list                          # List all persistent tasks and schedules in chat
+  /task status <task-name>            # View live status, active lease, and recent runs
+  /task show <task-name>              # Show full task configuration and notification hooks
+  /task runs <task-name>              # Inspect execution history table
+  /task logs <task-name>              # Inspect tool step logs and audit events
+  /task run <task-name>               # Execute task manually and display output
+  /task pause <task-name>             # Pause scheduled executions
+  /task resume <task-name>            # Resume scheduled executions
+  /task doctor                        # Run system, scheduler, and privileges health check
+  /task explain "*/15 * * * *"        # Natural language cron schedule explainer
+  /task test <task-name>              # Run safe dry-run task simulation
+  /task audit <task-name>             # View forensic audit log
+  /task template list                 # List all curated templates
+  ```
+  *(Press `Tab` while typing `/task ` to autocomplete subcommands, task names, and templates).*
+
 ### Curated Task Templates (`forge task template`)
 
 Forge ships with built-in production templates for common operational patterns:
